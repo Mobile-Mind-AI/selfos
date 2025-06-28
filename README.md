@@ -66,6 +66,37 @@ User ↔️ Flutter Frontend (Web/Mobile/Desktop)
 
 ---
 
+## 🚀 Getting Started (Local Development)
+
+### Prerequisites
+- Docker & Docker Compose installed
+- (Optional) Python 3.11+ for running backend tests locally
+
+### Start Services
+```bash
+# Build and run DB, Redis, and Backend API
+docker-compose up --build
+
+# (Frontend is in 'frontend' profile – activate it when ready)
+docker-compose --profile frontend up --build
+```
+
+### API Health Check
+```bash
+curl http://localhost:8000/
+```  
+Expected: { "message": "SelfOS Backend API" }
+
+### Run Backend Tests
+```bash
+cd apps/backend-api
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pytest -q
+```
+
+---
 ## 🛠 Get Involved
 We’re building something deeply meaningful. If you’re a:
 - Developer who believes AI should reflect *humans*, not replace them

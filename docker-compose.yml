@@ -1,0 +1,45 @@
+version: '3.9'
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: selfos
+      POSTGRES_PASSWORD: selfos
+      POSTGRES_DB: selfos_dev
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: .
+      dockerfile: infra/docker/backend.Dockerfile
+    depends_on:
+      - db
+      - redis
+    environment:
+      DATABASE_URL: postgres://selfos:selfos@db:5432/selfos_dev
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "8000:8000"
+
+  frontend:
+    # Frontend service is behind 'frontend' profile; activate with --profile frontend
+    profiles:
+      - frontend
+    build:
+      context: .
+      dockerfile: infra/docker/frontend.Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  db_data:
