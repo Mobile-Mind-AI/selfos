@@ -26,6 +26,11 @@ services:
     environment:
       DATABASE_URL: postgres://selfos:selfos@db:5432/selfos_dev
       REDIS_URL: redis://redis:6379
+Adde      # Path inside container where the Firebase service account key is mounted
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/selfos-firebase.json
+    # Mount Firebase service account JSON into container
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/secrets/selfos-firebase.json:ro
     ports:
       - "8000:8000"
 

@@ -71,9 +71,13 @@ User ↔️ Flutter Frontend (Web/Mobile/Desktop)
 ### Prerequisites
 - Docker & Docker Compose installed
 - (Optional) Python 3.11+ for running backend tests locally
+- Firebase service account JSON – obtain credentials as described in [docs/AUTHENTICATION_SETUP.md](docs/AUTHENTICATION_SETUP.md)
 
 ### Start Services
 ```bash
+# Before starting, set Firebase service account (required for auth):
+# export GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccountKey.json
+#
 # Build and run DB, Redis, and Backend API
 docker-compose up --build
 
