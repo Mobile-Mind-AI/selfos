@@ -9,6 +9,8 @@ import models
 from routers.auth import router as auth_router
 from routers.goals import router as goals_router
 from routers.tasks import router as tasks_router
+from routers.life_areas import router as life_areas_router
+from routers.media_attachments import router as media_attachments_router
 
 app = FastAPI()
 
@@ -25,3 +27,5 @@ def on_startup():
 app.include_router(auth_router)
 app.include_router(goals_router)
 app.include_router(tasks_router)
+app.include_router(life_areas_router)
+app.include_router(media_attachments_router)

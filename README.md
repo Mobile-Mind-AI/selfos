@@ -93,7 +93,7 @@ Expected: { "message": "SelfOS Backend API" }
 
 ### Run Backend Tests
 ```bash
-cd apps/backend-api
+cd apps/backend_api
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt

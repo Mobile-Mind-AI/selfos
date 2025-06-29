@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend:
+    name: Backend Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          cd apps/backend-api
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 apps/backend-api
+      - name: Run pytest
+        run: |
+          cd apps/backend-api
+          pytest -q
+
+  flutter:
+    name: Frontend Analyze & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+      - name: Install Flutter dependencies
+        run: |
+          if [ -f apps/frontend/pubspec.yaml ]; then
+            cd apps/frontend
+            flutter pub get
+          else
+            echo "No Flutter project found, skipping"
+          fi
+      - name: Analyze Flutter code
+        run: |
+          if [ -f apps/frontend/pubspec.yaml ]; then
+            cd apps/frontend
+            flutter analyze
+          else
+            echo "No Flutter project found, skipping"
+          fi
+      - name: Run Flutter tests
+        run: |
+          if [ -f apps/frontend/pubspec.yaml ]; then
+            cd apps/frontend
+            flutter test --machine
+          else
+            echo "No Flutter project found, skipping"
+          fi
