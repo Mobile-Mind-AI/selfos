@@ -110,9 +110,9 @@ def test_create_feedback_log():
         "session_id": "session_abc123"
     }
     
-    response = client.post("/feedback-logs", json=feedback_data)
+    response = client.post("/api/feedback-logs", json=feedback_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["user_id"] == "test_user_feedback_123"
     assert data["context_type"] == "task"
@@ -132,9 +132,9 @@ def test_create_minimal_feedback_log():
         "feedback_type": "neutral"
     }
     
-    response = client.post("/feedback-logs", json=feedback_data)
+    response = client.post("/api/feedback-logs", json=feedback_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["context_type"] == "ui_interaction"
     assert data["feedback_type"] == "neutral"
@@ -165,12 +165,12 @@ def test_get_feedback_logs():
     
     created_ids = []
     for feedback_data in feedback_entries:
-        response = client.post("/feedback-logs", json=feedback_data)
-        assert response.status_code == 200
+        response = client.post("/api/feedback-logs", json=feedback_data)
+        assert response.status_code == 201
         created_ids.append(response.json()["id"])
     
     # Get all feedback logs
-    response = client.get("/feedback-logs")
+    response = client.get("/api/feedback-logs")
     
     assert response.status_code == 200
     data = response.json()
@@ -189,25 +189,25 @@ def test_get_feedback_logs_with_filtering():
     ]
     
     for feedback_data in feedback_entries:
-        response = client.post("/feedback-logs", json=feedback_data)
-        assert response.status_code == 200
+        response = client.post("/api/feedback-logs", json=feedback_data)
+        assert response.status_code == 201
     
     # Filter by context_type
-    response = client.get("/feedback-logs?context_type=task")
+    response = client.get("/api/feedback-logs?context_type=task")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
     assert all(log["context_type"] == "task" for log in data)
     
     # Filter by feedback_type
-    response = client.get("/feedback-logs?feedback_type=positive")
+    response = client.get("/api/feedback-logs?feedback_type=positive")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
     assert all(log["feedback_type"] == "positive" for log in data)
     
     # Filter by both
-    response = client.get("/feedback-logs?context_type=goal&feedback_type=positive")
+    response = client.get("/api/feedback-logs?context_type=goal&feedback_type=positive")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
@@ -224,17 +224,17 @@ def test_get_feedback_logs_pagination():
             "feedback_type": "neutral",
             "comment": f"Feedback {i}"
         }
-        response = client.post("/feedback-logs", json=feedback_data)
-        assert response.status_code == 200
+        response = client.post("/api/feedback-logs", json=feedback_data)
+        assert response.status_code == 201
     
     # Test limit
-    response = client.get("/feedback-logs?limit=5")
+    response = client.get("/api/feedback-logs?limit=5")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 5
     
     # Test offset
-    response = client.get("/feedback-logs?limit=5&offset=5")
+    response = client.get("/api/feedback-logs?limit=5&offset=5")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 5
@@ -248,12 +248,12 @@ def test_get_single_feedback_log():
         "comment": "Great planning suggestion!"
     }
     
-    create_response = client.post("/feedback-logs", json=feedback_data)
-    assert create_response.status_code == 200
+    create_response = client.post("/api/feedback-logs", json=feedback_data)
+    assert create_response.status_code == 201
     feedback_id = create_response.json()["id"]
     
     # Get the specific feedback log
-    response = client.get(f"/feedback-logs/{feedback_id}")
+    response = client.get(f"/api/feedback-logs/{feedback_id}")
     
     assert response.status_code == 200
     data = response.json()
@@ -264,7 +264,7 @@ def test_get_single_feedback_log():
 
 def test_get_nonexistent_feedback_log():
     """Test retrieving a feedback log that doesn't exist"""
-    response = client.get("/feedback-logs/nonexistent-id")
+    response = client.get("/api/feedback-logs/nonexistent-id")
     
     assert response.status_code == 404
     assert "not found" in response.json()["detail"]
@@ -278,8 +278,8 @@ def test_update_feedback_log():
         "comment": "Initial comment"
     }
     
-    create_response = client.post("/feedback-logs", json=feedback_data)
-    assert create_response.status_code == 200
+    create_response = client.post("/api/feedback-logs", json=feedback_data)
+    assert create_response.status_code == 201
     feedback_id = create_response.json()["id"]
     
     # Update the feedback log
@@ -288,7 +288,7 @@ def test_update_feedback_log():
         "processed_at": "2024-01-01T12:00:00"
     }
     
-    response = client.put(f"/feedback-logs/{feedback_id}", json=update_data)
+    response = client.put(f"/api/feedback-logs/{feedback_id}", json=update_data)
     
     assert response.status_code == 200
     data = response.json()
@@ -300,7 +300,7 @@ def test_update_nonexistent_feedback_log():
     """Test updating a feedback log that doesn't exist"""
     update_data = {"comment": "Updated comment"}
     
-    response = client.put("/feedback-logs/nonexistent-id", json=update_data)
+    response = client.put("/api/feedback-logs/nonexistent-id", json=update_data)
     
     assert response.status_code == 404
     assert "not found" in response.json()["detail"]
@@ -313,23 +313,23 @@ def test_delete_feedback_log():
         "feedback_type": "negative"
     }
     
-    create_response = client.post("/feedback-logs", json=feedback_data)
-    assert create_response.status_code == 200
+    create_response = client.post("/api/feedback-logs", json=feedback_data)
+    assert create_response.status_code == 201
     feedback_id = create_response.json()["id"]
     
     # Delete the feedback log
-    response = client.delete(f"/feedback-logs/{feedback_id}")
+    response = client.delete(f"/api/feedback-logs/{feedback_id}")
     
     assert response.status_code == 204
     
     # Verify it's deleted
-    get_response = client.get(f"/feedback-logs/{feedback_id}")
+    get_response = client.get(f"/api/feedback-logs/{feedback_id}")
     assert get_response.status_code == 404
 
 
 def test_delete_nonexistent_feedback_log():
     """Test deleting a feedback log that doesn't exist"""
-    response = client.delete("/feedback-logs/nonexistent-id")
+    response = client.delete("/api/feedback-logs/nonexistent-id")
     
     assert response.status_code == 404
     assert "not found" in response.json()["detail"]
@@ -347,11 +347,11 @@ def test_get_feedback_summary():
     ]
     
     for feedback_data in feedback_entries:
-        response = client.post("/feedback-logs", json=feedback_data)
-        assert response.status_code == 200
+        response = client.post("/api/feedback-logs", json=feedback_data)
+        assert response.status_code == 201
     
     # Get summary
-    response = client.get("/feedback-logs/summary/stats")
+    response = client.get("/api/feedback-logs/summary/stats")
     
     assert response.status_code == 200
     data = response.json()
@@ -368,7 +368,7 @@ def test_get_feedback_summary():
 
 def test_get_context_type_options():
     """Test getting context type options"""
-    response = client.get("/feedback-logs/context-types/options")
+    response = client.get("/api/feedback-logs/context-types/options")
     
     assert response.status_code == 200
     data = response.json()
@@ -392,9 +392,9 @@ def test_create_bulk_feedback_logs():
         {"context_type": "plan", "feedback_type": "neutral"}
     ]
     
-    response = client.post("/feedback-logs/bulk", json=bulk_data)
+    response = client.post("/api/feedback-logs/bulk", json=bulk_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert len(data) == 3
     assert all(log["user_id"] == "test_user_feedback_123" for log in data)
@@ -408,7 +408,7 @@ def test_bulk_create_limit():
     # Try to create more than 100 entries
     bulk_data = [{"context_type": "test", "feedback_type": "neutral"} for _ in range(101)]
     
-    response = client.post("/feedback-logs/bulk", json=bulk_data)
+    response = client.post("/api/feedback-logs/bulk", json=bulk_data)
     
     assert response.status_code == 400
     assert "Cannot create more than 100" in response.json()["detail"]
@@ -425,18 +425,18 @@ def test_delete_bulk_feedback_logs():
     
     created_ids = []
     for feedback_data in feedback_entries:
-        response = client.post("/feedback-logs", json=feedback_data)
-        assert response.status_code == 200
+        response = client.post("/api/feedback-logs", json=feedback_data)
+        assert response.status_code == 201
         created_ids.append(response.json()["id"])
     
     # Delete them in bulk
-    response = client.post("/feedback-logs/bulk-delete", json={"feedback_ids": created_ids})
+    response = client.post("/api/feedback-logs/bulk-delete", json={"feedback_ids": created_ids})
     
     assert response.status_code == 204
     
     # Verify they're deleted
     for feedback_id in created_ids:
-        get_response = client.get(f"/feedback-logs/{feedback_id}")
+        get_response = client.get(f"/api/feedback-logs/{feedback_id}")
         assert get_response.status_code == 404
 
 
@@ -445,7 +445,7 @@ def test_bulk_delete_limit():
     # Try to delete more than 100 entries
     fake_ids = [f"id_{i}" for i in range(101)]
     
-    response = client.post("/feedback-logs/bulk-delete", json={"feedback_ids": fake_ids})
+    response = client.post("/api/feedback-logs/bulk-delete", json={"feedback_ids": fake_ids})
     
     assert response.status_code == 400
     assert "Cannot delete more than 100" in response.json()["detail"]
@@ -453,7 +453,7 @@ def test_bulk_delete_limit():
 
 def test_bulk_delete_nonexistent_ids():
     """Test bulk delete with some nonexistent IDs"""
-    response = client.post("/feedback-logs/bulk-delete", json={"feedback_ids": ["nonexistent1", "nonexistent2"]})
+    response = client.post("/api/feedback-logs/bulk-delete", json={"feedback_ids": ["nonexistent1", "nonexistent2"]})
     
     assert response.status_code == 404
     assert "not found" in response.json()["detail"]
@@ -464,16 +464,16 @@ def test_feedback_validation():
     
     # Test invalid feedback_type
     response = client.post(
-        "/feedback-logs", 
+        "/api/feedback-logs", 
         json={"context_type": "task", "feedback_type": "invalid_type"}
     )
     assert response.status_code == 422
     
     # Test missing required fields
-    response = client.post("/feedback-logs", json={"feedback_type": "positive"})
+    response = client.post("/api/feedback-logs", json={"feedback_type": "positive"})
     assert response.status_code == 422
     
-    response = client.post("/feedback-logs", json={"context_type": "task"})
+    response = client.post("/api/feedback-logs", json={"context_type": "task"})
     assert response.status_code == 422
 
 
@@ -483,17 +483,17 @@ def test_feedback_value_validation():
     # Valid feedback values
     valid_values = [-1.0, -0.5, 0.0, 0.5, 1.0]
     for value in valid_values:
-        response = client.post("/feedback-logs", json={
+        response = client.post("/api/feedback-logs", json={
             "context_type": "test",
             "feedback_type": "neutral",
             "feedback_value": value
         })
-        assert response.status_code == 200
+        assert response.status_code == 201
     
     # Invalid feedback values (outside -1.0 to 1.0 range)
     invalid_values = [-1.1, 1.1, -2.0, 2.0]
     for value in invalid_values:
-        response = client.post("/feedback-logs", json={
+        response = client.post("/api/feedback-logs", json={
             "context_type": "test",
             "feedback_type": "neutral",
             "feedback_value": value
@@ -505,12 +505,12 @@ def test_user_isolation():
     """Test that users can only access their own feedback logs"""
     # Create feedback log as test_user_feedback_123
     feedback_data = {"context_type": "task", "feedback_type": "positive"}
-    create_response = client.post("/feedback-logs", json=feedback_data)
-    assert create_response.status_code == 200
+    create_response = client.post("/api/feedback-logs", json=feedback_data)
+    assert create_response.status_code == 201
     feedback_id = create_response.json()["id"]
     
     # Verify user can access their feedback
-    user_logs = client.get("/feedback-logs").json()
+    user_logs = client.get("/api/feedback-logs").json()
     assert len(user_logs) == 1
     assert user_logs[0]["user_id"] == "test_user_feedback_123"
     
@@ -534,11 +534,11 @@ def test_user_isolation():
         different_client = TestClient(test_app)
         
         # Different user should not see the feedback log
-        different_user_logs = different_client.get("/feedback-logs").json()
+        different_user_logs = different_client.get("/api/feedback-logs").json()
         assert len(different_user_logs) == 0
         
         # Different user should not be able to access the specific feedback log
-        access_response = different_client.get(f"/feedback-logs/{feedback_id}")
+        access_response = different_client.get(f"/api/feedback-logs/{feedback_id}")
         assert access_response.status_code == 404
     
     finally:
@@ -560,8 +560,8 @@ def test_session_grouping():
             "feedback_type": "neutral",
             "session_id": session_id
         }
-        response = client.post("/feedback-logs", json=feedback_data)
-        assert response.status_code == 200
+        response = client.post("/api/feedback-logs", json=feedback_data)
+        assert response.status_code == 201
     
     # Create one with a different session ID
     feedback_data = {
@@ -569,11 +569,11 @@ def test_session_grouping():
         "feedback_type": "positive",
         "session_id": "different_session"
     }
-    response = client.post("/feedback-logs", json=feedback_data)
-    assert response.status_code == 200
+    response = client.post("/api/feedback-logs", json=feedback_data)
+    assert response.status_code == 201
     
     # Filter by session ID
-    response = client.get(f"/feedback-logs?session_id={session_id}")
+    response = client.get(f"/api/feedback-logs?session_id={session_id}")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 3

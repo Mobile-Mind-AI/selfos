@@ -110,9 +110,9 @@ def test_create_story_session():
         "estimated_read_time": 60
     }
     
-    response = client.post("/story-sessions", json=session_data)
+    response = client.post("/api/story-sessions", json=session_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["user_id"] == "test_user_story_123"
     assert data["title"] == "Weekly Progress Story"
@@ -133,9 +133,9 @@ def test_create_minimal_story_session():
         "content_type": "summary"
     }
     
-    response = client.post("/story-sessions", json=session_data)
+    response = client.post("/api/story-sessions", json=session_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["summary_period"] == "monthly"
     assert data["content_type"] == "summary"
@@ -146,16 +146,16 @@ def test_create_minimal_story_session():
 def test_create_story_session_with_sources():
     """Test creating a story session with source references"""
     # First create some goals and life areas
-    life_area_response = client.post("/life-areas", json={"name": "Health & Fitness"})
+    life_area_response = client.post("/api/life-areas", json={"name": "Health & Fitness"})
     life_area_id = life_area_response.json()["id"]
     
-    goal_response = client.post("/goals", json={
+    goal_response = client.post("/api/goals", json={
         "title": "Run 5K",
         "life_area_id": life_area_id
     })
     goal_id = goal_response.json()["id"]
     
-    task_response = client.post("/tasks", json={
+    task_response = client.post("/api/tasks", json={
         "title": "Morning run",
         "goal_id": goal_id
     })
@@ -170,9 +170,9 @@ def test_create_story_session_with_sources():
         "source_life_areas": [life_area_id]
     }
     
-    response = client.post("/story-sessions", json=session_data)
+    response = client.post("/api/story-sessions", json=session_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["source_goals"] == [goal_id]
     assert data["source_tasks"] == [task_id]
@@ -188,7 +188,7 @@ def test_create_story_session_invalid_sources():
         "source_tasks": [99999]   # Non-existent task
     }
     
-    response = client.post("/story-sessions", json=session_data)
+    response = client.post("/api/story-sessions", json=session_data)
     
     assert response.status_code == 400
     assert "do not exist" in response.json()["detail"]
@@ -217,12 +217,12 @@ def test_get_story_sessions():
     
     created_ids = []
     for session_data in sessions:
-        response = client.post("/story-sessions", json=session_data)
-        assert response.status_code == 200
+        response = client.post("/api/story-sessions", json=session_data)
+        assert response.status_code == 201
         created_ids.append(response.json()["id"])
     
     # Get all story sessions
-    response = client.get("/story-sessions")
+    response = client.get("/api/story-sessions")
     
     assert response.status_code == 200
     data = response.json()
@@ -241,25 +241,25 @@ def test_get_story_sessions_with_filtering():
     ]
     
     for session_data in sessions:
-        response = client.post("/story-sessions", json=session_data)
-        assert response.status_code == 200
+        response = client.post("/api/story-sessions", json=session_data)
+        assert response.status_code == 201
     
     # Filter by content_type
-    response = client.get("/story-sessions?content_type=story")
+    response = client.get("/api/story-sessions?content_type=story")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
     assert all(session["content_type"] == "story" for session in data)
     
     # Filter by summary_period
-    response = client.get("/story-sessions?summary_period=weekly")
+    response = client.get("/api/story-sessions?summary_period=weekly")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
     assert all(session["summary_period"] == "weekly" for session in data)
     
     # Filter by posting_status
-    response = client.get("/story-sessions?posting_status=draft")
+    response = client.get("/api/story-sessions?posting_status=draft")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
@@ -275,17 +275,17 @@ def test_get_story_sessions_pagination():
             "summary_period": "daily",
             "content_type": "summary"
         }
-        response = client.post("/story-sessions", json=session_data)
-        assert response.status_code == 200
+        response = client.post("/api/story-sessions", json=session_data)
+        assert response.status_code == 201
     
     # Test limit
-    response = client.get("/story-sessions?limit=5")
+    response = client.get("/api/story-sessions?limit=5")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 5
     
     # Test offset
-    response = client.get("/story-sessions?limit=5&offset=5")
+    response = client.get("/api/story-sessions?limit=5&offset=5")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 5
@@ -300,12 +300,12 @@ def test_get_single_story_session():
         "generated_text": "This is a test story about weekly progress."
     }
     
-    create_response = client.post("/story-sessions", json=session_data)
-    assert create_response.status_code == 200
+    create_response = client.post("/api/story-sessions", json=session_data)
+    assert create_response.status_code == 201
     session_id = create_response.json()["id"]
     
     # Get the specific story session
-    response = client.get(f"/story-sessions/{session_id}")
+    response = client.get(f"/api/story-sessions/{session_id}")
     
     assert response.status_code == 200
     data = response.json()
@@ -316,7 +316,7 @@ def test_get_single_story_session():
 
 def test_get_nonexistent_story_session():
     """Test retrieving a story session that doesn't exist"""
-    response = client.get("/story-sessions/nonexistent-id")
+    response = client.get("/api/story-sessions/nonexistent-id")
     
     assert response.status_code == 404
     assert "not found" in response.json()["detail"]
@@ -331,8 +331,8 @@ def test_update_story_session():
         "processing_status": "pending"
     }
     
-    create_response = client.post("/story-sessions", json=session_data)
-    assert create_response.status_code == 200
+    create_response = client.post("/api/story-sessions", json=session_data)
+    assert create_response.status_code == 201
     session_id = create_response.json()["id"]
     
     # Update the story session
@@ -344,7 +344,7 @@ def test_update_story_session():
         "user_rating": 4.5
     }
     
-    response = client.put(f"/story-sessions/{session_id}", json=update_data)
+    response = client.put(f"/api/story-sessions/{session_id}", json=update_data)
     
     assert response.status_code == 200
     data = response.json()
@@ -359,7 +359,7 @@ def test_update_nonexistent_story_session():
     """Test updating a story session that doesn't exist"""
     update_data = {"title": "Updated Title"}
     
-    response = client.put("/story-sessions/nonexistent-id", json=update_data)
+    response = client.put("/api/story-sessions/nonexistent-id", json=update_data)
     
     assert response.status_code == 404
     assert "not found" in response.json()["detail"]
@@ -373,23 +373,23 @@ def test_delete_story_session():
         "content_type": "story"
     }
     
-    create_response = client.post("/story-sessions", json=session_data)
-    assert create_response.status_code == 200
+    create_response = client.post("/api/story-sessions", json=session_data)
+    assert create_response.status_code == 201
     session_id = create_response.json()["id"]
     
     # Delete the story session
-    response = client.delete(f"/story-sessions/{session_id}")
+    response = client.delete(f"/api/story-sessions/{session_id}")
     
     assert response.status_code == 204
     
     # Verify it's deleted
-    get_response = client.get(f"/story-sessions/{session_id}")
+    get_response = client.get(f"/api/story-sessions/{session_id}")
     assert get_response.status_code == 404
 
 
 def test_delete_nonexistent_story_session():
     """Test deleting a story session that doesn't exist"""
-    response = client.delete("/story-sessions/nonexistent-id")
+    response = client.delete("/api/story-sessions/nonexistent-id")
     
     assert response.status_code == 404
     assert "not found" in response.json()["detail"]
@@ -407,11 +407,11 @@ def test_get_story_sessions_summary():
     ]
     
     for session_data in sessions:
-        response = client.post("/story-sessions", json=session_data)
-        assert response.status_code == 200
+        response = client.post("/api/story-sessions", json=session_data)
+        assert response.status_code == 201
     
     # Get summary
-    response = client.get("/story-sessions/summary/stats")
+    response = client.get("/api/story-sessions/summary/stats")
     
     assert response.status_code == 200
     data = response.json()
@@ -430,10 +430,10 @@ def test_get_story_sessions_summary():
 def test_generate_story_request():
     """Test requesting story generation"""
     # Create a goal and task for the generation
-    life_area_response = client.post("/life-areas", json={"name": "Personal Growth"})
+    life_area_response = client.post("/api/life-areas", json={"name": "Personal Growth"})
     life_area_id = life_area_response.json()["id"]
     
-    goal_response = client.post("/goals", json={
+    goal_response = client.post("/api/goals", json={
         "title": "Learn Python",
         "life_area_id": life_area_id
     })
@@ -457,9 +457,9 @@ def test_generate_story_request():
         "include_life_areas": [life_area_id]
     }
     
-    response = client.post("/story-sessions/generate", json=generation_data)
+    response = client.post("/api/story-sessions/generate", json=generation_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["title"] == "Weekly Learning Progress"
     assert data["summary_period"] == "weekly"
@@ -480,8 +480,8 @@ def test_publish_story_session():
         "processing_status": "completed"
     }
     
-    create_response = client.post("/story-sessions", json=session_data)
-    assert create_response.status_code == 200
+    create_response = client.post("/api/story-sessions", json=session_data)
+    assert create_response.status_code == 201
     session_id = create_response.json()["id"]
     
     # Publish the story
@@ -490,9 +490,9 @@ def test_publish_story_session():
         "custom_message": "Check out my weekly progress story!"
     }
     
-    response = client.post(f"/story-sessions/{session_id}/publish", json=publish_data)
+    response = client.post(f"/api/story-sessions/{session_id}/publish", json=publish_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["posted_to"] == ["instagram", "twitter"]
     assert data["posting_status"] == "posted"
@@ -507,15 +507,15 @@ def test_publish_incomplete_story_session():
         "processing_status": "pending"  # Not completed
     }
     
-    create_response = client.post("/story-sessions", json=session_data)
-    assert create_response.status_code == 200
+    create_response = client.post("/api/story-sessions", json=session_data)
+    assert create_response.status_code == 201
     session_id = create_response.json()["id"]
     
     publish_data = {
         "platforms": ["instagram"]
     }
     
-    response = client.post(f"/story-sessions/{session_id}/publish", json=publish_data)
+    response = client.post(f"/api/story-sessions/{session_id}/publish", json=publish_data)
     
     assert response.status_code == 400
     assert "hasn't been generated" in response.json()["detail"]
@@ -532,14 +532,14 @@ def test_regenerate_story_session():
         "regeneration_count": 0
     }
     
-    create_response = client.post("/story-sessions", json=session_data)
-    assert create_response.status_code == 200
+    create_response = client.post("/api/story-sessions", json=session_data)
+    assert create_response.status_code == 201
     session_id = create_response.json()["id"]
     
     # Regenerate the story without request body (test default behavior)
-    response = client.post(f"/story-sessions/{session_id}/regenerate")
+    response = client.post(f"/api/story-sessions/{session_id}/regenerate")
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["regeneration_count"] == 1
     assert data["processing_status"] == "pending"
@@ -547,7 +547,7 @@ def test_regenerate_story_session():
 
 def test_get_content_type_options():
     """Test getting content type options"""
-    response = client.get("/story-sessions/content-types/options")
+    response = client.get("/api/story-sessions/content-types/options")
     
     assert response.status_code == 200
     data = response.json()
@@ -565,7 +565,7 @@ def test_get_content_type_options():
 
 def test_get_period_options():
     """Test getting summary period options"""
-    response = client.get("/story-sessions/periods/options")
+    response = client.get("/api/story-sessions/periods/options")
     
     assert response.status_code == 200
     data = response.json()
@@ -583,7 +583,7 @@ def test_get_period_options():
 
 def test_get_platform_options():
     """Test getting publishing platform options"""
-    response = client.get("/story-sessions/platforms/options")
+    response = client.get("/api/story-sessions/platforms/options")
     
     assert response.status_code == 200
     data = response.json()
@@ -604,21 +604,21 @@ def test_story_session_validation():
     
     # Test invalid content_type
     response = client.post(
-        "/story-sessions", 
+        "/api/story-sessions", 
         json={"summary_period": "weekly", "content_type": "invalid_type"}
     )
     assert response.status_code == 422
     
     # Test invalid posting_status
     response = client.post(
-        "/story-sessions", 
+        "/api/story-sessions", 
         json={"summary_period": "weekly", "posting_status": "invalid_status"}
     )
     assert response.status_code == 422
     
     # Test invalid user_rating (outside 1-5 range)
     response = client.post(
-        "/story-sessions", 
+        "/api/story-sessions", 
         json={"summary_period": "weekly", "user_rating": 6.0}
     )
     assert response.status_code == 422
@@ -628,12 +628,12 @@ def test_user_isolation():
     """Test that users can only access their own story sessions"""
     # Create story session as test_user_story_123
     session_data = {"title": "My Story", "summary_period": "weekly", "content_type": "story"}
-    create_response = client.post("/story-sessions", json=session_data)
-    assert create_response.status_code == 200
+    create_response = client.post("/api/story-sessions", json=session_data)
+    assert create_response.status_code == 201
     session_id = create_response.json()["id"]
     
     # Verify user can access their story session
-    user_sessions = client.get("/story-sessions").json()
+    user_sessions = client.get("/api/story-sessions").json()
     assert len(user_sessions) == 1
     assert user_sessions[0]["user_id"] == "test_user_story_123"
     
@@ -657,11 +657,11 @@ def test_user_isolation():
         different_client = TestClient(test_app)
         
         # Different user should not see the story session
-        different_user_sessions = different_client.get("/story-sessions").json()
+        different_user_sessions = different_client.get("/api/story-sessions").json()
         assert len(different_user_sessions) == 0
         
         # Different user should not be able to access the specific story session
-        access_response = different_client.get(f"/story-sessions/{session_id}")
+        access_response = different_client.get(f"/api/story-sessions/{session_id}")
         assert access_response.status_code == 404
     
     finally:
@@ -676,11 +676,11 @@ def test_story_session_timestamps():
     """Test that created_at and updated_at timestamps work correctly"""
     # Create story session
     response = client.post(
-        "/story-sessions", 
+        "/api/story-sessions", 
         json={"title": "Test Story", "summary_period": "weekly", "content_type": "story"}
     )
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     
     created_at = data["created_at"]
@@ -695,7 +695,7 @@ def test_story_session_timestamps():
     
     session_id = data["id"]
     update_response = client.put(
-        f"/story-sessions/{session_id}",
+        f"/api/story-sessions/{session_id}",
         json={"title": "Updated Story"}
     )
     
@@ -718,9 +718,9 @@ def test_engagement_tracking():
         "engagement_data": {"comments": 1, "saves": 2}
     }
     
-    response = client.post("/story-sessions", json=session_data)
+    response = client.post("/api/story-sessions", json=session_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["view_count"] == 5
     assert data["like_count"] == 3
@@ -739,9 +739,9 @@ def test_period_date_handling():
         "content_type": "summary"
     }
     
-    response = client.post("/story-sessions", json=session_data)
+    response = client.post("/api/story-sessions", json=session_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert "2024-01-01T00:00:00" in data["period_start"]
     assert "2024-01-07T23:59:59" in data["period_end"]

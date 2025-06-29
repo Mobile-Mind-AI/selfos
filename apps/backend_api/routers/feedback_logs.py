@@ -60,7 +60,7 @@ def get_feedback_log(
     
     return feedback_log
 
-@router.post("", response_model=FeedbackLogSchema)
+@router.post("", response_model=FeedbackLogSchema, status_code=201)
 def create_feedback_log(
     feedback_data: FeedbackLogCreate,
     current_user: dict = Depends(get_current_user),
@@ -253,7 +253,7 @@ def get_context_type_options():
         ]
     }
 
-@router.post("/bulk", response_model=List[FeedbackLogSchema])
+@router.post("/bulk", response_model=List[FeedbackLogSchema], status_code=201)
 def create_bulk_feedback_logs(
     feedback_entries: List[FeedbackLogCreate],
     current_user: dict = Depends(get_current_user),

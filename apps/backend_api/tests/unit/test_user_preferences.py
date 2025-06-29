@@ -99,7 +99,7 @@ def pytest_sessionfinish(session, exitstatus):
 
 def test_get_user_preferences_creates_default():
     """Test that getting preferences creates default preferences if none exist"""
-    response = client.get("/user-preferences")
+    response = client.get("/api/user-preferences")
     
     assert response.status_code == 200
     data = response.json()
@@ -131,9 +131,9 @@ def test_create_user_preferences():
         "analytics_enabled": True
     }
     
-    response = client.post("/user-preferences", json=preferences_data)
+    response = client.post("/api/user-preferences", json=preferences_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["user_id"] == "test_user_123"
     assert data["tone"] == "coach"
@@ -146,11 +146,11 @@ def test_create_preferences_fails_if_already_exist():
     """Test that creating preferences fails if they already exist"""
     # First create preferences
     preferences_data = {"tone": "minimal"}
-    response1 = client.post("/user-preferences", json=preferences_data)
+    response1 = client.post("/api/user-preferences", json=preferences_data)
     assert response1.status_code == 200
     
     # Try to create again - should fail
-    response2 = client.post("/user-preferences", json=preferences_data)
+    response2 = client.post("/api/user-preferences", json=preferences_data)
     assert response2.status_code == 400
     assert "already exist" in response2.json()["detail"]
 
@@ -159,7 +159,7 @@ def test_update_user_preferences():
     """Test updating existing user preferences"""
     # First create preferences
     initial_data = {"tone": "friendly", "default_view": "card"}
-    client.post("/user-preferences", json=initial_data)
+    client.post("/api/user-preferences", json=initial_data)
     
     # Update preferences
     update_data = {
@@ -168,7 +168,7 @@ def test_update_user_preferences():
         "notifications_enabled": False
     }
     
-    response = client.put("/user-preferences", json=update_data)
+    response = client.put("/api/user-preferences", json=update_data)
     
     assert response.status_code == 200
     data = response.json()
@@ -185,7 +185,7 @@ def test_update_preferences_creates_if_not_exist():
         "default_view": "list"
     }
     
-    response = client.put("/user-preferences", json=update_data)
+    response = client.put("/api/user-preferences", json=update_data)
     
     assert response.status_code == 200
     data = response.json()
@@ -198,13 +198,13 @@ def test_update_preferences_with_default_life_area():
     """Test updating preferences with a default life area"""
     # First create a life area
     life_area_data = {"name": "Health & Fitness", "weight": 30}
-    life_area_response = client.post("/life-areas", json=life_area_data)
+    life_area_response = client.post("/api/life-areas", json=life_area_data)
     life_area_id = life_area_response.json()["id"]
     
     # Update preferences with default life area
     update_data = {"default_life_area_id": life_area_id}
     
-    response = client.put("/user-preferences", json=update_data)
+    response = client.put("/api/user-preferences", json=update_data)
     
     assert response.status_code == 200
     data = response.json()
@@ -215,12 +215,12 @@ def test_update_preferences_with_invalid_life_area():
     """Test that updating preferences with invalid life area fails"""
     # First create some preferences
     initial_data = {"tone": "friendly"}
-    client.post("/user-preferences", json=initial_data)
+    client.post("/api/user-preferences", json=initial_data)
     
     # Try to update with invalid life area
     update_data = {"default_life_area_id": 99999}
     
-    response = client.put("/user-preferences", json=update_data)
+    response = client.put("/api/user-preferences", json=update_data)
     
     assert response.status_code == 404
     assert "Default life area not found" in response.json()["detail"]
@@ -230,15 +230,15 @@ def test_delete_user_preferences():
     """Test deleting user preferences"""
     # First create preferences
     preferences_data = {"tone": "coach"}
-    client.post("/user-preferences", json=preferences_data)
+    client.post("/api/user-preferences", json=preferences_data)
     
     # Delete preferences
-    response = client.delete("/user-preferences")
+    response = client.delete("/api/user-preferences")
     
     assert response.status_code == 204
     
     # Verify they're deleted by trying to get them (should create new defaults)
-    get_response = client.get("/user-preferences")
+    get_response = client.get("/api/user-preferences")
     assert get_response.status_code == 200
     data = get_response.json()
     assert data["tone"] == "friendly"  # Default value
@@ -246,7 +246,7 @@ def test_delete_user_preferences():
 
 def test_delete_nonexistent_preferences():
     """Test deleting preferences that don't exist"""
-    response = client.delete("/user-preferences")
+    response = client.delete("/api/user-preferences")
     
     assert response.status_code == 404
     assert "User preferences not found" in response.json()["detail"]
@@ -254,7 +254,7 @@ def test_delete_nonexistent_preferences():
 
 def test_get_tone_options():
     """Test getting available tone options"""
-    response = client.get("/user-preferences/tone-options")
+    response = client.get("/api/user-preferences/tone-options")
     
     assert response.status_code == 200
     data = response.json()
@@ -272,7 +272,7 @@ def test_get_tone_options():
 
 def test_get_view_options():
     """Test getting available view mode options"""
-    response = client.get("/user-preferences/view-options")
+    response = client.get("/api/user-preferences/view-options")
     
     assert response.status_code == 200
     data = response.json()
@@ -291,7 +291,7 @@ def test_get_view_options():
 def test_quick_setup_preferences():
     """Test quick setup for new users"""
     response = client.post(
-        "/user-preferences/quick-setup",
+        "/api/user-preferences/quick-setup",
         params={
             "tone": "coach",
             "notifications": False,
@@ -299,7 +299,7 @@ def test_quick_setup_preferences():
         }
     )
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["tone"] == "coach"
     assert data["notifications_enabled"] == False
@@ -309,7 +309,7 @@ def test_quick_setup_preferences():
 def test_quick_setup_invalid_tone():
     """Test quick setup with invalid tone"""
     response = client.post(
-        "/user-preferences/quick-setup",
+        "/api/user-preferences/quick-setup",
         params={"tone": "invalid_tone"}
     )
     
@@ -320,7 +320,7 @@ def test_quick_setup_invalid_tone():
 def test_quick_setup_invalid_view():
     """Test quick setup with invalid view"""
     response = client.post(
-        "/user-preferences/quick-setup",
+        "/api/user-preferences/quick-setup",
         params={
             "tone": "friendly",
             "default_view": "invalid_view"
@@ -335,11 +335,11 @@ def test_quick_setup_updates_existing():
     """Test that quick setup updates existing preferences"""
     # First create preferences
     initial_data = {"tone": "minimal", "mood_tracking_enabled": True}
-    client.post("/user-preferences", json=initial_data)
+    client.post("/api/user-preferences", json=initial_data)
     
     # Run quick setup
     response = client.post(
-        "/user-preferences/quick-setup",
+        "/api/user-preferences/quick-setup",
         params={
             "tone": "professional",
             "notifications": False,
@@ -347,7 +347,7 @@ def test_quick_setup_updates_existing():
         }
     )
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["tone"] == "professional"
     assert data["notifications_enabled"] == False
@@ -360,14 +360,14 @@ def test_preferences_validation():
     
     # Test invalid tone
     response = client.post(
-        "/user-preferences", 
+        "/api/user-preferences", 
         json={"tone": "invalid_tone"}
     )
     assert response.status_code == 422
     
     # Test invalid view mode
     response = client.post(
-        "/user-preferences", 
+        "/api/user-preferences", 
         json={"default_view": "invalid_view"}
     )
     assert response.status_code == 422
@@ -380,9 +380,9 @@ def test_notification_time_handling():
         "notifications_enabled": True
     }
     
-    response = client.post("/user-preferences", json=preferences_data)
+    response = client.post("/api/user-preferences", json=preferences_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert "14:30:00" in data["notification_time"]
     assert data["notifications_enabled"] == True
@@ -392,11 +392,11 @@ def test_preferences_timestamps():
     """Test that created_at and updated_at timestamps work correctly"""
     # Create preferences
     response = client.post(
-        "/user-preferences", 
+        "/api/user-preferences", 
         json={"tone": "friendly"}
     )
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     
     created_at = data["created_at"]
@@ -410,7 +410,7 @@ def test_preferences_timestamps():
     time.sleep(0.1)  # Small delay to ensure timestamp difference
     
     update_response = client.put(
-        "/user-preferences",
+        "/api/user-preferences",
         json={"tone": "coach"}
     )
     
@@ -425,11 +425,11 @@ def test_user_isolation():
     """Test that users can only access their own preferences"""
     # Create preferences as test_user_123
     preferences_data = {"tone": "coach"}
-    create_response = client.post("/user-preferences", json=preferences_data)
-    assert create_response.status_code == 200
+    create_response = client.post("/api/user-preferences", json=preferences_data)
+    assert create_response.status_code == 201
     
     # Verify user can access their preferences
-    user_preferences = client.get("/user-preferences").json()
+    user_preferences = client.get("/api/user-preferences").json()
     assert user_preferences["user_id"] == "test_user_123"
     
     # Create a separate TestClient with different user override to avoid interference
@@ -453,7 +453,7 @@ def test_user_isolation():
         different_client = TestClient(test_app)
         
         # Different user should get their own default preferences (auto-created)
-        different_user_prefs = different_client.get("/user-preferences").json()
+        different_user_prefs = different_client.get("/api/user-preferences").json()
         assert different_user_prefs["user_id"] == "different_user_456"
         assert different_user_prefs["tone"] == "friendly"  # Default, not "coach"
         

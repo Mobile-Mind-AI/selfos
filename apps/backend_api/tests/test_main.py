@@ -38,11 +38,11 @@ def test_api_structure():
     assert response.status_code in [400, 401, 422]  # Not 404
     
     # Goals endpoints should exist but require auth
-    response = client.get("/goals")
+    response = client.get("/api/goals")
     assert response.status_code in [200, 401]  # May be 200 if auth overrides are active
     
     # Tasks endpoints should exist but require auth  
-    response = client.get("/tasks")
+    response = client.get("/api/tasks")
     assert response.status_code in [200, 401]  # May be 200 if auth overrides are active
 
 

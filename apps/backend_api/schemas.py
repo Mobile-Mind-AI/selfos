@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator, EmailStr, constr
 from typing import Optional, List, Literal, Dict, Any, TYPE_CHECKING
 from datetime import datetime, time
+import re
 
 # Forward references for nested schemas
 if TYPE_CHECKING:
@@ -11,12 +12,48 @@ if TYPE_CHECKING:
 
 ## Authentication Schemas
 class RegisterRequest(BaseModel):
-    username: str
-    password: str
+    username: constr(min_length=3, max_length=50, pattern=r'^[a-zA-Z0-9_.-]+$') = Field(
+        ..., 
+        description="Username (3-50 chars, alphanumeric, underscore, dot, dash only)"
+    )
+    password: constr(min_length=8, max_length=128) = Field(
+        ..., 
+        description="Password (8-128 characters)"
+    )
+    
+    @validator('username')
+    def validate_username(cls, v):
+        if not v or v.isspace():
+            raise ValueError('Username cannot be empty or whitespace')
+        if '..' in v or '__' in v:
+            raise ValueError('Username cannot contain consecutive dots or underscores')
+        return v.lower().strip()
+    
+    @validator('password')
+    def validate_password(cls, v):
+        if not v or v.isspace():
+            raise ValueError('Password cannot be empty or whitespace')
+        if not re.search(r'[A-Za-z]', v):
+            raise ValueError('Password must contain at least one letter')
+        if not re.search(r'[0-9]', v):
+            raise ValueError('Password must contain at least one number')
+        return v
 
 class LoginRequest(BaseModel):
-    username: str
-    password: str
+    username: constr(min_length=1, max_length=50) = Field(..., description="Username or email")
+    password: constr(min_length=1, max_length=128) = Field(..., description="Password")
+    
+    @validator('username')
+    def validate_username(cls, v):
+        if not v or v.isspace():
+            raise ValueError('Username cannot be empty')
+        return v.strip()
+    
+    @validator('password')
+    def validate_password(cls, v):
+        if not v:
+            raise ValueError('Password cannot be empty')
+        return v
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -36,11 +73,43 @@ class UserCreate(BaseModel):
     preferences: Optional['UserPreferencesCreate'] = Field(None, description="Initial user preferences")
 
 class GoalBase(BaseModel):
-    title: str = Field(..., description="Title of the goal")
-    description: Optional[str] = Field(None, description="Detailed description of the goal")
-    status: Optional[str] = Field('todo', description="Status of the goal (todo, in_progress, completed)")
-    progress: Optional[float] = Field(0.0, description="Progress percentage of the goal")
-    life_area_id: Optional[int] = Field(None, description="Associated life area ID")
+    title: constr(min_length=1, max_length=200, strip_whitespace=True) = Field(
+        ..., 
+        description="Title of the goal (1-200 characters)"
+    )
+    description: Optional[constr(max_length=2000, strip_whitespace=True)] = Field(
+        None, 
+        description="Detailed description of the goal (max 2000 characters)"
+    )
+    status: Optional[Literal['todo', 'in_progress', 'completed', 'paused']] = Field(
+        'todo', 
+        description="Status of the goal"
+    )
+    progress: Optional[float] = Field(
+        0.0, 
+        ge=0.0, 
+        le=100.0, 
+        description="Progress percentage (0-100)"
+    )
+    life_area_id: Optional[int] = Field(
+        None, 
+        gt=0, 
+        description="Associated life area ID (positive integer)"
+    )
+    
+    @validator('title')
+    def validate_title(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Goal title cannot be empty')
+        return v.strip()
+    
+    @validator('description')
+    def validate_description(cls, v):
+        if v is not None:
+            v = v.strip()
+            if len(v) == 0:
+                return None
+        return v
 
 class GoalCreate(GoalBase):
     """Schema for creating a new Goal"""
@@ -56,14 +125,73 @@ class Goal(GoalBase):
         from_attributes = True
 
 class TaskBase(BaseModel):
-    title: str = Field(..., description="Title of the task")
-    description: Optional[str] = Field(None, description="Detailed description of the task")
+    title: constr(min_length=1, max_length=200, strip_whitespace=True) = Field(
+        ..., 
+        description="Title of the task (1-200 characters)"
+    )
+    description: Optional[constr(max_length=2000, strip_whitespace=True)] = Field(
+        None, 
+        description="Detailed description of the task (max 2000 characters)"
+    )
     due_date: Optional[datetime] = Field(None, description="Optional due date for the task")
-    duration: Optional[int] = Field(None, description="Expected duration in minutes")
-    status: Optional[str] = Field('todo', description="Status of the task")
-    progress: Optional[float] = Field(0.0, description="Progress percentage of the task")
-    life_area_id: Optional[int] = Field(None, description="Associated life area ID")
-    dependencies: Optional[List[int]] = Field(default_factory=list, description="Prerequisite task IDs")
+    duration: Optional[int] = Field(
+        None, 
+        gt=0, 
+        le=1440, 
+        description="Expected duration in minutes (1-1440, max 24 hours)"
+    )
+    status: Optional[Literal['todo', 'in_progress', 'completed', 'cancelled']] = Field(
+        'todo', 
+        description="Status of the task"
+    )
+    progress: Optional[float] = Field(
+        0.0, 
+        ge=0.0, 
+        le=100.0, 
+        description="Progress percentage (0-100)"
+    )
+    life_area_id: Optional[int] = Field(
+        None, 
+        gt=0, 
+        description="Associated life area ID (positive integer)"
+    )
+    dependencies: Optional[List[int]] = Field(
+        default_factory=list, 
+        description="Prerequisite task IDs (max 10 dependencies)",
+        max_items=10
+    )
+    
+    @validator('title')
+    def validate_title(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Task title cannot be empty')
+        return v.strip()
+    
+    @validator('description')
+    def validate_description(cls, v):
+        if v is not None:
+            v = v.strip()
+            if len(v) == 0:
+                return None
+        return v
+    
+    @validator('due_date')
+    def validate_due_date(cls, v):
+        if v is not None:
+            # Don't allow due dates more than 10 years in the future
+            from datetime import datetime, timedelta
+            max_future = datetime.utcnow() + timedelta(days=3650)
+            if v > max_future:
+                raise ValueError('Due date cannot be more than 10 years in the future')
+        return v
+    
+    @validator('dependencies')
+    def validate_dependencies(cls, v):
+        if v is not None:
+            # Remove duplicates and ensure all are positive integers
+            unique_deps = list(set([dep for dep in v if isinstance(dep, int) and dep > 0]))
+            return unique_deps
+        return []
 
 class TaskCreate(TaskBase):
     goal_id: int = Field(..., description="Parent goal ID")
@@ -79,11 +207,45 @@ class Task(TaskBase):
         from_attributes = True
 
 class LifeAreaBase(BaseModel):
-    name: str = Field(..., description="Name of the life area", min_length=1, max_length=100)
-    weight: Optional[int] = Field(10, description="Importance weight as percentage (0-100)", ge=0, le=100)
-    icon: Optional[str] = Field(None, description="UI icon identifier", max_length=50)
-    color: Optional[str] = Field(None, description="UI color preference (hex or color name)", max_length=50)
-    description: Optional[str] = Field(None, description="Description of this life area", max_length=500)
+    name: constr(min_length=1, max_length=100, strip_whitespace=True) = Field(
+        ..., 
+        description="Name of the life area (1-100 characters)"
+    )
+    weight: Optional[int] = Field(
+        10, 
+        ge=0, 
+        le=100, 
+        description="Importance weight as percentage (0-100)"
+    )
+    icon: Optional[constr(max_length=50, strip_whitespace=True)] = Field(
+        None, 
+        description="UI icon identifier (max 50 characters)"
+    )
+    color: Optional[constr(max_length=50, strip_whitespace=True)] = Field(
+        None, 
+        description="UI color preference (hex or color name, max 50 characters)"
+    )
+    description: Optional[constr(max_length=500, strip_whitespace=True)] = Field(
+        None, 
+        description="Description of this life area (max 500 characters)"
+    )
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Life area name cannot be empty')
+        return v.strip()
+    
+    @validator('color')
+    def validate_color(cls, v):
+        if v is not None:
+            v = v.strip()
+            # Basic hex color validation
+            if v.startswith('#') and len(v) in [4, 7]:
+                if not all(c in '0123456789ABCDEFabcdef' for c in v[1:]):
+                    raise ValueError('Invalid hex color format')
+            return v
+        return v
 
 class LifeAreaCreate(LifeAreaBase):
     """Schema for creating a new LifeArea"""
@@ -107,17 +269,90 @@ class LifeArea(LifeAreaBase):
         from_attributes = True
 
 class MediaAttachmentBase(BaseModel):
-    filename: str = Field(..., description="System filename for the attachment", min_length=1)
-    original_filename: str = Field(..., description="Original filename from upload", min_length=1)
-    file_path: str = Field(..., description="Full path to the stored file", min_length=1)
-    file_size: int = Field(..., description="File size in bytes", ge=0)
-    mime_type: str = Field(..., description="MIME type (e.g., image/jpeg, video/mp4)", min_length=1)
-    file_type: str = Field(..., description="File category: image, video, audio, document", min_length=1)
-    title: Optional[str] = Field(None, description="User-defined title for the attachment", max_length=200)
-    description: Optional[str] = Field(None, description="User description for storytelling", max_length=1000)
-    duration: Optional[int] = Field(None, description="Duration in seconds for video/audio", ge=0)
-    width: Optional[int] = Field(None, description="Width in pixels for images/videos", ge=0)
-    height: Optional[int] = Field(None, description="Height in pixels for images/videos", ge=0)
+    filename: constr(min_length=1, max_length=255, strip_whitespace=True) = Field(
+        ..., 
+        description="System filename for the attachment (1-255 characters)"
+    )
+    original_filename: constr(min_length=1, max_length=255, strip_whitespace=True) = Field(
+        ..., 
+        description="Original filename from upload (1-255 characters)"
+    )
+    file_path: constr(min_length=1, max_length=1000, strip_whitespace=True) = Field(
+        ..., 
+        description="Full path to the stored file (1-1000 characters)"
+    )
+    file_size: int = Field(
+        ..., 
+        ge=0, 
+        le=1073741824,  # 1GB max
+        description="File size in bytes (max 1GB)"
+    )
+    mime_type: constr(min_length=1, max_length=100, strip_whitespace=True) = Field(
+        ..., 
+        description="MIME type (e.g., image/jpeg, video/mp4)"
+    )
+    file_type: Literal["image", "video", "audio", "document"] = Field(
+        ..., 
+        description="File category: image, video, audio, document"
+    )
+    title: Optional[constr(max_length=200, strip_whitespace=True)] = Field(
+        None, 
+        description="User-defined title for the attachment (max 200 characters)"
+    )
+    description: Optional[constr(max_length=1000, strip_whitespace=True)] = Field(
+        None, 
+        description="User description for storytelling (max 1000 characters)"
+    )
+    duration: Optional[int] = Field(
+        None, 
+        ge=0, 
+        le=86400,  # 24 hours max
+        description="Duration in seconds for video/audio (max 24 hours)"
+    )
+    width: Optional[int] = Field(
+        None, 
+        ge=1, 
+        le=8192,  # 8K resolution max
+        description="Width in pixels for images/videos (1-8192px)"
+    )
+    height: Optional[int] = Field(
+        None, 
+        ge=1, 
+        le=8192,  # 8K resolution max
+        description="Height in pixels for images/videos (1-8192px)"
+    )
+    
+    @validator('mime_type')
+    def validate_mime_type(cls, v):
+        allowed_mime_types = {
+            'image': ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'],
+            'video': ['video/mp4', 'video/webm', 'video/avi', 'video/mov', 'video/wmv'],
+            'audio': ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/aac', 'audio/flac'],
+            'document': ['application/pdf', 'text/plain', 'application/msword', 
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+        }
+        
+        # Check if mime type is in any allowed category
+        for category, mime_types in allowed_mime_types.items():
+            if v in mime_types:
+                return v
+        
+        # If not in predefined list, allow but warn
+        if '/' not in v:
+            raise ValueError('Invalid MIME type format')
+        return v
+    
+    @validator('file_type')
+    def validate_file_type_consistency(cls, v, values):
+        if 'mime_type' in values:
+            mime_type = values['mime_type']
+            if v == 'image' and not mime_type.startswith('image/'):
+                raise ValueError('File type and MIME type mismatch')
+            elif v == 'video' and not mime_type.startswith('video/'):
+                raise ValueError('File type and MIME type mismatch')
+            elif v == 'audio' and not mime_type.startswith('audio/'):
+                raise ValueError('File type and MIME type mismatch')
+        return v
 
 class MediaAttachmentCreate(MediaAttachmentBase):
     """Schema for creating a new MediaAttachment"""
@@ -231,24 +466,82 @@ class UserOut(User):
 ## FeedbackLog Schemas
 class FeedbackLogBase(BaseModel):
     # Context information
-    context_type: str = Field(..., description="Type of context (task, goal, plan, suggestion, ui_interaction, etc.)")
-    context_id: Optional[str] = Field(None, description="ID of the related entity (goal_id, task_id, etc.)")
-    context_data: Optional[Dict[str, Any]] = Field(None, description="Additional context data (query, response, etc.)")
+    context_type: constr(min_length=1, max_length=50, strip_whitespace=True) = Field(
+        ..., 
+        description="Type of context (task, goal, plan, suggestion, ui_interaction, etc.)"
+    )
+    context_id: Optional[constr(max_length=100, strip_whitespace=True)] = Field(
+        None, 
+        description="ID of the related entity (goal_id, task_id, etc.)"
+    )
+    context_data: Optional[Dict[str, Any]] = Field(
+        None, 
+        description="Additional context data (query, response, etc.)"
+    )
     
     # Feedback details
-    feedback_type: Literal["positive", "negative", "neutral"] = Field(..., description="Type of feedback")
-    feedback_value: Optional[float] = Field(None, ge=-1.0, le=1.0, description="Numeric feedback score (-1.0 to 1.0)")
-    comment: Optional[str] = Field(None, max_length=1000, description="Optional user comment")
+    feedback_type: Literal["positive", "negative", "neutral"] = Field(
+        ..., 
+        description="Type of feedback"
+    )
+    feedback_value: Optional[float] = Field(
+        None, 
+        ge=-1.0, 
+        le=1.0, 
+        description="Numeric feedback score (-1.0 to 1.0)"
+    )
+    comment: Optional[constr(max_length=1000, strip_whitespace=True)] = Field(
+        None, 
+        description="Optional user comment (max 1000 characters)"
+    )
     
     # ML/RLHF specific fields
-    action_taken: Optional[Dict[str, Any]] = Field(None, description="What action was taken (for RL)")
-    reward_signal: Optional[float] = Field(None, description="Computed reward signal")
-    model_version: Optional[str] = Field(None, description="Version of model that generated the response")
+    action_taken: Optional[Dict[str, Any]] = Field(
+        None, 
+        description="What action was taken (for RL)"
+    )
+    reward_signal: Optional[float] = Field(
+        None, 
+        ge=-10.0,
+        le=10.0,
+        description="Computed reward signal (-10.0 to 10.0)"
+    )
+    model_version: Optional[constr(max_length=50, strip_whitespace=True)] = Field(
+        None, 
+        description="Version of model that generated the response"
+    )
     
     # Metadata
-    session_id: Optional[str] = Field(None, description="Session identifier for grouping related feedback")
-    device_info: Optional[Dict[str, Any]] = Field(None, description="Device/platform information")
-    feature_flags: Optional[Dict[str, Any]] = Field(None, description="Active feature flags during interaction")
+    session_id: Optional[constr(max_length=100, strip_whitespace=True)] = Field(
+        None, 
+        description="Session identifier for grouping related feedback"
+    )
+    device_info: Optional[Dict[str, Any]] = Field(
+        None, 
+        description="Device/platform information"
+    )
+    feature_flags: Optional[Dict[str, Any]] = Field(
+        None, 
+        description="Active feature flags during interaction"
+    )
+    
+    @validator('context_data')
+    def validate_context_data(cls, v):
+        if v is not None:
+            # Limit context data size to prevent abuse
+            if len(str(v)) > 10000:  # 10KB limit
+                raise ValueError('Context data too large (max 10KB)')
+        return v
+    
+    @validator('device_info')
+    def validate_device_info(cls, v):
+        if v is not None:
+            # Ensure device info doesn't contain sensitive data
+            sensitive_keys = ['password', 'token', 'key', 'secret']
+            for key in v.keys():
+                if any(sensitive in key.lower() for sensitive in sensitive_keys):
+                    raise ValueError('Device info cannot contain sensitive data')
+        return v
 
 class FeedbackLogCreate(FeedbackLogBase):
     """Schema for creating feedback logs"""
