@@ -7,7 +7,7 @@ from dependencies import get_db, get_current_user
 
 router = APIRouter()
 
-@router.post("/media-attachments", response_model=schemas.MediaAttachment)
+@router.post("/media-attachments", response_model=schemas.MediaAttachment, status_code=201)
 def create_media_attachment(
     attachment: schemas.MediaAttachmentCreate,
     db: Session = Depends(get_db),

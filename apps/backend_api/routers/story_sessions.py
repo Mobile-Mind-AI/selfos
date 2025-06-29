@@ -70,7 +70,7 @@ def get_story_session(
     
     return story_session
 
-@router.post("", response_model=StorySessionSchema)
+@router.post("", response_model=StorySessionSchema, status_code=201)
 def create_story_session(
     session_data: StorySessionCreate,
     current_user: dict = Depends(get_current_user),

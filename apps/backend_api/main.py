@@ -1,9 +1,13 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import db  # ensure database engine & Base
 from db import engine, Base
 
 # Import ORM models so they are registered
 import models
+
+# Import middleware
+from middleware import ErrorHandlingMiddleware, RequestLoggingMiddleware, RateLimitingMiddleware
 
 # Include API routers
 from routers.auth import router as auth_router
@@ -19,7 +23,27 @@ from routers.health import router as health_router
 # Import event system
 import event_consumers
 
-app = FastAPI()
+app = FastAPI(
+    title="SelfOS Backend API",
+    description="Backend API for SelfOS - Personal Life Management System",
+    version="0.1.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+# Add middleware (order matters - first added is executed last)
+app.add_middleware(ErrorHandlingMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(RateLimitingMiddleware, requests_per_minute=60, requests_per_hour=1000, burst_limit=10)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure appropriately for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def root():

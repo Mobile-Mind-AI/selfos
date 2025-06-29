@@ -99,7 +99,7 @@ def test_create_task():
     """Test creating a new task"""
     # First create a goal
     goal_data = {"title": "Test Goal for Task"}
-    goal_response = client.post("/goals", json=goal_data)
+    goal_response = client.post("/api/goals", json=goal_data)
     goal_id = goal_response.json()["id"]
     
     # Create task
@@ -115,9 +115,9 @@ def test_create_task():
         "dependencies": []
     }
     
-    response = client.post("/tasks", json=task_data)
+    response = client.post("/api/tasks", json=task_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert "id" in data
     assert data["title"] == "Test Task"
@@ -134,7 +134,7 @@ def test_create_task_minimal():
     """Test creating a task with minimal data"""
     # First create a goal
     goal_data = {"title": "Test Goal for Minimal Task"}
-    goal_response = client.post("/goals", json=goal_data)
+    goal_response = client.post("/api/goals", json=goal_data)
     goal_id = goal_response.json()["id"]
     
     task_data = {
@@ -142,9 +142,9 @@ def test_create_task_minimal():
         "title": "Minimal Task"
     }
     
-    response = client.post("/tasks", json=task_data)
+    response = client.post("/api/tasks", json=task_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["title"] == "Minimal Task"
     assert data["status"] == "todo"  # Default value
@@ -157,13 +157,13 @@ def test_list_tasks():
     """Test listing user tasks"""
     # Create a goal and task first
     goal_data = {"title": "Goal for List Test"}
-    goal_response = client.post("/goals", json=goal_data)
+    goal_response = client.post("/api/goals", json=goal_data)
     goal_id = goal_response.json()["id"]
     
     task_data = {"goal_id": goal_id, "title": "List Test Task"}
-    client.post("/tasks", json=task_data)
+    client.post("/api/tasks", json=task_data)
     
-    response = client.get("/tasks")
+    response = client.get("/api/tasks")
     
     assert response.status_code == 200
     data = response.json()
@@ -176,14 +176,14 @@ def test_get_task():
     """Test getting a specific task"""
     # Create goal and task first
     goal_data = {"title": "Goal for Get Test"}
-    goal_response = client.post("/goals", json=goal_data)
+    goal_response = client.post("/api/goals", json=goal_data)
     goal_id = goal_response.json()["id"]
     
     task_data = {"goal_id": goal_id, "title": "Get Test Task"}
-    create_response = client.post("/tasks", json=task_data)
+    create_response = client.post("/api/tasks", json=task_data)
     task_id = create_response.json()["id"]
     
-    response = client.get(f"/tasks/{task_id}")
+    response = client.get(f"/api/tasks/{task_id}")
     
     assert response.status_code == 200
     data = response.json()
@@ -195,7 +195,7 @@ def test_get_task():
 
 def test_get_task_not_found():
     """Test getting a non-existent task"""
-    response = client.get("/tasks/99999")
+    response = client.get("/api/tasks/99999")
     
     assert response.status_code == 404
     assert "Task not found" in response.json()["detail"]
@@ -205,11 +205,11 @@ def test_update_task():
     """Test updating an existing task"""
     # Create goal and task first
     goal_data = {"title": "Goal for Update Test"}
-    goal_response = client.post("/goals", json=goal_data)
+    goal_response = client.post("/api/goals", json=goal_data)
     goal_id = goal_response.json()["id"]
     
     task_data = {"goal_id": goal_id, "title": "Original Task"}
-    create_response = client.post("/tasks", json=task_data)
+    create_response = client.post("/api/tasks", json=task_data)
     task_id = create_response.json()["id"]
     
     # Update the task
@@ -222,7 +222,7 @@ def test_update_task():
         "progress": 100.0
     }
     
-    response = client.put(f"/tasks/{task_id}", json=update_data)
+    response = client.put(f"/api/tasks/{task_id}", json=update_data)
     
     assert response.status_code == 200
     data = response.json()
@@ -237,7 +237,7 @@ def test_update_task():
 def test_update_task_not_found():
     """Test updating a non-existent task"""
     update_data = {"goal_id": 1, "title": "Updated Task"}
-    response = client.put("/tasks/99999", json=update_data)
+    response = client.put("/api/tasks/99999", json=update_data)
     
     assert response.status_code == 404
     assert "Task not found" in response.json()["detail"]
@@ -247,26 +247,26 @@ def test_delete_task():
     """Test deleting an existing task"""
     # Create goal and task first
     goal_data = {"title": "Goal for Delete Test"}
-    goal_response = client.post("/goals", json=goal_data)
+    goal_response = client.post("/api/goals", json=goal_data)
     goal_id = goal_response.json()["id"]
     
     task_data = {"goal_id": goal_id, "title": "Task to Delete"}
-    create_response = client.post("/tasks", json=task_data)
+    create_response = client.post("/api/tasks", json=task_data)
     task_id = create_response.json()["id"]
     
     # Delete the task
-    response = client.delete(f"/tasks/{task_id}")
+    response = client.delete(f"/api/tasks/{task_id}")
     
     assert response.status_code == 204
     
     # Verify it's deleted
-    get_response = client.get(f"/tasks/{task_id}")
+    get_response = client.get(f"/api/tasks/{task_id}")
     assert get_response.status_code == 404
 
 
 def test_delete_task_not_found():
     """Test deleting a non-existent task"""
-    response = client.delete("/tasks/99999")
+    response = client.delete("/api/tasks/99999")
     
     assert response.status_code == 404
     assert "Task not found" in response.json()["detail"]

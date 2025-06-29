@@ -41,7 +41,7 @@ def test_register_success(mock_create_user):
         "password": "testpassword"
     })
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert "uid" in data
     assert data["email"] == "testuser@example.com"
@@ -74,7 +74,7 @@ def test_login_success(mock_create_token):
         "password": "testpassword"
     })
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert "access_token" in data
     assert data["access_token"] == "mock_custom_token"
@@ -133,7 +133,7 @@ def test_me_endpoint_invalid_token(mock_verify_token):
 
 def test_me_endpoint_no_token():
     """Test /me endpoint without authorization header"""
-    response = client.get("/me")
+    response = client.get("/api/me")
     
     assert response.status_code == 401
 

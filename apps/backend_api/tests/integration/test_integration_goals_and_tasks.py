@@ -84,7 +84,7 @@ class TestGoalsAndTasksIntegration:
             "life_area_id": None
         }
         
-        goal_response = client.post("/goals", json=goal_data)
+        goal_response = client.post("/api/goals", json=goal_data)
         assert goal_response.status_code == 200
         goal = goal_response.json()
         goal_id = goal["id"]
@@ -102,7 +102,7 @@ class TestGoalsAndTasksIntegration:
             "progress": 100.0
         }
         
-        task1_response = client.post("/tasks", json=task1_data)
+        task1_response = client.post("/api/tasks", json=task1_data)
         assert task1_response.status_code == 200
         task1 = task1_response.json()
         task1_id = task1["id"]
@@ -117,7 +117,7 @@ class TestGoalsAndTasksIntegration:
             "dependencies": [task1_id]
         }
         
-        task2_response = client.post("/tasks", json=task2_data)
+        task2_response = client.post("/api/tasks", json=task2_data)
         assert task2_response.status_code == 200
         task2 = task2_response.json()
         task2_id = task2["id"]
@@ -132,12 +132,12 @@ class TestGoalsAndTasksIntegration:
             "dependencies": [task2_id]
         }
         
-        task3_response = client.post("/tasks", json=task3_data)
+        task3_response = client.post("/api/tasks", json=task3_data)
         assert task3_response.status_code == 200
         task3 = task3_response.json()
         
         # Step 3: Verify all tasks are linked to goal
-        tasks_response = client.get("/tasks")
+        tasks_response = client.get("/api/tasks")
         assert tasks_response.status_code == 200
         tasks = tasks_response.json()
         
@@ -157,7 +157,7 @@ class TestGoalsAndTasksIntegration:
             "dependencies": [task1_id]
         }
         
-        task2_update_response = client.put(f"/tasks/{task2_id}", json=task2_update)
+        task2_update_response = client.put(f"/api/tasks/{task2_id}", json=task2_update)
         assert task2_update_response.status_code == 200
         updated_task2 = task2_update_response.json()
         assert updated_task2["status"] == "completed"
@@ -172,7 +172,7 @@ class TestGoalsAndTasksIntegration:
             "life_area_id": None
         }
         
-        goal_update_response = client.put(f"/goals/{goal_id}", json=goal_update)
+        goal_update_response = client.put(f"/api/goals/{goal_id}", json=goal_update)
         assert goal_update_response.status_code == 200
         updated_goal = goal_update_response.json()
         assert updated_goal["progress"] == 50.0
@@ -188,7 +188,7 @@ class TestGoalsAndTasksIntegration:
             "dependencies": [task2_id]
         }
         
-        task3_update_response = client.put(f"/tasks/{task3["id"]}", json=task3_update)
+        task3_update_response = client.put(f"/api/tasks/{task3["id"]}", json=task3_update)
         assert task3_update_response.status_code == 200
         
         # Step 7: Complete the goal
@@ -200,19 +200,19 @@ class TestGoalsAndTasksIntegration:
             "life_area_id": None
         }
         
-        goal_complete_response = client.put(f"/goals/{goal_id}", json=goal_complete)
+        goal_complete_response = client.put(f"/api/goals/{goal_id}", json=goal_complete)
         assert goal_complete_response.status_code == 200
         completed_goal = goal_complete_response.json()
         assert completed_goal["status"] == "completed"
         assert completed_goal["progress"] == 100.0
         
         # Step 8: Verify final state
-        final_goal_response = client.get(f"/goals/{goal_id}")
+        final_goal_response = client.get(f"/api/goals/{goal_id}")
         assert final_goal_response.status_code == 200
         final_goal = final_goal_response.json()
         assert final_goal["status"] == "completed"
         
-        final_tasks_response = client.get("/tasks")
+        final_tasks_response = client.get("/api/tasks")
         final_tasks = final_tasks_response.json()
         completed_tasks = [t for t in final_tasks if t["status"] == "completed"]
         assert len(completed_tasks) == 3
@@ -222,7 +222,7 @@ class TestGoalsAndTasksIntegration:
         
         # Create goal with tasks
         goal_data = {"title": "Test Cascade Goal"}
-        goal_response = client.post("/goals", json=goal_data)
+        goal_response = client.post("/api/goals", json=goal_data)
         goal_id = goal_response.json()["id"]
         
         # Create tasks
@@ -232,24 +232,24 @@ class TestGoalsAndTasksIntegration:
                 "title": f"Task {i+1}",
                 "description": f"Description for task {i+1}"
             }
-            client.post("/tasks", json=task_data)
+            client.post("/api/tasks", json=task_data)
         
         # Verify tasks exist
-        tasks_response = client.get("/tasks")
+        tasks_response = client.get("/api/tasks")
         tasks = tasks_response.json()
         goal_tasks = [t for t in tasks if t["goal_id"] == goal_id]
         assert len(goal_tasks) == 3
         
         # Delete goal (cascades to delete tasks due to relationship)
-        delete_response = client.delete(f"/goals/{goal_id}")
+        delete_response = client.delete(f"/api/goals/{goal_id}")
         assert delete_response.status_code == 204
         
         # Verify goal is deleted
-        get_goal_response = client.get(f"/goals/{goal_id}")
+        get_goal_response = client.get(f"/api/goals/{goal_id}")
         assert get_goal_response.status_code == 404
         
         # Tasks should be deleted too (cascade delete implemented)
-        tasks_after_delete = client.get("/tasks").json()
+        tasks_after_delete = client.get("/api/tasks").json()
         remaining_goal_tasks = [t for t in tasks_after_delete if t["goal_id"] == goal_id]
         assert len(remaining_goal_tasks) == 0  # Tasks cascaded delete
     
@@ -258,16 +258,16 @@ class TestGoalsAndTasksIntegration:
         
         # Create data as integration_test_user
         goal_data = {"title": "User Isolation Test Goal"}
-        goal_response = client.post("/goals", json=goal_data)
+        goal_response = client.post("/api/goals", json=goal_data)
         goal_id = goal_response.json()["id"]
         
         task_data = {"goal_id": goal_id, "title": "User Isolation Test Task"}
-        task_response = client.post("/tasks", json=task_data)
+        task_response = client.post("/api/tasks", json=task_data)
         task_id = task_response.json()["id"]
         
         # Verify user can access their data
-        user_goals = client.get("/goals").json()
-        user_tasks = client.get("/tasks").json()
+        user_goals = client.get("/api/goals").json()
+        user_tasks = client.get("/api/tasks").json()
         
         assert len(user_goals) >= 1  # May have data from previous tests
         assert len(user_tasks) >= 1   # May have data from previous tests
@@ -288,15 +288,15 @@ class TestGoalsAndTasksIntegration:
         app.dependency_overrides[get_current_user] = override_get_different_user
         
         # Different user should see no data
-        different_user_goals = client.get("/goals").json()
-        different_user_tasks = client.get("/tasks").json()
+        different_user_goals = client.get("/api/goals").json()
+        different_user_tasks = client.get("/api/tasks").json()
         
         assert len(different_user_goals) == 0
         assert len(different_user_tasks) == 0
         
         # Different user should not be able to access specific items
-        goal_response = client.get(f"/goals/{goal_id}")
-        task_response = client.get(f"/tasks/{task_id}")
+        goal_response = client.get(f"/api/goals/{goal_id}")
+        task_response = client.get(f"/api/tasks/{task_id}")
         
         assert goal_response.status_code == 404
         assert task_response.status_code == 404
@@ -313,7 +313,7 @@ class TestGoalsAndTasksIntegration:
             "status": "todo",
             "progress": 0.0
         }
-        goal_response = client.post("/goals", json=goal_data)
+        goal_response = client.post("/api/goals", json=goal_data)
         goal_id = goal_response.json()["id"]
         
         # Create task
@@ -323,12 +323,12 @@ class TestGoalsAndTasksIntegration:
             "status": "todo",
             "progress": 0.0
         }
-        task_response = client.post("/tasks", json=task_data)
+        task_response = client.post("/api/tasks", json=task_data)
         task_id = task_response.json()["id"]
         
         # Get creation timestamps
-        initial_goal = client.get(f"/goals/{goal_id}").json()
-        initial_task = client.get(f"/tasks/{task_id}").json()
+        initial_goal = client.get(f"/api/goals/{goal_id}").json()
+        initial_task = client.get(f"/api/tasks/{task_id}").json()
         
         created_at_goal = initial_goal["created_at"]
         created_at_task = initial_task["created_at"]
@@ -340,10 +340,10 @@ class TestGoalsAndTasksIntegration:
             "status": "completed",
             "progress": 100.0
         }
-        client.put(f"/tasks/{task_id}", json=task_update)
+        client.put(f"/api/tasks/{task_id}", json=task_update)
         
         # Verify timestamps
-        updated_task = client.get(f"/tasks/{task_id}").json()
+        updated_task = client.get(f"/api/tasks/{task_id}").json()
         
         # Created timestamp should not change
         assert updated_task["created_at"] == created_at_task

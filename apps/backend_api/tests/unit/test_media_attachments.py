@@ -110,9 +110,9 @@ def test_create_media_attachment():
         "height": 1080
     }
     
-    response = client.post("/media-attachments", json=attachment_data)
+    response = client.post("/api/media-attachments", json=attachment_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert "id" in data
     assert data["filename"] == "test_image_123.jpg"
@@ -141,9 +141,9 @@ def test_create_media_attachment_minimal():
         "file_type": "audio"
     }
     
-    response = client.post("/media-attachments", json=attachment_data)
+    response = client.post("/api/media-attachments", json=attachment_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["filename"] == "minimal.mp3"
     assert data["file_type"] == "audio"
@@ -158,7 +158,7 @@ def test_create_media_attachment_with_goal():
     """Test creating a media attachment linked to a goal"""
     # First create a goal
     goal_data = {"title": "Test Goal for Media"}
-    goal_response = client.post("/goals", json=goal_data)
+    goal_response = client.post("/api/goals", json=goal_data)
     goal_id = goal_response.json()["id"]
     
     # Create attachment linked to goal
@@ -175,9 +175,9 @@ def test_create_media_attachment_with_goal():
         "height": 480
     }
     
-    response = client.post("/media-attachments", json=attachment_data)
+    response = client.post("/api/media-attachments", json=attachment_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["goal_id"] == goal_id
     assert data["task_id"] is None
@@ -189,11 +189,11 @@ def test_create_media_attachment_with_task():
     """Test creating a media attachment linked to a task"""
     # First create a goal and task
     goal_data = {"title": "Test Goal for Task Media"}
-    goal_response = client.post("/goals", json=goal_data)
+    goal_response = client.post("/api/goals", json=goal_data)
     goal_id = goal_response.json()["id"]
     
     task_data = {"goal_id": goal_id, "title": "Test Task for Media"}
-    task_response = client.post("/tasks", json=task_data)
+    task_response = client.post("/api/tasks", json=task_data)
     task_id = task_response.json()["id"]
     
     # Create attachment linked to task
@@ -208,9 +208,9 @@ def test_create_media_attachment_with_task():
         "title": "Project Requirements"
     }
     
-    response = client.post("/media-attachments", json=attachment_data)
+    response = client.post("/api/media-attachments", json=attachment_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["goal_id"] is None
     assert data["task_id"] == task_id
@@ -230,7 +230,7 @@ def test_create_media_attachment_invalid_goal():
         "file_type": "image"
     }
     
-    response = client.post("/media-attachments", json=attachment_data)
+    response = client.post("/api/media-attachments", json=attachment_data)
     
     assert response.status_code == 404
     assert "Goal not found" in response.json()["detail"]
@@ -248,7 +248,7 @@ def test_create_media_attachment_invalid_task():
         "file_type": "image"
     }
     
-    response = client.post("/media-attachments", json=attachment_data)
+    response = client.post("/api/media-attachments", json=attachment_data)
     
     assert response.status_code == 404
     assert "Task not found" in response.json()["detail"]
@@ -265,9 +265,9 @@ def test_list_media_attachments():
         "mime_type": "image/jpeg",
         "file_type": "image"
     }
-    client.post("/media-attachments", json=attachment_data)
+    client.post("/api/media-attachments", json=attachment_data)
     
-    response = client.get("/media-attachments")
+    response = client.get("/api/media-attachments")
     
     assert response.status_code == 200
     data = response.json()
@@ -280,7 +280,7 @@ def test_list_media_attachments_by_goal():
     """Test listing media attachments filtered by goal"""
     # Create goal and attachments
     goal_data = {"title": "Filter Test Goal"}
-    goal_response = client.post("/goals", json=goal_data)
+    goal_response = client.post("/api/goals", json=goal_data)
     goal_id = goal_response.json()["id"]
     
     # Create attachment for this goal
@@ -293,7 +293,7 @@ def test_list_media_attachments_by_goal():
         "mime_type": "image/jpeg",
         "file_type": "image"
     }
-    client.post("/media-attachments", json=attachment_data)
+    client.post("/api/media-attachments", json=attachment_data)
     
     # Create attachment not linked to goal
     attachment_data2 = {
@@ -304,10 +304,10 @@ def test_list_media_attachments_by_goal():
         "mime_type": "image/jpeg",
         "file_type": "image"
     }
-    client.post("/media-attachments", json=attachment_data2)
+    client.post("/api/media-attachments", json=attachment_data2)
     
     # Filter by goal
-    response = client.get(f"/media-attachments?goal_id={goal_id}")
+    response = client.get(f"/api/media-attachments?goal_id={goal_id}")
     
     assert response.status_code == 200
     data = response.json()
@@ -327,7 +327,7 @@ def test_list_media_attachments_by_file_type():
         "mime_type": "image/jpeg",
         "file_type": "image"
     }
-    client.post("/media-attachments", json=image_data)
+    client.post("/api/media-attachments", json=image_data)
     
     video_data = {
         "filename": "test.mp4",
@@ -337,10 +337,10 @@ def test_list_media_attachments_by_file_type():
         "mime_type": "video/mp4",
         "file_type": "video"
     }
-    client.post("/media-attachments", json=video_data)
+    client.post("/api/media-attachments", json=video_data)
     
     # Filter by image type
-    response = client.get("/media-attachments?file_type=image")
+    response = client.get("/api/media-attachments?file_type=image")
     
     assert response.status_code == 200
     data = response.json()
@@ -359,10 +359,10 @@ def test_get_media_attachment():
         "mime_type": "image/jpeg",
         "file_type": "image"
     }
-    create_response = client.post("/media-attachments", json=attachment_data)
+    create_response = client.post("/api/media-attachments", json=attachment_data)
     attachment_id = create_response.json()["id"]
     
-    response = client.get(f"/media-attachments/{attachment_id}")
+    response = client.get(f"/api/media-attachments/{attachment_id}")
     
     assert response.status_code == 200
     data = response.json()
@@ -373,7 +373,7 @@ def test_get_media_attachment():
 
 def test_get_media_attachment_not_found():
     """Test getting a non-existent media attachment"""
-    response = client.get("/media-attachments/99999")
+    response = client.get("/api/media-attachments/99999")
     
     assert response.status_code == 404
     assert "Media attachment not found" in response.json()["detail"]
@@ -390,7 +390,7 @@ def test_update_media_attachment():
         "mime_type": "image/jpeg",
         "file_type": "image"
     }
-    create_response = client.post("/media-attachments", json=attachment_data)
+    create_response = client.post("/api/media-attachments", json=attachment_data)
     attachment_id = create_response.json()["id"]
     
     # Update metadata
@@ -399,7 +399,7 @@ def test_update_media_attachment():
         "description": "Updated description for storytelling"
     }
     
-    response = client.put(f"/media-attachments/{attachment_id}", json=update_data)
+    response = client.put(f"/api/media-attachments/{attachment_id}", json=update_data)
     
     assert response.status_code == 200
     data = response.json()
@@ -415,11 +415,11 @@ def test_update_media_attachment_associations():
     """Test updating media attachment goal/task associations"""
     # Create goal and task
     goal_data = {"title": "Association Test Goal"}
-    goal_response = client.post("/goals", json=goal_data)
+    goal_response = client.post("/api/goals", json=goal_data)
     goal_id = goal_response.json()["id"]
     
     task_data = {"goal_id": goal_id, "title": "Association Test Task"}
-    task_response = client.post("/tasks", json=task_data)
+    task_response = client.post("/api/tasks", json=task_data)
     task_id = task_response.json()["id"]
     
     # Create attachment
@@ -431,7 +431,7 @@ def test_update_media_attachment_associations():
         "mime_type": "image/jpeg",
         "file_type": "image"
     }
-    create_response = client.post("/media-attachments", json=attachment_data)
+    create_response = client.post("/api/media-attachments", json=attachment_data)
     attachment_id = create_response.json()["id"]
     
     # Update associations
@@ -440,7 +440,7 @@ def test_update_media_attachment_associations():
         "task_id": task_id
     }
     
-    response = client.put(f"/media-attachments/{attachment_id}", json=update_data)
+    response = client.put(f"/api/media-attachments/{attachment_id}", json=update_data)
     
     assert response.status_code == 200
     data = response.json()
@@ -451,7 +451,7 @@ def test_update_media_attachment_associations():
 def test_update_media_attachment_not_found():
     """Test updating a non-existent media attachment"""
     update_data = {"title": "Updated Title"}
-    response = client.put("/media-attachments/99999", json=update_data)
+    response = client.put("/api/media-attachments/99999", json=update_data)
     
     assert response.status_code == 404
     assert "Media attachment not found" in response.json()["detail"]
@@ -468,23 +468,23 @@ def test_delete_media_attachment():
         "mime_type": "image/jpeg",
         "file_type": "image"
     }
-    create_response = client.post("/media-attachments", json=attachment_data)
+    create_response = client.post("/api/media-attachments", json=attachment_data)
     attachment_id = create_response.json()["id"]
     
     # Delete the attachment
-    response = client.delete(f"/media-attachments/{attachment_id}")
+    response = client.delete(f"/api/media-attachments/{attachment_id}")
     
     assert response.status_code == 200
     assert "deleted successfully" in response.json()["detail"]
     
     # Verify it's deleted
-    get_response = client.get(f"/media-attachments/{attachment_id}")
+    get_response = client.get(f"/api/media-attachments/{attachment_id}")
     assert get_response.status_code == 404
 
 
 def test_delete_media_attachment_not_found():
     """Test deleting a non-existent media attachment"""
-    response = client.delete("/media-attachments/99999")
+    response = client.delete("/api/media-attachments/99999")
     
     assert response.status_code == 404
     assert "Media attachment not found" in response.json()["detail"]
@@ -521,9 +521,9 @@ def test_get_media_statistics():
     ]
     
     for attachment in attachments:
-        client.post("/media-attachments", json=attachment)
+        client.post("/api/media-attachments", json=attachment)
     
-    response = client.get("/media-attachments/stats/summary")
+    response = client.get("/api/media-attachments/stats/summary")
     
     assert response.status_code == 200
     data = response.json()
@@ -553,11 +553,11 @@ def test_user_isolation():
         "mime_type": "image/jpeg",
         "file_type": "image"
     }
-    create_response = client.post("/media-attachments", json=attachment_data)
+    create_response = client.post("/api/media-attachments", json=attachment_data)
     attachment_id = create_response.json()["id"]
     
     # Verify user can access their attachment
-    user_attachments = client.get("/media-attachments").json()
+    user_attachments = client.get("/api/media-attachments").json()
     assert len(user_attachments) >= 1
     for attachment in user_attachments:
         assert attachment["user_id"] == "test_user_123"
@@ -583,11 +583,11 @@ def test_user_isolation():
         different_client = TestClient(test_app)
         
         # Different user should see no attachments
-        different_user_attachments = different_client.get("/media-attachments").json()
+        different_user_attachments = different_client.get("/api/media-attachments").json()
         assert len(different_user_attachments) == 0
         
         # Different user should not access specific attachment
-        attachment_response = different_client.get(f"/media-attachments/{attachment_id}")
+        attachment_response = different_client.get(f"/api/media-attachments/{attachment_id}")
         assert attachment_response.status_code == 404
         
     finally:

@@ -286,7 +286,7 @@ async def service_health_check(service_name: str, db: Session = Depends(get_db))
             "details": f"Service {service_name} is not operational"
         }
 
-@router.post("/health/test-event")
+@router.post("/health/test-event", status_code=201)
 async def test_event_system():
     """
     Test the event system by publishing a test event.

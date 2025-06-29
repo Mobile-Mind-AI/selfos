@@ -105,9 +105,9 @@ def test_create_goal():
         "life_area_id": None
     }
     
-    response = client.post("/goals", json=goal_data)
+    response = client.post("/api/goals", json=goal_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert "id" in data
     assert data["title"] == "Test Goal"
@@ -124,9 +124,9 @@ def test_create_goal_minimal():
         "title": "Minimal Goal"
     }
     
-    response = client.post("/goals", json=goal_data)
+    response = client.post("/api/goals", json=goal_data)
     
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["title"] == "Minimal Goal"
     assert data["status"] == "todo"  # Default value
@@ -138,9 +138,9 @@ def test_list_goals():
     """Test listing user goals"""
     # First create a goal
     goal_data = {"title": "List Test Goal"}
-    client.post("/goals", json=goal_data)
+    client.post("/api/goals", json=goal_data)
     
-    response = client.get("/goals")
+    response = client.get("/api/goals")
     
     assert response.status_code == 200
     data = response.json()
@@ -153,10 +153,10 @@ def test_get_goal():
     """Test getting a specific goal"""
     # Create a goal first
     goal_data = {"title": "Get Test Goal"}
-    create_response = client.post("/goals", json=goal_data)
+    create_response = client.post("/api/goals", json=goal_data)
     goal_id = create_response.json()["id"]
     
-    response = client.get(f"/goals/{goal_id}")
+    response = client.get(f"/api/goals/{goal_id}")
     
     assert response.status_code == 200
     data = response.json()
@@ -167,7 +167,7 @@ def test_get_goal():
 
 def test_get_goal_not_found():
     """Test getting a non-existent goal"""
-    response = client.get("/goals/99999")
+    response = client.get("/api/goals/99999")
     
     assert response.status_code == 404
     assert "Goal not found" in response.json()["detail"]
@@ -177,7 +177,7 @@ def test_update_goal():
     """Test updating an existing goal"""
     # Create a goal first
     goal_data = {"title": "Original Goal"}
-    create_response = client.post("/goals", json=goal_data)
+    create_response = client.post("/api/goals", json=goal_data)
     goal_id = create_response.json()["id"]
     
     # Update the goal
@@ -188,7 +188,7 @@ def test_update_goal():
         "progress": 100.0
     }
     
-    response = client.put(f"/goals/{goal_id}", json=update_data)
+    response = client.put(f"/api/goals/{goal_id}", json=update_data)
     
     assert response.status_code == 200
     data = response.json()
@@ -202,7 +202,7 @@ def test_update_goal():
 def test_update_goal_not_found():
     """Test updating a non-existent goal"""
     update_data = {"title": "Updated Goal"}
-    response = client.put("/goals/99999", json=update_data)
+    response = client.put("/api/goals/99999", json=update_data)
     
     assert response.status_code == 404
     assert "Goal not found" in response.json()["detail"]
@@ -212,22 +212,22 @@ def test_delete_goal():
     """Test deleting an existing goal"""
     # Create a goal first
     goal_data = {"title": "Goal to Delete"}
-    create_response = client.post("/goals", json=goal_data)
+    create_response = client.post("/api/goals", json=goal_data)
     goal_id = create_response.json()["id"]
     
     # Delete the goal
-    response = client.delete(f"/goals/{goal_id}")
+    response = client.delete(f"/api/goals/{goal_id}")
     
     assert response.status_code == 204
     
     # Verify it's deleted
-    get_response = client.get(f"/goals/{goal_id}")
+    get_response = client.get(f"/api/goals/{goal_id}")
     assert get_response.status_code == 404
 
 
 def test_delete_goal_not_found():
     """Test deleting a non-existent goal"""
-    response = client.delete("/goals/99999")
+    response = client.delete("/api/goals/99999")
     
     assert response.status_code == 404
     assert "Goal not found" in response.json()["detail"]

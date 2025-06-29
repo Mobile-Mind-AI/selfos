@@ -33,7 +33,7 @@ def get_user_preferences(
     
     return preferences
 
-@router.post("", response_model=UserPreferencesSchema)
+@router.post("", response_model=UserPreferencesSchema, status_code=201)
 def create_user_preferences(
     preferences_data: UserPreferencesCreate,
     current_user: dict = Depends(get_current_user),
@@ -170,7 +170,7 @@ def get_view_options():
         ]
     }
 
-@router.post("/quick-setup", response_model=UserPreferencesSchema)
+@router.post("/quick-setup", response_model=UserPreferencesSchema, status_code=201)
 def quick_setup_preferences(
     tone: str,
     notifications: bool = True,

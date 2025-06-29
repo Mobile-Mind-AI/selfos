@@ -8,3 +8,6 @@ alembic>=1.7.0
 requests>=2.31.0
 psycopg2-binary>=2.9.0
 python-multipart>=0.0.6
+python-magic>=0.4.27
+Pillow>=10.0.0
+starlette>=0.27.0
