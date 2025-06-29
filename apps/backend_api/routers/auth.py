@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from schemas import RegisterRequest, LoginRequest, TokenResponse
+from sqlalchemy.orm import Session, joinedload
+from schemas import RegisterRequest, LoginRequest, TokenResponse, UserOut
 from firebase_admin import auth as firebase_auth
-from dependencies import get_current_user
+from dependencies import get_current_user, get_db
+import models
 
 
 router = APIRouter()

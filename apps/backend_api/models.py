@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Float, JSON, Boolean, Enum, Time, func
+from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Float, JSON, Boolean, Enum, Time, func, Index
 from sqlalchemy.orm import relationship
 import db
 Base = db.Base
@@ -41,6 +41,11 @@ class Goal(Base):
     tasks = relationship("Task", back_populates="goal", cascade="all, delete-orphan")
     media_attachments = relationship("MediaAttachment", back_populates="goal")
 
+# Performance indexes for Goal model
+Index('ix_goals_user_created', Goal.user_id, Goal.created_at.desc())
+Index('ix_goals_user_status', Goal.user_id, Goal.status)
+Index('ix_goals_life_area_created', Goal.life_area_id, Goal.created_at.desc())
+
 class Task(Base):
     __tablename__ = "tasks"
     id = Column(Integer, primary_key=True, index=True)
@@ -68,6 +73,14 @@ class Task(Base):
     life_area = relationship("LifeArea", back_populates="tasks")
     media_attachments = relationship("MediaAttachment", back_populates="task")
 
+# Performance indexes for Task model
+Index('ix_tasks_user_created', Task.user_id, Task.created_at.desc())
+Index('ix_tasks_user_status', Task.user_id, Task.status)
+Index('ix_tasks_goal_created', Task.goal_id, Task.created_at.desc())
+Index('ix_tasks_due_date', Task.user_id, Task.due_date)
+# Partial index for completed tasks (PostgreSQL specific, will be in migration)
+Index('ix_tasks_completed', Task.user_id, Task.created_at.desc(), postgresql_where=(Task.status == 'completed'))
+
 class LifeArea(Base):
     __tablename__ = "life_areas"
     id = Column(Integer, primary_key=True, index=True)
@@ -88,6 +101,10 @@ class LifeArea(Base):
     user = relationship("User", back_populates="life_areas")
     goals = relationship("Goal", back_populates="life_area")
     tasks = relationship("Task", back_populates="life_area")
+
+# Performance indexes for LifeArea model
+Index('ix_life_areas_user_created', LifeArea.user_id, LifeArea.created_at.desc())
+Index('ix_life_areas_user_name', LifeArea.user_id, LifeArea.name)
 
 class MediaAttachment(Base):
     __tablename__ = "media_attachments"
@@ -118,6 +135,12 @@ class MediaAttachment(Base):
     goal = relationship("Goal", back_populates="media_attachments")
     task = relationship("Task", back_populates="media_attachments")
 
+# Performance indexes for MediaAttachment model
+Index('ix_media_user_created', MediaAttachment.user_id, MediaAttachment.created_at.desc())
+Index('ix_media_user_type', MediaAttachment.user_id, MediaAttachment.file_type)
+Index('ix_media_goal', MediaAttachment.goal_id, MediaAttachment.created_at.desc())
+Index('ix_media_task', MediaAttachment.task_id, MediaAttachment.created_at.desc())
+
 class MemoryItem(Base):
     __tablename__ = "memory_items"
     id = Column(Integer, primary_key=True, index=True)
@@ -127,6 +150,9 @@ class MemoryItem(Base):
     
     # Relationships
     user = relationship("User", back_populates="memory_items")
+
+# Performance indexes for MemoryItem model
+Index('ix_memory_user_timestamp', MemoryItem.user_id, MemoryItem.timestamp.desc())
 
 class UserPreferences(Base):
     __tablename__ = "user_preferences"
@@ -167,6 +193,9 @@ class UserPreferences(Base):
     user = relationship("User", back_populates="preferences")
     default_life_area = relationship("LifeArea", foreign_keys=[default_life_area_id])
 
+# Performance indexes for UserPreferences model  
+Index('ix_user_prefs_user_created', UserPreferences.user_id, UserPreferences.created_at.desc())
+
 class FeedbackLog(Base):
     __tablename__ = "feedback_logs"
     
@@ -199,6 +228,13 @@ class FeedbackLog(Base):
     
     # Relationships
     user = relationship("User", back_populates="feedback_logs")
+
+# Performance indexes for FeedbackLog model
+Index('ix_feedback_user_created', FeedbackLog.user_id, FeedbackLog.created_at.desc())
+Index('ix_feedback_user_type', FeedbackLog.user_id, FeedbackLog.feedback_type)
+Index('ix_feedback_context', FeedbackLog.context_type, FeedbackLog.created_at.desc())
+Index('ix_feedback_session', FeedbackLog.session_id, FeedbackLog.created_at.desc())
+Index('ix_feedback_processed', FeedbackLog.processed_at)  # For archival queries
 
 class StorySession(Base):
     __tablename__ = "story_sessions"
@@ -259,3 +295,10 @@ class StorySession(Base):
     
     # Relationships
     user = relationship("User", back_populates="story_sessions")
+
+# Performance indexes for StorySession model
+Index('ix_story_user_created', StorySession.user_id, StorySession.created_at.desc())
+Index('ix_story_user_status', StorySession.user_id, StorySession.processing_status)
+Index('ix_story_user_period', StorySession.user_id, StorySession.summary_period)
+Index('ix_story_posted_at', StorySession.posted_at)  # For archival queries
+Index('ix_story_content_type', StorySession.content_type, StorySession.created_at.desc())

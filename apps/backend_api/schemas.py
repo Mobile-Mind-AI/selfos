@@ -1,6 +1,13 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Literal, Dict, Any
+from typing import Optional, List, Literal, Dict, Any, TYPE_CHECKING
 from datetime import datetime, time
+
+# Forward references for nested schemas
+if TYPE_CHECKING:
+    from typing import ForwardRef
+    MediaAttachmentOut = ForwardRef('MediaAttachmentOut')
+    UserPreferencesOut = ForwardRef('UserPreferencesOut')
+    LifeAreaOut = ForwardRef('LifeAreaOut')
 
 ## Authentication Schemas
 class RegisterRequest(BaseModel):
@@ -18,6 +25,15 @@ class TokenResponse(BaseModel):
 class User(BaseModel):
     uid: str = Field(..., description="Firebase user ID")
     email: str = Field(..., description="User email address")
+
+class UserCreate(BaseModel):
+    """Schema for creating a new user"""
+    username: str = Field(..., description="Unique username")
+    email: str = Field(..., description="User email address")
+    password: str = Field(..., min_length=8, description="User password")
+    
+    # Optional preferences to set during registration
+    preferences: Optional['UserPreferencesCreate'] = Field(None, description="Initial user preferences")
 
 class GoalBase(BaseModel):
     title: str = Field(..., description="Title of the goal")
@@ -176,6 +192,39 @@ class UserPreferences(UserPreferencesBase):
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
+    class Config:
+        orm_mode = True
+
+# Enhanced Output Schemas with Nested Relationships
+
+class MediaAttachmentOut(MediaAttachment):
+    """Enhanced media attachment output schema"""
+    pass
+
+class LifeAreaOut(LifeArea):
+    """Enhanced life area output schema"""
+    pass
+
+class TaskOut(Task):
+    """Enhanced task output schema with nested relationships"""
+    media: List['MediaAttachmentOut'] = Field(default_factory=list, description="Associated media attachments")
+    life_area: Optional['LifeAreaOut'] = Field(None, description="Associated life area details")
+
+class GoalOut(Goal):
+    """Enhanced goal output schema with nested relationships"""
+    tasks: List['TaskOut'] = Field(default_factory=list, description="Associated tasks")
+    media: List['MediaAttachmentOut'] = Field(default_factory=list, description="Associated media attachments")
+    life_area: Optional['LifeAreaOut'] = Field(None, description="Associated life area details")
+
+class UserPreferencesOut(UserPreferences):
+    """Enhanced user preferences output schema"""
+    default_life_area: Optional['LifeAreaOut'] = Field(None, description="Default life area details")
+
+class UserOut(User):
+    """Enhanced user output schema with nested relationships"""
+    preferences: Optional['UserPreferencesOut'] = Field(None, description="User preferences")
+    created_at: Optional[datetime] = Field(None, description="Account creation timestamp")
+    
     class Config:
         orm_mode = True
 

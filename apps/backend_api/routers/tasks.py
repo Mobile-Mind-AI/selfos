@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 import models, schemas
 from dependencies import get_db, get_current_user
 
 router = APIRouter()
 
-@router.post("/tasks", response_model=schemas.Task)
+@router.post("/tasks", response_model=schemas.TaskOut)
 def create_task(
     task: schemas.TaskCreate,
     db: Session = Depends(get_db),
@@ -29,20 +29,26 @@ def create_task(
     db.refresh(db_task)
     return db_task
 
-@router.get("/tasks", response_model=List[schemas.Task])
+@router.get("/tasks", response_model=List[schemas.TaskOut])
 def list_tasks(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    return db.query(models.Task).filter(models.Task.user_id == current_user["uid"]).all()
+    return db.query(models.Task).options(
+        joinedload(models.Task.media_attachments),
+        joinedload(models.Task.life_area)
+    ).filter(models.Task.user_id == current_user["uid"]).all()
 
-@router.get("/tasks/{task_id}", response_model=schemas.Task)
+@router.get("/tasks/{task_id}", response_model=schemas.TaskOut)
 def get_task(
     task_id: int,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    task = db.query(models.Task).filter(
+    task = db.query(models.Task).options(
+        joinedload(models.Task.media_attachments),
+        joinedload(models.Task.life_area)
+    ).filter(
         models.Task.id == task_id,
         models.Task.user_id == current_user["uid"]
     ).first()
@@ -50,14 +56,17 @@ def get_task(
         raise HTTPException(status_code=404, detail="Task not found")
     return task
 
-@router.put("/tasks/{task_id}", response_model=schemas.Task)
+@router.put("/tasks/{task_id}", response_model=schemas.TaskOut)
 def update_task(
     task_id: int,
     task_in: schemas.TaskCreate,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    task = db.query(models.Task).filter(
+    task = db.query(models.Task).options(
+        joinedload(models.Task.media_attachments),
+        joinedload(models.Task.life_area)
+    ).filter(
         models.Task.id == task_id,
         models.Task.user_id == current_user["uid"]
     ).first()
