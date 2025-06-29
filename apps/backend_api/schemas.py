@@ -228,3 +228,128 @@ class FeedbackLogSummary(BaseModel):
     average_score: Optional[float] = Field(None, description="Average feedback score")
     context_breakdown: Dict[str, int] = Field(..., description="Breakdown by context type")
     recent_feedback: List[FeedbackLog] = Field(..., description="Most recent feedback entries")
+
+## StorySession Schemas
+class StorySessionBase(BaseModel):
+    # Content information
+    title: Optional[str] = Field(None, max_length=200, description="User-defined title for the story session")
+    generated_text: Optional[str] = Field(None, description="AI-generated narrative text")
+    video_url: Optional[str] = Field(None, description="URL to generated video")
+    audio_url: Optional[str] = Field(None, description="URL to generated audio/narration")
+    thumbnail_url: Optional[str] = Field(None, description="URL to video thumbnail")
+    
+    # Generation parameters
+    summary_period: Optional[str] = Field(None, description="Period type: weekly, monthly, project-based, custom")
+    period_start: Optional[datetime] = Field(None, description="Start of the period being summarized")
+    period_end: Optional[datetime] = Field(None, description="End of the period being summarized")
+    content_type: Optional[Literal["summary", "story", "reflection", "achievement"]] = Field("summary", description="Type of content generated")
+    
+    # Social media and distribution
+    posted_to: Optional[List[str]] = Field(default_factory=list, description="Platforms where content was posted")
+    posting_status: Optional[Literal["draft", "scheduled", "posted", "failed"]] = Field("draft", description="Current posting status")
+    scheduled_post_time: Optional[datetime] = Field(None, description="When content is scheduled to be posted")
+    
+    # Generation metadata
+    generation_prompt: Optional[str] = Field(None, description="The prompt used for generation")
+    model_version: Optional[str] = Field(None, description="AI model version used")
+    generation_params: Optional[Dict[str, Any]] = Field(None, description="Parameters used for generation")
+    word_count: Optional[int] = Field(None, ge=0, description="Word count of generated text")
+    estimated_read_time: Optional[int] = Field(None, ge=0, description="Estimated reading time in seconds")
+    
+    # Related content
+    source_goals: Optional[List[int]] = Field(default_factory=list, description="Goal IDs that contributed to this story")
+    source_tasks: Optional[List[int]] = Field(default_factory=list, description="Task IDs that contributed to this story")
+    source_life_areas: Optional[List[int]] = Field(default_factory=list, description="Life area IDs featured in this story")
+    
+    # Engagement and analytics
+    view_count: Optional[int] = Field(0, ge=0, description="Number of times viewed")
+    like_count: Optional[int] = Field(0, ge=0, description="Number of likes")
+    share_count: Optional[int] = Field(0, ge=0, description="Number of shares")
+    engagement_data: Optional[Dict[str, Any]] = Field(None, description="Additional engagement metrics")
+    
+    # Quality and user feedback
+    user_rating: Optional[float] = Field(None, ge=1.0, le=5.0, description="User rating 1-5 stars")
+    user_notes: Optional[str] = Field(None, max_length=1000, description="User notes about the story")
+    regeneration_count: Optional[int] = Field(0, ge=0, description="How many times this was regenerated")
+    
+    # Processing status
+    processing_status: Optional[Literal["pending", "generating", "completed", "failed"]] = Field("pending", description="Current processing status")
+    error_message: Optional[str] = Field(None, description="Error message if generation failed")
+
+class StorySessionCreate(StorySessionBase):
+    """Schema for creating story sessions"""
+    pass
+
+class StorySessionUpdate(BaseModel):
+    """Schema for updating story sessions - all fields optional"""
+    title: Optional[str] = Field(None, max_length=200, description="User-defined title for the story session")
+    generated_text: Optional[str] = Field(None, description="AI-generated narrative text")
+    video_url: Optional[str] = Field(None, description="URL to generated video")
+    audio_url: Optional[str] = Field(None, description="URL to generated audio/narration")
+    thumbnail_url: Optional[str] = Field(None, description="URL to video thumbnail")
+    summary_period: Optional[str] = Field(None, description="Period type: weekly, monthly, project-based, custom")
+    period_start: Optional[datetime] = Field(None, description="Start of the period being summarized")
+    period_end: Optional[datetime] = Field(None, description="End of the period being summarized")
+    content_type: Optional[Literal["summary", "story", "reflection", "achievement"]] = Field(None, description="Type of content generated")
+    posted_to: Optional[List[str]] = Field(None, description="Platforms where content was posted")
+    posting_status: Optional[Literal["draft", "scheduled", "posted", "failed"]] = Field(None, description="Current posting status")
+    scheduled_post_time: Optional[datetime] = Field(None, description="When content is scheduled to be posted")
+    generation_prompt: Optional[str] = Field(None, description="The prompt used for generation")
+    model_version: Optional[str] = Field(None, description="AI model version used")
+    generation_params: Optional[Dict[str, Any]] = Field(None, description="Parameters used for generation")
+    word_count: Optional[int] = Field(None, ge=0, description="Word count of generated text")
+    estimated_read_time: Optional[int] = Field(None, ge=0, description="Estimated reading time in seconds")
+    source_goals: Optional[List[int]] = Field(None, description="Goal IDs that contributed to this story")
+    source_tasks: Optional[List[int]] = Field(None, description="Task IDs that contributed to this story")
+    source_life_areas: Optional[List[int]] = Field(None, description="Life area IDs featured in this story")
+    view_count: Optional[int] = Field(None, ge=0, description="Number of times viewed")
+    like_count: Optional[int] = Field(None, ge=0, description="Number of likes")
+    share_count: Optional[int] = Field(None, ge=0, description="Number of shares")
+    engagement_data: Optional[Dict[str, Any]] = Field(None, description="Additional engagement metrics")
+    user_rating: Optional[float] = Field(None, ge=1.0, le=5.0, description="User rating 1-5 stars")
+    user_notes: Optional[str] = Field(None, max_length=1000, description="User notes about the story")
+    regeneration_count: Optional[int] = Field(None, ge=0, description="How many times this was regenerated")
+    processing_status: Optional[Literal["pending", "generating", "completed", "failed"]] = Field(None, description="Current processing status")
+    error_message: Optional[str] = Field(None, description="Error message if generation failed")
+    generated_at: Optional[datetime] = Field(None, description="When generation was completed")
+    posted_at: Optional[datetime] = Field(None, description="When content was actually posted")
+
+class StorySession(StorySessionBase):
+    id: str = Field(..., description="Unique story session ID")
+    user_id: str = Field(..., description="Owner user ID")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+    generated_at: Optional[datetime] = Field(None, description="When generation was completed")
+    posted_at: Optional[datetime] = Field(None, description="When content was actually posted")
+
+    class Config:
+        orm_mode = True
+
+class StorySessionSummary(BaseModel):
+    """Summary statistics for story sessions"""
+    total_sessions: int = Field(..., description="Total number of story sessions")
+    by_content_type: Dict[str, int] = Field(..., description="Breakdown by content type")
+    by_posting_status: Dict[str, int] = Field(..., description="Breakdown by posting status")
+    by_processing_status: Dict[str, int] = Field(..., description="Breakdown by processing status")
+    total_word_count: int = Field(..., description="Total words generated")
+    average_rating: Optional[float] = Field(None, description="Average user rating")
+    recent_sessions: List[StorySession] = Field(..., description="Most recent story sessions")
+
+class GenerationRequest(BaseModel):
+    """Schema for requesting story generation"""
+    title: Optional[str] = Field(None, max_length=200, description="Title for the story session")
+    summary_period: str = Field(..., description="Period type: weekly, monthly, project-based, custom")
+    period_start: Optional[datetime] = Field(None, description="Start of the period to summarize")
+    period_end: Optional[datetime] = Field(None, description="End of the period to summarize")
+    content_type: Literal["summary", "story", "reflection", "achievement"] = Field("summary", description="Type of content to generate")
+    generation_prompt: Optional[str] = Field(None, description="Custom prompt for generation")
+    include_goals: bool = Field(True, description="Include goals in the generation")
+    include_tasks: bool = Field(True, description="Include tasks in the generation")
+    include_life_areas: Optional[List[int]] = Field(None, description="Specific life areas to focus on")
+    generation_params: Optional[Dict[str, Any]] = Field(None, description="Custom generation parameters")
+
+class PublishRequest(BaseModel):
+    """Schema for publishing story content"""
+    platforms: List[str] = Field(..., min_items=1, description="Platforms to publish to")
+    scheduled_time: Optional[datetime] = Field(None, description="When to schedule the post")
+    custom_message: Optional[str] = Field(None, max_length=500, description="Custom message for the post")

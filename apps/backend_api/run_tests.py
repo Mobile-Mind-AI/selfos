@@ -42,6 +42,7 @@ def run_module_by_module():
         "tests/unit/test_media_attachments.py",
         "tests/unit/test_user_preferences.py",
         "tests/unit/test_feedback_logs.py",
+        "tests/unit/test_story_sessions.py",
         "tests/integration/"
     ]
     
@@ -120,6 +121,7 @@ def main():
     parser.add_argument("--media", action="store_true", help="Run media attachments tests only")
     parser.add_argument("--preferences", action="store_true", help="Run user preferences tests only")
     parser.add_argument("--feedback", action="store_true", help="Run feedback logs tests only")
+    parser.add_argument("--stories", action="store_true", help="Run story sessions tests only")
     parser.add_argument("--main", action="store_true", help="Run main API tests only")
     parser.add_argument("--coverage", action="store_true", help="Run with coverage report")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
@@ -136,7 +138,7 @@ def main():
     
     # Check if we should run module-by-module (default for --all)
     if not any([args.unit, args.integration, args.auth, args.goals, args.tasks, 
-                args.life_areas, args.media, args.preferences, args.feedback, args.main, args.all_together]):
+                args.life_areas, args.media, args.preferences, args.feedback, args.stories, args.main, args.all_together]):
         # Default: run all tests module by module
         print("🚀 Running all tests module-by-module to avoid isolation issues...")
         success = run_module_by_module()
@@ -166,6 +168,8 @@ def main():
         test_targets.append("tests/unit/test_user_preferences.py")
     elif args.feedback:
         test_targets.append("tests/unit/test_feedback_logs.py")
+    elif args.stories:
+        test_targets.append("tests/unit/test_story_sessions.py")
     elif args.main:
         test_targets.append("tests/test_main.py")
     elif args.all_together:
@@ -216,6 +220,7 @@ def main():
     print("  python run_tests.py --media         # Media attachments tests only")
     print("  python run_tests.py --preferences   # User preferences tests only")
     print("  python run_tests.py --feedback     # Feedback logs tests only")
+    print("  python run_tests.py --stories      # Story sessions tests only")
     print("  python run_tests.py --coverage      # With coverage report")
     print("  python run_tests.py --fast          # Stop on first failure")
     

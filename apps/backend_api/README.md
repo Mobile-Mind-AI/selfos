@@ -12,6 +12,7 @@ The backend API provides comprehensive endpoints for:
 - 📎 **Media Attachments** - File uploads and media management
 - ⚙️ **User Preferences** - Personalized settings and configurations
 - 📊 **Feedback Logs** - Training data collection for ML/RLHF
+- 📖 **Story Sessions** - AI-generated narrative content and social media publishing
 
 ## Testing
 
@@ -75,6 +76,9 @@ python run_tests.py --preferences
 
 # Feedback logs
 python run_tests.py --feedback
+
+# Story sessions
+python run_tests.py --stories
 ```
 
 #### Advanced Options
@@ -112,8 +116,9 @@ Tests use isolated in-memory SQLite databases to ensure:
 | Media Attachments | 18 tests | File management, associations |
 | User Preferences | 19 tests | Settings, defaults, validation |
 | Feedback Logs | 22 tests | ML/RLHF data collection |
+| Story Sessions | 26 tests | Narrative generation, publishing |
 | Integration | 4 tests | Cross-module workflows |
-| **Total** | **111 tests** | **All functionality covered** |
+| **Total** | **137 tests** | **All functionality covered** |
 
 ### Test Isolation Strategy
 
@@ -156,7 +161,7 @@ If tests fail:
 
 ### Performance
 
-- **Fast execution**: All 111 tests run in ~1 second
+- **Fast execution**: All 137 tests run in ~1 second
 - **Parallel potential**: Module-by-module structure allows future parallelization
 - **Memory efficient**: In-memory databases with automatic cleanup
 

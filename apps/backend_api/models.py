@@ -19,6 +19,7 @@ class User(Base):
     memory_items = relationship("MemoryItem", back_populates="user", cascade="all, delete-orphan")
     preferences = relationship("UserPreferences", back_populates="user", cascade="all, delete-orphan", uselist=False)
     feedback_logs = relationship("FeedbackLog", back_populates="user", cascade="all, delete-orphan")
+    story_sessions = relationship("StorySession", back_populates="user", cascade="all, delete-orphan")
 
 class Goal(Base):
     __tablename__ = "goals"
@@ -198,3 +199,63 @@ class FeedbackLog(Base):
     
     # Relationships
     user = relationship("User", back_populates="feedback_logs")
+
+class StorySession(Base):
+    __tablename__ = "story_sessions"
+    
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid4()))
+    user_id = Column(String, ForeignKey("users.uid"), nullable=False)
+    
+    # Content information
+    title = Column(String, nullable=True)  # User-defined title for the story session
+    generated_text = Column(Text, nullable=True)  # AI-generated narrative text
+    video_url = Column(String, nullable=True)  # URL to generated video
+    audio_url = Column(String, nullable=True)  # URL to generated audio/narration
+    thumbnail_url = Column(String, nullable=True)  # URL to video thumbnail
+    
+    # Generation parameters
+    summary_period = Column(String, nullable=True)  # "weekly", "monthly", "project-based", "custom", etc.
+    period_start = Column(DateTime, nullable=True)  # Start of the period being summarized
+    period_end = Column(DateTime, nullable=True)  # End of the period being summarized
+    content_type = Column(Enum("summary", "story", "reflection", "achievement", name="story_content_type"), default="summary")
+    
+    # Social media and distribution
+    posted_to = Column(JSON, nullable=True, default=list)  # e.g., ["instagram", "youtube", "twitter"]
+    posting_status = Column(Enum("draft", "scheduled", "posted", "failed", name="posting_status"), default="draft")
+    scheduled_post_time = Column(DateTime, nullable=True)  # When content is scheduled to be posted
+    
+    # Generation metadata
+    generation_prompt = Column(Text, nullable=True)  # The prompt used for generation
+    model_version = Column(String, nullable=True)  # AI model version used
+    generation_params = Column(JSON, nullable=True)  # Parameters used for generation (temperature, etc.)
+    word_count = Column(Integer, nullable=True)  # Word count of generated text
+    estimated_read_time = Column(Integer, nullable=True)  # Estimated reading time in seconds
+    
+    # Related content
+    source_goals = Column(JSON, nullable=True, default=list)  # Goal IDs that contributed to this story
+    source_tasks = Column(JSON, nullable=True, default=list)  # Task IDs that contributed to this story
+    source_life_areas = Column(JSON, nullable=True, default=list)  # Life area IDs featured in this story
+    
+    # Engagement and analytics
+    view_count = Column(Integer, default=0)  # Number of times viewed
+    like_count = Column(Integer, default=0)  # Number of likes (if posted)
+    share_count = Column(Integer, default=0)  # Number of shares
+    engagement_data = Column(JSON, nullable=True)  # Additional engagement metrics
+    
+    # Quality and user feedback
+    user_rating = Column(Float, nullable=True)  # User rating 1-5 stars
+    user_notes = Column(Text, nullable=True)  # User notes about the story
+    regeneration_count = Column(Integer, default=0)  # How many times this was regenerated
+    
+    # Processing status
+    processing_status = Column(Enum("pending", "generating", "completed", "failed", name="processing_status"), default="pending")
+    error_message = Column(Text, nullable=True)  # Error message if generation failed
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    generated_at = Column(DateTime, nullable=True)  # When generation was completed
+    posted_at = Column(DateTime, nullable=True)  # When content was actually posted
+    
+    # Relationships
+    user = relationship("User", back_populates="story_sessions")
