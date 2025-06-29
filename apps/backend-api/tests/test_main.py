@@ -6,6 +6,8 @@ from fastapi.testclient import TestClient
 # Ensure app module can be imported
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)))
 import main
+import firebase_admin
+from firebase_admin import auth as firebase_auth
 
 app = main.app
 client = TestClient(app)
@@ -21,13 +23,13 @@ def patch_firebase(monkeypatch):
     def fake_create_user(email, password):
         return FakeUser(uid=f"uid_{email}", email=email)
 
-    monkeypatch.setattr(main.auth, "create_user", fake_create_user)
+    monkeypatch.setattr(firebase_auth, "create_user", fake_create_user)
 
     # Fake custom token creation
     def fake_create_custom_token(uid):
         return f"token_{uid}".encode("utf-8")
 
-    monkeypatch.setattr(main.auth, "create_custom_token", fake_create_custom_token)
+    monkeypatch.setattr(firebase_auth, "create_custom_token", fake_create_custom_token)
 
     # Fake verify id token
     def fake_verify_id_token(token):
@@ -35,7 +37,7 @@ def patch_firebase(monkeypatch):
             return {"uid": "uid_user1@example.com", "email": "user1@example.com", "roles": ["user"]}
         raise Exception("Invalid token")
 
-    monkeypatch.setattr(main.auth, "verify_id_token", fake_verify_id_token)
+    monkeypatch.setattr(firebase_auth, "verify_id_token", fake_verify_id_token)
 
     return monkeypatch
 
