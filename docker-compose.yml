@@ -16,6 +16,19 @@ services:
     ports:
       - "6379:6379"
 
+  weaviate:
+    image: semitechnologies/weaviate:1.22.4
+    ports:
+      - "8080:8080"
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      DEFAULT_VECTORIZER_MODULE: 'none'
+      CLUSTER_HOSTNAME: 'node1'
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+
   backend:
     build:
       context: .
@@ -23,14 +36,23 @@ services:
     depends_on:
       - db
       - redis
+      - weaviate
     environment:
-      DATABASE_URL: postgres://selfos:selfos@db:5432/selfos_dev
+      DATABASE_URL: postgresql://selfos:selfos@db:5432/selfos_dev
       REDIS_URL: redis://redis:6379
-Adde      # Path inside container where the Firebase service account key is mounted
+      # Path inside container where the Firebase service account key is mounted
       GOOGLE_APPLICATION_CREDENTIALS: /secrets/selfos-firebase.json
+      # Event system configuration
+      EVENT_SYSTEM_ENABLED: "true"
+      EVENT_TIMEOUT_SECONDS: "30"
+      LOG_LEVEL: "INFO"
+      # Vector database configuration (for future Weaviate integration)
+      WEAVIATE_URL: "http://weaviate:8080"
+      WEAVIATE_API_KEY: ""
     # Mount Firebase service account JSON into container
     volumes:
       - ${GOOGLE_APPLICATION_CREDENTIALS}:/secrets/selfos-firebase.json:ro
+      - ./logs:/app/logs
     ports:
       - "8000:8000"
 
@@ -48,3 +70,4 @@ Adde      # Path inside container where the Firebase service account key is moun
 
 volumes:
   db_data:
+  weaviate_data:

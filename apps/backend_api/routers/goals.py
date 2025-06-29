@@ -6,7 +6,7 @@ from dependencies import get_db, get_current_user
 
 router = APIRouter()
 
-@router.post("/goals", response_model=schemas.GoalOut)
+@router.post("/goals", response_model=schemas.GoalOut, status_code=201)
 def create_goal(
     goal: schemas.GoalCreate,
     db: Session = Depends(get_db),

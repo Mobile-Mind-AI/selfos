@@ -53,7 +53,7 @@ class Goal(GoalBase):
     updated_at: datetime = Field(..., description="Last update timestamp")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class TaskBase(BaseModel):
     title: str = Field(..., description="Title of the task")
@@ -76,7 +76,7 @@ class Task(TaskBase):
     updated_at: datetime = Field(..., description="Last update timestamp")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class LifeAreaBase(BaseModel):
     name: str = Field(..., description="Name of the life area", min_length=1, max_length=100)
@@ -104,7 +104,7 @@ class LifeArea(LifeAreaBase):
     updated_at: datetime = Field(..., description="Last update timestamp")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class MediaAttachmentBase(BaseModel):
     filename: str = Field(..., description="System filename for the attachment", min_length=1)
@@ -140,7 +140,7 @@ class MediaAttachment(MediaAttachmentBase):
     updated_at: datetime = Field(..., description="Last update timestamp")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class MemoryItem(BaseModel):
     id: int = Field(..., description="Unique memory item ID")
@@ -149,7 +149,7 @@ class MemoryItem(BaseModel):
     timestamp: datetime = Field(..., description="When the memory was recorded")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 ## UserPreferences Schemas
 class UserPreferencesBase(BaseModel):
@@ -193,7 +193,7 @@ class UserPreferences(UserPreferencesBase):
     updated_at: datetime = Field(..., description="Last update timestamp")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Enhanced Output Schemas with Nested Relationships
 
@@ -226,7 +226,7 @@ class UserOut(User):
     created_at: Optional[datetime] = Field(None, description="Account creation timestamp")
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 ## FeedbackLog Schemas
 class FeedbackLogBase(BaseModel):
@@ -266,7 +266,7 @@ class FeedbackLog(FeedbackLogBase):
     processed_at: Optional[datetime] = Field(None, description="When feedback was processed for training")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class FeedbackLogSummary(BaseModel):
     """Summary statistics for feedback logs"""
@@ -372,7 +372,7 @@ class StorySession(StorySessionBase):
     posted_at: Optional[datetime] = Field(None, description="When content was actually posted")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class StorySessionSummary(BaseModel):
     """Summary statistics for story sessions"""

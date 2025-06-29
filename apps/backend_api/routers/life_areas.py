@@ -7,7 +7,7 @@ from dependencies import get_db, get_current_user
 
 router = APIRouter()
 
-@router.post("/life-areas", response_model=schemas.LifeArea)
+@router.post("/life-areas", response_model=schemas.LifeArea, status_code=201)
 def create_life_area(
     life_area: schemas.LifeAreaCreate,
     db: Session = Depends(get_db),
