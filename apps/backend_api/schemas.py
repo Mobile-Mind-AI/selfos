@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
-from datetime import datetime
+from typing import Optional, List, Literal, Dict, Any
+from datetime import datetime, time
 
 ## Authentication Schemas
 class RegisterRequest(BaseModel):
@@ -134,3 +134,97 @@ class MemoryItem(BaseModel):
 
     class Config:
         orm_mode = True
+
+## UserPreferences Schemas
+class UserPreferencesBase(BaseModel):
+    # Tone and communication preferences
+    tone: Optional[Literal["friendly", "coach", "minimal", "professional"]] = Field("friendly", description="Communication tone preference")
+    
+    # Notification preferences
+    notification_time: Optional[time] = Field(None, description="Preferred time for daily notifications (HH:MM)")
+    notifications_enabled: Optional[bool] = Field(True, description="Enable/disable notifications")
+    email_notifications: Optional[bool] = Field(False, description="Enable/disable email notifications")
+    
+    # Content and visualization preferences
+    prefers_video: Optional[bool] = Field(True, description="Prefers video content")
+    prefers_audio: Optional[bool] = Field(False, description="Prefers audio content")
+    default_view: Optional[Literal["list", "card", "timeline"]] = Field("card", description="Default view mode")
+    
+    # Feature preferences
+    mood_tracking_enabled: Optional[bool] = Field(False, description="Enable mood tracking feature")
+    progress_charts_enabled: Optional[bool] = Field(True, description="Enable progress charts")
+    ai_suggestions_enabled: Optional[bool] = Field(True, description="Enable AI suggestions")
+    
+    # Default associations
+    default_life_area_id: Optional[int] = Field(None, description="Default life area ID for new goals/tasks")
+    
+    # Privacy and data preferences
+    data_sharing_enabled: Optional[bool] = Field(False, description="Allow data sharing for improvements")
+    analytics_enabled: Optional[bool] = Field(True, description="Enable analytics tracking")
+
+class UserPreferencesCreate(UserPreferencesBase):
+    """Schema for creating user preferences"""
+    pass
+
+class UserPreferencesUpdate(UserPreferencesBase):
+    """Schema for updating user preferences - all fields optional"""
+    pass
+
+class UserPreferences(UserPreferencesBase):
+    id: str = Field(..., description="Unique preferences ID")
+    user_id: str = Field(..., description="Owner user ID")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+    class Config:
+        orm_mode = True
+
+## FeedbackLog Schemas
+class FeedbackLogBase(BaseModel):
+    # Context information
+    context_type: str = Field(..., description="Type of context (task, goal, plan, suggestion, ui_interaction, etc.)")
+    context_id: Optional[str] = Field(None, description="ID of the related entity (goal_id, task_id, etc.)")
+    context_data: Optional[Dict[str, Any]] = Field(None, description="Additional context data (query, response, etc.)")
+    
+    # Feedback details
+    feedback_type: Literal["positive", "negative", "neutral"] = Field(..., description="Type of feedback")
+    feedback_value: Optional[float] = Field(None, ge=-1.0, le=1.0, description="Numeric feedback score (-1.0 to 1.0)")
+    comment: Optional[str] = Field(None, max_length=1000, description="Optional user comment")
+    
+    # ML/RLHF specific fields
+    action_taken: Optional[Dict[str, Any]] = Field(None, description="What action was taken (for RL)")
+    reward_signal: Optional[float] = Field(None, description="Computed reward signal")
+    model_version: Optional[str] = Field(None, description="Version of model that generated the response")
+    
+    # Metadata
+    session_id: Optional[str] = Field(None, description="Session identifier for grouping related feedback")
+    device_info: Optional[Dict[str, Any]] = Field(None, description="Device/platform information")
+    feature_flags: Optional[Dict[str, Any]] = Field(None, description="Active feature flags during interaction")
+
+class FeedbackLogCreate(FeedbackLogBase):
+    """Schema for creating feedback logs"""
+    pass
+
+class FeedbackLogUpdate(BaseModel):
+    """Schema for updating feedback logs - limited fields"""
+    comment: Optional[str] = Field(None, max_length=1000, description="Updated user comment")
+    processed_at: Optional[datetime] = Field(None, description="When feedback was processed for training")
+
+class FeedbackLog(FeedbackLogBase):
+    id: str = Field(..., description="Unique feedback log ID")
+    user_id: str = Field(..., description="Owner user ID")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    processed_at: Optional[datetime] = Field(None, description="When feedback was processed for training")
+
+    class Config:
+        orm_mode = True
+
+class FeedbackLogSummary(BaseModel):
+    """Summary statistics for feedback logs"""
+    total_feedback: int = Field(..., description="Total number of feedback entries")
+    positive_count: int = Field(..., description="Number of positive feedback entries")
+    negative_count: int = Field(..., description="Number of negative feedback entries")
+    neutral_count: int = Field(..., description="Number of neutral feedback entries")
+    average_score: Optional[float] = Field(None, description="Average feedback score")
+    context_breakdown: Dict[str, int] = Field(..., description="Breakdown by context type")
+    recent_feedback: List[FeedbackLog] = Field(..., description="Most recent feedback entries")

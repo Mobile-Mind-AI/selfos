@@ -1,8 +1,10 @@
-from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Float, JSON
+from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Float, JSON, Boolean, Enum, Time, func
 from sqlalchemy.orm import relationship
 import db
 Base = db.Base
 from datetime import datetime
+from uuid import uuid4
+from sqlalchemy.dialects.postgresql import UUID
 
 class User(Base):
     __tablename__ = "users"
@@ -15,6 +17,8 @@ class User(Base):
     life_areas = relationship("LifeArea", back_populates="user", cascade="all, delete-orphan")
     media_attachments = relationship("MediaAttachment", back_populates="user", cascade="all, delete-orphan")
     memory_items = relationship("MemoryItem", back_populates="user", cascade="all, delete-orphan")
+    preferences = relationship("UserPreferences", back_populates="user", cascade="all, delete-orphan", uselist=False)
+    feedback_logs = relationship("FeedbackLog", back_populates="user", cascade="all, delete-orphan")
 
 class Goal(Base):
     __tablename__ = "goals"
@@ -122,3 +126,75 @@ class MemoryItem(Base):
     
     # Relationships
     user = relationship("User", back_populates="memory_items")
+
+class UserPreferences(Base):
+    __tablename__ = "user_preferences"
+    
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid4()))
+    user_id = Column(String, ForeignKey("users.uid"), unique=True, nullable=False)
+    
+    # Tone and communication preferences
+    tone = Column(Enum("friendly", "coach", "minimal", "professional", name="tone_style"), default="friendly")
+    
+    # Notification preferences
+    notification_time = Column(Time)  # Preferred time for daily notifications
+    notifications_enabled = Column(Boolean, default=True)
+    email_notifications = Column(Boolean, default=False)
+    
+    # Content and visualization preferences
+    prefers_video = Column(Boolean, default=True)
+    prefers_audio = Column(Boolean, default=False)
+    default_view = Column(Enum("list", "card", "timeline", name="view_mode"), default="card")
+    
+    # Feature preferences
+    mood_tracking_enabled = Column(Boolean, default=False)
+    progress_charts_enabled = Column(Boolean, default=True)
+    ai_suggestions_enabled = Column(Boolean, default=True)
+    
+    # Default associations
+    default_life_area_id = Column(Integer, ForeignKey("life_areas.id"), nullable=True)
+    
+    # Privacy and data preferences
+    data_sharing_enabled = Column(Boolean, default=False)
+    analytics_enabled = Column(Boolean, default=True)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="preferences")
+    default_life_area = relationship("LifeArea", foreign_keys=[default_life_area_id])
+
+class FeedbackLog(Base):
+    __tablename__ = "feedback_logs"
+    
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid4()))
+    user_id = Column(String, ForeignKey("users.uid"), nullable=False)
+    
+    # Context information for the feedback
+    context_type = Column(String, nullable=False)  # "task", "goal", "plan", "suggestion", "ui_interaction", etc.
+    context_id = Column(String, nullable=True)  # ID of the related entity (goal_id, task_id, etc.)
+    context_data = Column(JSON, nullable=True)  # Additional context data (query, response, etc.)
+    
+    # Feedback details
+    feedback_type = Column(Enum("positive", "negative", "neutral", name="feedback_type"), nullable=False)
+    feedback_value = Column(Float, nullable=True)  # Numeric feedback score (-1.0 to 1.0)
+    comment = Column(Text, nullable=True)  # Optional user comment
+    
+    # ML/RLHF specific fields
+    action_taken = Column(JSON, nullable=True)  # What action was taken (for RL)
+    reward_signal = Column(Float, nullable=True)  # Computed reward signal
+    model_version = Column(String, nullable=True)  # Version of model that generated the response
+    
+    # Metadata
+    session_id = Column(String, nullable=True)  # Session identifier for grouping related feedback
+    device_info = Column(JSON, nullable=True)  # Device/platform information
+    feature_flags = Column(JSON, nullable=True)  # Active feature flags during interaction
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    processed_at = Column(DateTime, nullable=True)  # When feedback was processed for training
+    
+    # Relationships
+    user = relationship("User", back_populates="feedback_logs")
