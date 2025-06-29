@@ -133,35 +133,36 @@ sequenceDiagram
 ### 2.4 Deployment Architecture
 
 #### Phase 1: Local Development (Docker Compose)
+
 ```yaml
 version: '3.8'
 services:
-  frontend:
-    build: ./apps/frontend
-    ports: ["3000:3000"]
-  
-  backend:
-    build: ./apps/backend-api
-    environment:
-      - DATABASE_URL=postgresql://...
-      - LLM_MODE=local
-    depends_on: [postgres, redis]
-  
-  ai-engine:
-    build: ./apps/ai-engine
-    volumes:
-      - ./models:/models
-  
-  postgres:
-    image: postgres:15
-    volumes: ["postgres_data:/var/lib/postgresql/data"]
-  
-  redis:
-    image: redis:7-alpine
-  
-  local-llm:
-    image: ollama/ollama
-    volumes: ["./models:/models"]
+   frontend:
+      build: ./apps/frontend
+      ports: [ "3000:3000" ]
+
+   backend:
+      build: apps/backend_api
+      environment:
+         - DATABASE_URL=postgresql://...
+         - LLM_MODE=local
+      depends_on: [ postgres, redis ]
+
+   ai-engine:
+      build: apps/ai_engine
+      volumes:
+         - ./models:/models
+
+   postgres:
+      image: postgres:15
+      volumes: [ "postgres_data:/var/lib/postgresql/data" ]
+
+   redis:
+      image: redis:7-alpine
+
+   local-llm:
+      image: ollama/ollama
+      volumes: [ "./models:/models" ]
 ```
 
 #### Phase 2: Production (Google Cloud)
@@ -550,7 +551,7 @@ class PersonalizationEngine:
 **Core Domain Models**:
 
 ```python
-# Shared models (libs/shared-models)
+# Shared models (libs/shared_models)
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 from datetime import datetime
@@ -1060,7 +1061,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: backend-api
+    name: backend_api
   minReplicas: 3
   maxReplicas: 100
   metrics:
@@ -1227,14 +1228,14 @@ spec:
         pathType: ImplementationSpecific
         backend:
           service:
-            name: backend-api
+            name: backend_api
             port:
               number: 8000
       - path: /ai/*
         pathType: ImplementationSpecific
         backend:
           service:
-            name: ai-engine
+            name: ai_engine
             port:
               number: 8001
 ```
@@ -1532,7 +1533,7 @@ cp .env.example .env.local
 
 # Start local development
 docker-compose up -d
-nx serve backend-api
+nx serve backend_api
 nx serve frontend
 
 # Run tests
