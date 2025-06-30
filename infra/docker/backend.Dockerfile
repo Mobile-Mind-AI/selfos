@@ -15,11 +15,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY apps/backend_api /app
 
+# Copy AI engine and libs
+COPY apps/ai_engine /app/ai_engine
+COPY libs/prompts /app/libs/prompts
+
 # Create necessary directories
 RUN mkdir -p /app/logs
+RUN mkdir -p /app/libs
 
 # Set environment variables for event system
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app:/app/ai_engine:/app/libs
 ENV LOG_LEVEL=INFO
 ENV EVENT_SYSTEM_ENABLED=true
 ENV EVENT_TIMEOUT_SECONDS=30

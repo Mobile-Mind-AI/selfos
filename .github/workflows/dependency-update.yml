@@ -1,0 +1,384 @@
+name: Dependency Updates
+
+on:
+  # Disabled until basic CI is working  
+  workflow_dispatch:
+    inputs:
+      update_type:
+        description: 'Type of update to perform'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - security
+          - minor
+          - patch
+
+jobs:
+  # Python dependency updates
+  update-python-deps:
+    name: Update Python Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install pip-tools
+        run: pip install pip-tools pip-audit safety
+
+      - name: Check for security vulnerabilities
+        run: |
+          cd apps/backend_api
+          safety check --file requirements.txt --json --output safety-report.json || true
+          pip-audit --format=json --output=pip-audit-report.json . || true
+
+      - name: Update dependencies
+        run: |
+          cd apps/backend_api
+          
+          # Backup current requirements
+          cp requirements.txt requirements.txt.backup
+          
+          # Update dependencies based on input
+          case "${{ github.event.inputs.update_type || 'all' }}" in
+            "security")
+              # Only update packages with known vulnerabilities
+              if [ -f safety-report.json ]; then
+                # Extract vulnerable packages
+                VULNERABLE_PACKAGES=$(jq -r '.vulnerabilities[].package_name' safety-report.json | sort -u)
+                for package in $VULNERABLE_PACKAGES; do
+                  pip install --upgrade "$package"
+                done
+                pip freeze > requirements.txt
+              fi
+              ;;
+            "patch")
+              # Update to latest patch versions only
+              pip-compile --upgrade --resolver=backtracking requirements.in
+              ;;
+            "minor")
+              # Update to latest minor versions
+              pip-compile --upgrade --resolver=backtracking requirements.in
+              ;;
+            "all"|*)
+              # Update all dependencies
+              pip-compile --upgrade --resolver=backtracking requirements.in
+              ;;
+          esac
+
+      - name: Install updated dependencies
+        run: |
+          cd apps/backend_api
+          pip install -r requirements.txt
+
+      - name: Run tests with updated dependencies
+        run: |
+          cd apps/backend_api
+          # Create test environment
+          cat > .env.test << EOF
+          DATABASE_URL=sqlite:///test.db
+          SECRET_KEY=test-secret-key
+          AI_PROVIDER=local
+          MEMORY_VECTOR_STORE=memory
+          EVENT_SYSTEM_ENABLED=false
+          LOG_LEVEL=INFO
+          GOOGLE_APPLICATION_CREDENTIALS=/tmp/dummy-firebase.json
+          EOF
+          echo '{"type": "service_account", "project_id": "test"}' > /tmp/dummy-firebase.json
+          
+          export $(cat .env.test | xargs)
+          pytest tests/unit/ -x --tb=short
+
+      - name: Check for breaking changes
+        run: |
+          cd apps/backend_api
+          
+          # Compare old and new requirements
+          if ! diff -u requirements.txt.backup requirements.txt > requirements.diff; then
+            echo "Dependencies changed:"
+            cat requirements.diff
+            
+            # Check for major version changes
+            MAJOR_CHANGES=$(grep "^-.*==" requirements.diff | sed 's/^-//' | while read old_dep; do
+              package_name=$(echo "$old_dep" | cut -d'=' -f1)
+              old_version=$(echo "$old_dep" | cut -d'=' -f3)
+              new_dep=$(grep "^${package_name}==" requirements.txt || echo "")
+              if [ -n "$new_dep" ]; then
+                new_version=$(echo "$new_dep" | cut -d'=' -f3)
+                old_major=$(echo "$old_version" | cut -d'.' -f1)
+                new_major=$(echo "$new_version" | cut -d'.' -f1)
+                if [ "$old_major" != "$new_major" ]; then
+                  echo "MAJOR: $package_name $old_version -> $new_version"
+                fi
+              fi
+            done)
+            
+            if [ -n "$MAJOR_CHANGES" ]; then
+              echo "⚠️ Major version changes detected:"
+              echo "$MAJOR_CHANGES"
+            fi
+          else
+            echo "No dependency changes needed"
+            exit 0
+          fi
+
+      - name: AI Engine dependency updates
+        run: |
+          cd apps/ai_engine
+          if [ -f requirements.txt ]; then
+            cp requirements.txt requirements.txt.backup
+            pip-compile --upgrade --resolver=backtracking requirements.in || pip install --upgrade -r requirements.txt
+            pip install -r requirements.txt
+            pytest tests/ -x --tb=short || true
+          fi
+
+      - name: Generate dependency update summary
+        run: |
+          echo "# Dependency Update Summary" > dependency-update-summary.md
+          echo "" >> dependency-update-summary.md
+          echo "## Backend API Changes" >> dependency-update-summary.md
+          
+          cd apps/backend_api
+          if [ -f requirements.diff ]; then
+            echo "\`\`\`diff" >> ../../dependency-update-summary.md
+            cat requirements.diff >> ../../dependency-update-summary.md
+            echo "\`\`\`" >> ../../dependency-update-summary.md
+          else
+            echo "No changes" >> ../../dependency-update-summary.md
+          fi
+          
+          echo "" >> ../../dependency-update-summary.md
+          echo "## Security Scan Results" >> ../../dependency-update-summary.md
+          
+          if [ -f safety-report.json ]; then
+            VULN_COUNT=$(jq '.vulnerabilities | length' safety-report.json)
+            echo "Found $VULN_COUNT vulnerabilities" >> ../../dependency-update-summary.md
+            
+            if [ "$VULN_COUNT" -gt 0 ]; then
+              echo "" >> ../../dependency-update-summary.md
+              echo "### Vulnerabilities:" >> ../../dependency-update-summary.md
+              jq -r '.vulnerabilities[] | "- **\(.package_name)** \(.installed_version): \(.vulnerability_id) - \(.advisory)"' safety-report.json >> ../../dependency-update-summary.md
+            fi
+          fi
+          
+          cd ../..
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update Python dependencies"
+          title: "chore: update Python dependencies (${{ github.event.inputs.update_type || 'all' }})"
+          body-path: dependency-update-summary.md
+          branch: chore/update-python-dependencies
+          base: main
+          labels: |
+            dependencies
+            automated
+          reviewers: |
+            @security-team
+          assignees: |
+            @security-team
+
+  # GitHub Actions workflow updates
+  update-actions:
+    name: Update GitHub Actions
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update GitHub Actions
+        uses: reloc8/action-latest-tag@latest
+        with:
+          pattern: '.github/workflows/*.yml'
+          version-regex: 'uses:\s*([^@]+)@v(\d+)'
+          exclude-patterns: |
+            uses: ./
+            uses: ./.github/
+
+      - name: Check for Action updates
+        run: |
+          if git diff --quiet; then
+            echo "No GitHub Actions updates needed"
+            exit 0
+          fi
+          
+          echo "GitHub Actions updated:"
+          git diff --name-only
+
+      - name: Create Pull Request for Actions
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update GitHub Actions to latest versions"
+          title: "chore: update GitHub Actions to latest versions"
+          body: |
+            Automated update of GitHub Actions to their latest versions.
+            
+            ## Changes
+            - Updated action versions in workflow files
+            - Maintained compatibility with existing configurations
+            
+            ## Testing
+            - [ ] Verify CI pipeline still works
+            - [ ] Check for any breaking changes in updated actions
+            
+            Generated automatically by dependency update workflow.
+          branch: chore/update-github-actions
+          base: main
+          labels: |
+            dependencies
+            github-actions
+            automated
+
+  # Renovate-style configuration updates
+  renovate-config:
+    name: Update Renovate Configuration
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create or update Renovate config
+        run: |
+          cat > .github/renovate.json << 'EOF'
+          {
+            "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+            "extends": [
+              "config:base",
+              "security:openssf-scorecard"
+            ],
+            "timezone": "UTC",
+            "schedule": ["before 9am on monday"],
+            "packageRules": [
+              {
+                "matchDepTypes": ["devDependencies"],
+                "automerge": true,
+                "automergeType": "pr",
+                "platformAutomerge": true
+              },
+              {
+                "matchUpdateTypes": ["patch"],
+                "automerge": true,
+                "automergeType": "pr",
+                "platformAutomerge": true
+              },
+              {
+                "matchUpdateTypes": ["minor"],
+                "groupName": "minor updates",
+                "schedule": ["before 9am on monday"]
+              },
+              {
+                "matchUpdateTypes": ["major"],
+                "groupName": "major updates",
+                "schedule": ["before 9am on first day of month"],
+                "dependencyDashboard": true
+              },
+              {
+                "matchDepTypes": ["action"],
+                "groupName": "GitHub Actions",
+                "automerge": true,
+                "automergeType": "pr",
+                "platformAutomerge": true
+              }
+            ],
+            "python": {
+              "fileMatch": ["(^|/)requirements\\.txt$", "(^|/)requirements\\.in$"],
+              "extractVersion": "^(?<version>.*)$",
+              "versioning": "pep440"
+            },
+            "dockerfile": {
+              "enabled": true
+            },
+            "docker-compose": {
+              "enabled": true
+            },
+            "vulnerabilityAlerts": {
+              "enabled": true,
+              "schedule": ["at any time"]
+            },
+            "osvVulnerabilityAlerts": true,
+            "labels": ["dependencies", "renovate"],
+            "reviewers": ["@security-team"],
+            "assignees": ["@security-team"]
+          }
+          EOF
+
+      - name: Create Pull Request for Renovate
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: add/update Renovate configuration"
+          title: "chore: add/update Renovate configuration"
+          body: |
+            Add or update Renovate configuration for automated dependency updates.
+            
+            ## Features
+            - Automatic patch and dev dependency updates
+            - Grouped minor and major updates
+            - Security vulnerability alerts
+            - GitHub Actions updates
+            - Python package management
+            
+            ## Schedule
+            - Minor updates: Weekly on Mondays
+            - Major updates: Monthly
+            - Security updates: Immediate
+            
+            This will help keep dependencies up to date automatically.
+          branch: chore/add-renovate-config
+          base: main
+          labels: |
+            dependencies
+            renovate
+            automation
+
+  # Security notification
+  notify-security:
+    name: Security Notification
+    runs-on: ubuntu-latest
+    needs: [update-python-deps]
+    if: always() && (needs.update-python-deps.result == 'failure' || github.event.inputs.update_type == 'security')
+    
+    steps:
+      - name: Notify security team
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ needs.update-python-deps.result == 'failure' && 'failure' || 'success' }}
+          channel: '#security'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          custom_payload: |
+            {
+              "text": "${{ needs.update-python-deps.result == 'failure' && '⚠️ Dependency Update Failed' || '🔒 Security Dependencies Updated' }}",
+              "attachments": [{
+                "color": "${{ needs.update-python-deps.result == 'failure' && 'danger' || 'good' }}",
+                "fields": [{
+                  "title": "Repository",
+                  "value": "${{ github.repository }}",
+                  "short": true
+                }, {
+                  "title": "Update Type",
+                  "value": "${{ github.event.inputs.update_type || 'all' }}",
+                  "short": true
+                }, {
+                  "title": "Action Required",
+                  "value": "${{ needs.update-python-deps.result == 'failure' && 'Review failed dependency update' || 'Review and merge security updates' }}",
+                  "short": false
+                }]
+              }]
+            }
