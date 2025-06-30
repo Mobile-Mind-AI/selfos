@@ -207,7 +207,8 @@ async def forgot_password(request: dict):
         
     except Exception as e:
         print(f"🔥 FIREBASE: Error checking user: {e}")
-        return {"message": "Unable to process password reset request. Please try again later."}
+        # For security, don't reveal if user exists or not
+        return {"message": "If an account with this email exists, a password reset link has been sent"}
     
     try:
         # Generate password reset link with Firebase
