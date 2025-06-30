@@ -13,6 +13,7 @@ The backend API provides comprehensive endpoints for:
 - ⚙️ **User Preferences** - Personalized settings and configurations
 - 📊 **Feedback Logs** - Training data collection for ML/RLHF
 - 📖 **Story Sessions** - AI-generated narrative content and social media publishing
+- 📧 **Email Service** - Password reset emails and system notifications
 
 ## Testing
 
@@ -104,12 +105,48 @@ Tests use isolated in-memory SQLite databases to ensure:
 - ✅ Clean state for each test
 - ✅ No impact on development/production databases
 
+## Email Service Configuration
+
+The backend includes a production-ready email service for password resets and notifications.
+
+### Quick Setup (Gmail)
+
+1. **Configure SMTP in `.env`**:
+   ```bash
+   SMTP_USERNAME=your-email@gmail.com
+   SMTP_PASSWORD="your-app-password"  # Gmail App Password
+   FROM_EMAIL=noreply@yourcompany.com
+   FROM_NAME=YourApp
+   ```
+
+2. **Generate Gmail App Password**:
+   - Enable 2FA on Google account
+   - Visit: https://myaccount.google.com/apppasswords
+   - Generate password for "Mail"
+
+3. **Test Password Reset**:
+   ```bash
+   curl -X POST "http://localhost:8000/auth/forgot-password" \
+     -H "Content-Type: application/json" \
+     -d '{"email": "test@example.com"}'
+   ```
+
+### Email Service Features
+- ✅ **Production-Ready**: Real SMTP email sending
+- ✅ **Professional Templates**: HTML and text email templates
+- ✅ **Development Mode**: Console output when SMTP not configured
+- ✅ **Security Focused**: Built-in security warnings and best practices
+- ✅ **Firebase Integration**: Secure password reset links with expiration
+
+> 📧 See [Email Service Documentation](../../docs/EMAIL_SERVICE.md) for complete setup and configuration guide.
+
 ### Current Test Coverage
 
 | Module | Tests | Coverage |
 |--------|-------|----------|
 | Main API | 5 tests | Core endpoints, CORS, health checks |
-| Authentication | 7 tests | Registration, login, JWT validation |
+| Authentication | 7 tests | Registration, login, JWT validation, password reset |
+| Email Service | Integrated | Password reset emails (tested via auth module) |
 | Goals | 9 tests | CRUD operations, validation |
 | Tasks | 9 tests | CRUD operations, dependencies |
 | Life Areas | 18 tests | CRUD, validation, user isolation |

@@ -47,9 +47,16 @@ services:
       WEAVIATE_URL: http://weaviate:8080
       # Path inside container where the Firebase service account key is mounted
       GOOGLE_APPLICATION_CREDENTIALS: /secrets/selfos-firebase.json
+      # SMTP Email Configuration - always attempts real email sending when configured
+      SMTP_SERVER: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@selfos.app}
+      FROM_NAME: ${FROM_NAME:-SelfOS}
     # Mount Firebase service account JSON into container
     volumes:
-      - ${GOOGLE_APPLICATION_CREDENTIALS}:/secrets/selfos-firebase.json:ro
+      - ./apps/backend_api/firebase-service-account.json:/secrets/selfos-firebase.json:ro
       - ./logs:/app/logs
     ports:
       - "8000:8000"

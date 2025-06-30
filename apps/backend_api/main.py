@@ -6,6 +6,9 @@ from db import engine, Base
 # Import ORM models so they are registered
 import models
 
+# Import dependencies to initialize Firebase
+import dependencies
+
 # Import middleware
 from middleware import ErrorHandlingMiddleware, RequestLoggingMiddleware, RateLimitingMiddleware
 

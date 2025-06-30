@@ -52,6 +52,7 @@ User ↔️ Flutter Frontend (Web/Mobile/Desktop)
 ├── AI Engine (Claude/GPT + Local LLM)
 ├── Memory Engine (RAG + Pinecone)
 ├── Storytelling Engine (Narrative + Media)
+├── Email Service (SMTP + Templates)
 ├── Notification Service
 ├── RLHF Trainer (Phase 3+)
 └── Integrations (Calendar, Obsidian, Trello, Social APIs)
@@ -72,6 +73,7 @@ User ↔️ Flutter Frontend (Web/Mobile/Desktop)
 - Docker & Docker Compose installed
 - (Optional) Python 3.11+ for running backend tests locally
 - Firebase service account JSON – obtain credentials as described in [docs/AUTHENTICATION_SETUP.md](docs/AUTHENTICATION_SETUP.md)
+- (Optional) SMTP credentials for email functionality – see [docs/EMAIL_SERVICE.md](docs/EMAIL_SERVICE.md)
 
 ### Start Services
 ```bash

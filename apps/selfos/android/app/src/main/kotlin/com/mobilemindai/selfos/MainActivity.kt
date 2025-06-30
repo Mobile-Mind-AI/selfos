@@ -1,4 +1,4 @@
-package com.example.selfos
+package com.mobilemindai.selfos
 
 import io.flutter.embedding.android.FlutterActivity
 
