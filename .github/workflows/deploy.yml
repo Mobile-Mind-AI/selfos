@@ -1,0 +1,274 @@
+name: Deploy to Production
+
+on:
+  # Disabled until infrastructure is set up
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Build and push Docker images
+  build:
+    name: Build Images
+    runs-on: ubuntu-latest
+    outputs:
+      backend-image: ${{ steps.backend-meta.outputs.tags }}
+      ai-engine-image: ${{ steps.ai-engine-meta.outputs.tags }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract backend metadata
+        id: backend-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: apps/backend_api
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.backend-meta.outputs.tags }}
+          labels: ${{ steps.backend-meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract AI engine metadata
+        id: ai-engine-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/ai-engine
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push AI engine image
+        uses: docker/build-push-action@v5
+        with:
+          context: apps/ai_engine
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.ai-engine-meta.outputs.tags }}
+          labels: ${{ steps.ai-engine-meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Deploy to staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment: staging
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY_STAGING }}
+          project_id: ${{ secrets.GCP_PROJECT_ID_STAGING }}
+
+      - name: Configure kubectl
+        run: |
+          gcloud container clusters get-credentials selfos-staging --zone=us-central1-a
+
+      - name: Update Kubernetes manifests
+        run: |
+          # Update image tags in Kubernetes manifests
+          sed -i "s|image: .*backend.*|image: ${{ needs.build.outputs.backend-image }}|g" infra/k8s/staging/backend-deployment.yaml
+          sed -i "s|image: .*ai-engine.*|image: ${{ needs.build.outputs.ai-engine-image }}|g" infra/k8s/staging/ai-engine-deployment.yaml
+
+      - name: Deploy to staging
+        run: |
+          kubectl apply -f infra/k8s/staging/
+          kubectl rollout status deployment/backend-api -n staging --timeout=300s
+          kubectl rollout status deployment/ai-engine -n staging --timeout=300s
+
+      - name: Run smoke tests
+        run: |
+          # Wait for deployment to be ready
+          sleep 30
+          
+          # Get staging URL
+          STAGING_URL=$(kubectl get service backend-api-service -n staging -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          
+          # Run basic health checks
+          curl -f http://$STAGING_URL/health
+          curl -f http://$STAGING_URL/api/ai/health
+
+      - name: Notify deployment status
+        uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+
+  # Deploy to production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging]
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY_PRODUCTION }}
+          project_id: ${{ secrets.GCP_PROJECT_ID_PRODUCTION }}
+
+      - name: Configure kubectl
+        run: |
+          gcloud container clusters get-credentials selfos-production --zone=us-central1-a
+
+      - name: Create backup
+        run: |
+          # Create database backup before deployment
+          gcloud sql export sql selfos-prod-db gs://selfos-backups/pre-deploy-$(date +%Y%m%d%H%M%S).sql \
+            --database=selfos_prod
+
+      - name: Update Kubernetes manifests
+        run: |
+          # Update image tags in Kubernetes manifests
+          sed -i "s|image: .*backend.*|image: ${{ needs.build.outputs.backend-image }}|g" infra/k8s/production/backend-deployment.yaml
+          sed -i "s|image: .*ai-engine.*|image: ${{ needs.build.outputs.ai-engine-image }}|g" infra/k8s/production/ai-engine-deployment.yaml
+
+      - name: Deploy to production
+        run: |
+          # Rolling deployment with zero downtime
+          kubectl apply -f infra/k8s/production/
+          kubectl rollout status deployment/backend-api -n production --timeout=600s
+          kubectl rollout status deployment/ai-engine -n production --timeout=600s
+
+      - name: Run production health checks
+        run: |
+          # Wait for deployment to be ready
+          sleep 60
+          
+          # Get production URL
+          PROD_URL=$(kubectl get service backend-api-service -n production -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          
+          # Comprehensive health checks
+          curl -f https://$PROD_URL/health
+          curl -f https://$PROD_URL/api/ai/health
+          curl -f https://$PROD_URL/health/detailed
+          
+          # Check database connectivity
+          curl -f https://$PROD_URL/health/database/migration-status
+
+      - name: Update monitoring alerts
+        run: |
+          # Update Prometheus/Grafana alerts for new version
+          echo "Updating monitoring configuration for new deployment"
+
+      - name: Notify production deployment
+        uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          status: ${{ job.status }}
+          channel: '#production'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          custom_payload: |
+            {
+              "text": "🚀 Production Deployment ${{ job.status }}",
+              "attachments": [{
+                "color": "${{ job.status == 'success' && 'good' || 'danger' }}",
+                "fields": [{
+                  "title": "Version",
+                  "value": "${{ github.ref }}",
+                  "short": true
+                }, {
+                  "title": "Environment",
+                  "value": "Production",
+                  "short": true
+                }]
+              }]
+            }
+
+  # Rollback capability
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: failure() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    needs: [deploy-staging, deploy-production]
+    environment: production
+    
+    steps:
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY_PRODUCTION }}
+          project_id: ${{ secrets.GCP_PROJECT_ID_PRODUCTION }}
+
+      - name: Configure kubectl
+        run: |
+          gcloud container clusters get-credentials selfos-production --zone=us-central1-a
+
+      - name: Rollback deployment
+        run: |
+          kubectl rollout undo deployment/backend-api -n production
+          kubectl rollout undo deployment/ai-engine -n production
+          kubectl rollout status deployment/backend-api -n production --timeout=300s
+          kubectl rollout status deployment/ai-engine -n production --timeout=300s
+
+      - name: Notify rollback
+        uses: 8398a7/action-slack@v3
+        with:
+          status: 'warning'
+          channel: '#production'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          custom_payload: |
+            {
+              "text": "⚠️ Production Rollback Executed",
+              "attachments": [{
+                "color": "warning",
+                "fields": [{
+                  "title": "Reason",
+                  "value": "Deployment failure detected",
+                  "short": false
+                }]
+              }]
+            }

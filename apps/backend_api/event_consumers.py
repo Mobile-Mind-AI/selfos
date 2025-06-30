@@ -12,7 +12,8 @@ from typing import Dict, Any
 
 from event_bus import EventType, subscribe, publish
 from dependencies import get_db
-from services import progress, storytelling, notifications, memory
+from services import progress, storytelling, notifications
+from services.enhanced_memory import create_memory_service
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +65,11 @@ async def handle_task_completed(payload: Dict[str, Any]):
             )
         )
         
-        # 4. Index task in vector memory
+        # 4. Index task in vector memory using enhanced memory service
         services_tasks.append(
             _safe_service_call(
-                "memory.index_task",
-                memory.index_task(task_data)
+                "enhanced_memory.store_memory",
+                _store_task_memory(task_data)
             )
         )
         
@@ -136,6 +137,69 @@ async def handle_goal_completed(payload: Dict[str, Any]):
             
     except Exception as e:
         logger.error(f"Failed to process goal completion event: {e}")
+
+async def _store_task_memory(task_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Store task completion in enhanced memory service.
+    
+    Args:
+        task_data: Task completion data
+        
+    Returns:
+        Storage result
+    """
+    try:
+        memory_service = create_memory_service(vector_store_type="memory")
+        
+        # Prepare content for memory storage
+        title = task_data.get("title", "")
+        description = task_data.get("description", "")
+        
+        # Build comprehensive content string
+        content_parts = [f"Task: {title}"]
+        if description:
+            content_parts.append(f"Description: {description}")
+        content_parts.append("Status: Completed successfully")
+        
+        if task_data.get("duration"):
+            duration = task_data["duration"]
+            hours = duration // 60
+            minutes = duration % 60
+            if hours > 0:
+                content_parts.append(f"Duration: {hours} hours {minutes} minutes")
+            else:
+                content_parts.append(f"Duration: {minutes} minutes")
+        
+        if task_data.get("media_count", 0) > 0:
+            content_parts.append(f"Documented with {task_data['media_count']} media attachments")
+        
+        content = ". ".join(content_parts)
+        
+        # Store in enhanced memory service
+        entry_id = await memory_service.store_memory(
+            user_id=str(task_data.get("user_id")),
+            content=content,
+            content_type="task_completion",
+            metadata={
+                "task_id": task_data.get("task_id"),
+                "goal_id": task_data.get("goal_id"),
+                "life_area_id": task_data.get("life_area_id"),
+                "duration_minutes": task_data.get("duration"),
+                "has_media": task_data.get("media_count", 0) > 0,
+                "original_task_data": task_data
+            }
+        )
+        
+        return {
+            "success": True,
+            "entry_id": entry_id,
+            "content_length": len(content)
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to store task memory: {e}")
+        return {"success": False, "error": str(e)}
+
 
 async def _safe_service_call(service_name: str, service_coroutine):
     """

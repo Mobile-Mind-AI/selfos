@@ -191,3 +191,12 @@ python -m pytest tests/ --lf              # Run last failed tests
 - Recent migration from `backend-api` to `backend_api` (underscores)
 - Dockerfile may reference old `backend-api` path
 - Update paths if encountering build issues
+
+## Development Roadmap
+
+### AI & Memory Engine Development (Week 3: Jul 15–21)
+- [ ] Define prompt templates for goal decomposition (libs/prompts)
+- [ ] ai-engine: implement orchestrator service to call OpenAI/GPT
+- [ ] Memory service: integrate Pinecone (or local vector store)
+- [ ] API endpoint /ai/decompose-goal
+- [ ] Integration tests: simulate chat requests

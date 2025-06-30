@@ -19,6 +19,7 @@ from routers.user_preferences import router as user_preferences_router
 from routers.feedback_logs import router as feedback_logs_router
 from routers.story_sessions import router as story_sessions_router
 from routers.health import router as health_router
+from routers.ai import router as ai_router
 
 # Import event system
 import event_consumers
@@ -72,3 +73,4 @@ app.include_router(media_attachments_router, prefix="/api", tags=["media"])
 app.include_router(user_preferences_router, prefix="/api", tags=["preferences"])
 app.include_router(feedback_logs_router, prefix="/api", tags=["feedback"])
 app.include_router(story_sessions_router, prefix="/api", tags=["stories"])
+app.include_router(ai_router, prefix="/api", tags=["ai"])
