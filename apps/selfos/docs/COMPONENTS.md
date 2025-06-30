@@ -138,7 +138,13 @@ CustomButton(
 
 ### SocialButton
 
-Specialized button for social login providers.
+Specialized button for social login providers with platform-specific styling.
+
+**Features:**
+- Provider-specific branding and colors
+- Loading states synchronized with auth flow
+- Responsive design for different screen sizes
+- Built-in error handling for social auth failures
 
 **Usage:**
 ```dart
@@ -150,11 +156,19 @@ SocialButton(
 )
 ```
 
+**Properties:**
+- `provider` (SocialProvider) - Social login provider
+- `onPressed` (VoidCallback?) - Press callback
+- `isLoading` (bool) - Shows loading spinner
+- `width` (double?) - Button width
+- `text` (String?) - Custom button text
+- `showIcon` (bool) - Whether to show provider icon
+
 **Supported Providers:**
-- `SocialProvider.google` - Google Sign-In
-- `SocialProvider.apple` - Apple Sign-In
-- `SocialProvider.facebook` - Facebook Login
-- `SocialProvider.github` - GitHub OAuth
+- `SocialProvider.google` - Google Sign-In with Google branding
+- `SocialProvider.apple` - Apple Sign-In with Apple styling
+- `SocialProvider.facebook` - Facebook Login (future implementation)
+- `SocialProvider.github` - GitHub OAuth (future implementation)
 
 ## Loading and State Components
 
