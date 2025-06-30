@@ -208,7 +208,7 @@ class _SocialLoginSectionState extends State<SocialLoginSection> {
           } catch (e) {
             // Apple Sign-In not available, skip it
             if (kDebugMode) {
-              print('Apple Sign-In not available: $e');
+              log('Apple Sign-In not available', error: e, name: 'SocialLoginSection');
             }
           }
           break;
