@@ -9,6 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 import json
 import time
+import os
 from concurrent.futures import ThreadPoolExecutor
 import threading
 
@@ -18,10 +19,17 @@ from main import app
 
 client = TestClient(app)
 
+# Skip AI content tests when using local provider (CI)
+skip_ai_content_tests = pytest.mark.skipif(
+    os.getenv("AI_PROVIDER", "local") == "local",
+    reason="AI content validation tests require actual AI provider, not local mock"
+)
+
 
 class TestAdvancedChatScenarios:
     """Advanced and edge case chat scenarios."""
     
+    @skip_ai_content_tests
     def test_context_switching_conversation(self, get_test_user_headers):
         """Test conversation that switches between multiple topics/contexts."""
         headers = get_test_user_headers
@@ -74,6 +82,7 @@ class TestAdvancedChatScenarios:
                 {"role": "assistant", "content": ai_response["content"]}
             ])
     
+    @skip_ai_content_tests
     def test_emotional_support_conversation(self, get_test_user_headers):
         """Test conversation requiring emotional intelligence and support."""
         headers = get_test_user_headers
@@ -122,6 +131,7 @@ class TestAdvancedChatScenarios:
             has_appropriate_tone = any(phrase in content_lower for phrase in scenario["expected_tone"])
             assert has_appropriate_tone, f"Inappropriate tone for {scenario['user_state']}: {ai_response['content']}"
     
+    @skip_ai_content_tests
     def test_complex_goal_decomposition_through_chat(self, get_test_user_headers):
         """Test breaking down complex, multi-faceted goals through conversation."""
         headers = get_test_user_headers
@@ -187,6 +197,7 @@ class TestAdvancedChatScenarios:
         # Should have built comprehensive context
         assert len(conversation_history) == 10  # 5 exchanges
     
+    @skip_ai_content_tests
     def test_habit_formation_guidance_conversation(self, get_test_user_headers):
         """Test conversation focused on habit formation strategies."""
         headers = get_test_user_headers
@@ -342,6 +353,7 @@ class TestChatStressTesting:
         
         print(f"Processed {len(rapid_messages)} rapid requests in {total_time:.2f} seconds")
     
+    @skip_ai_content_tests
     def test_very_long_message_handling(self, get_test_user_headers):
         """Test handling of very long user messages."""
         headers = get_test_user_headers

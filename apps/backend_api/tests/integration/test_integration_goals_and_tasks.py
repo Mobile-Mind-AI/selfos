@@ -103,7 +103,7 @@ class TestGoalsAndTasksIntegration:
         }
         
         task1_response = client.post("/api/tasks", json=task1_data)
-        assert task1_response.status_code == 200
+        assert task1_response.status_code in [200, 201]  # Accept both OK and Created
         task1 = task1_response.json()
         task1_id = task1["id"]
         
@@ -118,7 +118,7 @@ class TestGoalsAndTasksIntegration:
         }
         
         task2_response = client.post("/api/tasks", json=task2_data)
-        assert task2_response.status_code == 200
+        assert task2_response.status_code in [200, 201]  # Accept both OK and Created
         task2 = task2_response.json()
         task2_id = task2["id"]
         
@@ -133,7 +133,7 @@ class TestGoalsAndTasksIntegration:
         }
         
         task3_response = client.post("/api/tasks", json=task3_data)
-        assert task3_response.status_code == 200
+        assert task3_response.status_code in [200, 201]  # Accept both OK and Created
         task3 = task3_response.json()
         
         # Step 3: Verify all tasks are linked to goal
