@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 import sys
 import os
+import firebase_admin.auth
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -104,6 +105,9 @@ def test_login_success(mock_create_token):
     assert "access_token" in data
     assert data["access_token"] == "mock_custom_token"
     assert data["token_type"] == "bearer"
+    assert "user" in data
+    assert data["user"]["uid"] == "test_uid_123"
+    assert data["user"]["email"] == "test_uid_123"
 
 
 @patch('firebase_admin.auth.create_custom_token')
@@ -161,4 +165,173 @@ def test_me_endpoint_no_token():
     response = client.get("/auth/me")
     
     assert response.status_code == 401
+
+
+@patch('firebase_admin.auth.get_user')
+@patch('firebase_admin.auth.create_user')
+@patch('firebase_admin.auth.create_custom_token')
+def test_social_login_google_success(mock_create_token, mock_create_user, mock_get_user):
+    """Test successful Google social login"""
+    # Mock Firebase user not found (new user)
+    mock_get_user.side_effect = firebase_admin.auth.UserNotFoundError("User not found")
+    
+    # Mock Firebase user creation
+    mock_user = MagicMock()
+    mock_user.uid = "google_test@gmail.com"
+    mock_user.email = "test@gmail.com"
+    mock_create_user.return_value = mock_user
+    
+    # Mock Firebase custom token creation
+    mock_create_token.return_value = b"mock_google_token"
+    
+    response = client.post("/auth/login", json={
+        "username": "test@gmail.com",
+        "password": "",
+        "provider": "google",
+        "social_token": "mock_google_id_token",
+        "email": "test@gmail.com"
+    })
+    
+    assert response.status_code in [200, 201]
+    data = response.json()
+    assert "access_token" in data
+    assert data["access_token"] == "mock_google_token"
+    assert data["token_type"] == "bearer"
+    assert "user" in data
+    assert data["user"]["uid"] == "google_test@gmail.com"
+    assert data["user"]["email"] == "test@gmail.com"
+
+
+@patch('firebase_admin.auth.get_user')
+@patch('firebase_admin.auth.create_user')
+@patch('firebase_admin.auth.create_custom_token')
+def test_social_login_apple_success(mock_create_token, mock_create_user, mock_get_user):
+    """Test successful Apple social login"""
+    # Mock Firebase user not found (new user)
+    mock_get_user.side_effect = firebase_admin.auth.UserNotFoundError("User not found")
+    
+    # Mock Firebase user creation
+    mock_user = MagicMock()
+    mock_user.uid = "apple_mock_apple_auth_code"
+    mock_user.email = "test@icloud.com"
+    mock_create_user.return_value = mock_user
+    
+    # Mock Firebase custom token creation
+    mock_create_token.return_value = b"mock_apple_token"
+    
+    response = client.post("/auth/login", json={
+        "username": "test@icloud.com",
+        "password": "",
+        "provider": "apple",
+        "social_token": "mock_apple_auth_code",
+        "email": "test@icloud.com"
+    })
+    
+    assert response.status_code in [200, 201]
+    data = response.json()
+    assert "access_token" in data
+    assert data["access_token"] == "mock_apple_token"
+    assert data["token_type"] == "bearer"
+    assert "user" in data
+    assert data["user"]["uid"] == "apple_mock_apple_auth_code"
+    assert data["user"]["email"] == "test@icloud.com"
+
+
+def test_social_login_missing_token():
+    """Test social login without social_token"""
+    response = client.post("/auth/login", json={
+        "username": "test@gmail.com",
+        "password": "",
+        "provider": "google",
+        "email": "test@gmail.com"
+        # Missing social_token
+    })
+    
+    assert response.status_code == 422
+    data = response.json()
+    assert "detail" in data
+
+
+def test_social_login_missing_email():
+    """Test social login without email"""
+    response = client.post("/auth/login", json={
+        "username": "",
+        "password": "",
+        "provider": "google",
+        "social_token": "mock_token"
+        # Missing email
+    })
+    
+    assert response.status_code == 422
+    data = response.json()
+    assert "detail" in data
+
+
+@patch('services.email_service.email_service.send_password_reset_email')
+@patch('firebase_admin.auth.get_user_by_email')
+@patch('firebase_admin.auth.generate_password_reset_link')
+def test_forgot_password_success(mock_generate_reset_link, mock_get_user, mock_send_email):
+    """Test successful password reset request with email sending"""
+    # Mock Firebase user lookup
+    mock_user = MagicMock()
+    mock_user.uid = "test_uid_123"
+    mock_user.email = "test@example.com"
+    mock_get_user.return_value = mock_user
+    
+    # Mock Firebase password reset link generation
+    mock_generate_reset_link.return_value = "https://mock-reset-link.com"
+    
+    # Mock email service
+    mock_send_email.return_value = True
+    
+    response = client.post("/auth/forgot-password", json={
+        "email": "test@example.com"
+    })
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "message" in data
+    assert "sent successfully" in data["message"]
+    assert "reset_link" in data
+    assert "instructions" in data
+
+
+@patch('firebase_admin.auth.generate_password_reset_link')
+def test_forgot_password_user_not_found(mock_generate_reset_link):
+    """Test password reset request for non-existent user"""
+    # Mock Firebase user not found error
+    mock_generate_reset_link.side_effect = firebase_admin.auth.UserNotFoundError("User not found")
+    
+    response = client.post("/auth/forgot-password", json={
+        "email": "nonexistent@example.com"
+    })
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "message" in data
+    # Should not reveal whether user exists or not
+    assert "If an account with this email exists" in data["message"]
+
+
+def test_forgot_password_missing_email():
+    """Test password reset request without email"""
+    response = client.post("/auth/forgot-password", json={})
+    
+    assert response.status_code == 400
+    data = response.json()
+    assert "detail" in data
+    assert "Email is required" in data["detail"]
+
+
+def test_forgot_password_invalid_email():
+    """Test password reset request with invalid email format"""
+    response = client.post("/auth/forgot-password", json={
+        "email": "invalid-email"
+    })
+    
+    # Firebase will handle email validation, but endpoint should still return success
+    # to avoid revealing information about valid/invalid emails
+    assert response.status_code == 200
+    data = response.json()
+    assert "message" in data
 

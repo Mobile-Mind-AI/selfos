@@ -15,8 +15,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# Python lib64 directories (but not Flutter lib directories)
+**/lib64/
+!apps/*/lib/
 parts/
 sdist/
 var/
@@ -172,3 +173,6 @@ cython_debug/
 /.idea/inspectionProfiles/Project_Default.xml
 /.idea/selfos.iml
 /.idea/vcs.xml
+/apps/backend_api/firebase-service-account.json
+!/apps/selfos/ios/Runner/GoogleService-Info.plist
+!/apps/selfos/macos/Runner/GoogleService-Info.plist

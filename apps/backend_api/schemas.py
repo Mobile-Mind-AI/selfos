@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator, EmailStr, constr
+from pydantic import BaseModel, Field, validator, root_validator, EmailStr, constr
 from typing import Optional, List, Literal, Dict, Any, TYPE_CHECKING
 from datetime import datetime, time
 import re
@@ -12,52 +12,102 @@ if TYPE_CHECKING:
 
 ## Authentication Schemas
 class RegisterRequest(BaseModel):
-    username: constr(min_length=3, max_length=50, pattern=r'^[a-zA-Z0-9_.-]+$') = Field(
-        ..., 
-        description="Username (3-50 chars, alphanumeric, underscore, dot, dash only)"
-    )
-    password: constr(min_length=8, max_length=128) = Field(
-        ..., 
-        description="Password (8-128 characters)"
-    )
+    username: Optional[str] = Field(None, description="Username or email address")
+    password: Optional[str] = Field(None, description="Password")
     
-    @validator('username')
-    def validate_username(cls, v):
-        if not v or v.isspace():
-            raise ValueError('Username cannot be empty or whitespace')
-        if '..' in v or '__' in v:
-            raise ValueError('Username cannot contain consecutive dots or underscores')
-        return v.lower().strip()
+    # Social login fields
+    provider: Optional[Literal["email", "google", "apple", "facebook"]] = Field("email", description="Authentication provider")
+    social_token: Optional[str] = Field(None, description="OAuth token from social provider")
+    email: Optional[str] = Field(None, description="Email from social provider")
+    display_name: Optional[str] = Field(None, description="Display name from social provider")
     
-    @validator('password')
-    def validate_password(cls, v):
-        if not v or v.isspace():
-            raise ValueError('Password cannot be empty or whitespace')
-        if not re.search(r'[A-Za-z]', v):
-            raise ValueError('Password must contain at least one letter')
-        if not re.search(r'[0-9]', v):
-            raise ValueError('Password must contain at least one number')
-        return v
+    @root_validator(skip_on_failure=True)
+    def validate_fields_by_provider(cls, values):
+        provider = values.get('provider', 'email')
+        if provider == 'email':
+            username = values.get('username')
+            password = values.get('password')
+            
+            if not username or username.isspace():
+                raise ValueError('Username is required for email registration')
+            if not password or password.isspace():
+                raise ValueError('Password is required for email registration')
+                
+            # Username validation
+            username = username.strip()
+            if len(username) < 3 or len(username) > 50:
+                raise ValueError('Username must be 3-50 characters')
+                
+            # Allow both usernames and email addresses
+            if '@' in username:
+                # Basic email validation
+                if not username.count('@') == 1 or not '.' in username.split('@')[1]:
+                    raise ValueError('Invalid email format')
+            else:
+                # Username validation - no consecutive special chars
+                if '..' in username or '__' in username:
+                    raise ValueError('Username cannot contain consecutive dots or underscores')
+                    
+            # Password validation
+            if len(password) < 8 or len(password) > 128:
+                raise ValueError('Password must be 8-128 characters')
+            if not re.search(r'[A-Za-z]', password):
+                raise ValueError('Password must contain at least one letter')
+            if not re.search(r'[0-9]', password):
+                raise ValueError('Password must contain at least one number')
+                
+            values['username'] = username.lower()
+        else:
+            if not values.get('social_token'):
+                raise ValueError('Social token is required for social registration')
+            if not values.get('email'):
+                raise ValueError('Email is required for social registration')
+        return values
 
 class LoginRequest(BaseModel):
-    username: constr(min_length=1, max_length=50) = Field(..., description="Username or email")
-    password: constr(min_length=1, max_length=128) = Field(..., description="Password")
+    username: Optional[str] = Field(None, description="Username or email")
+    password: Optional[str] = Field(None, description="Password")
     
-    @validator('username')
-    def validate_username(cls, v):
-        if not v or v.isspace():
-            raise ValueError('Username cannot be empty')
-        return v.strip()
+    # Social login fields
+    provider: Optional[Literal["email", "google", "apple", "facebook"]] = Field("email", description="Authentication provider")
+    social_token: Optional[str] = Field(None, description="OAuth token from social provider")
+    email: Optional[str] = Field(None, description="Email from social provider")
     
-    @validator('password')
-    def validate_password(cls, v):
-        if not v:
-            raise ValueError('Password cannot be empty')
-        return v
+    @root_validator(skip_on_failure=True)
+    def validate_fields_by_provider(cls, values):
+        provider = values.get('provider', 'email')
+        if provider == 'email':
+            username = values.get('username')
+            password = values.get('password')
+            
+            if not username or username.isspace():
+                raise ValueError('Username is required for email login')
+            if not password:
+                raise ValueError('Password is required for email login')
+                
+            # Additional username validation for email login
+            username = username.strip()
+            if '@' in username:
+                # Basic email validation
+                if not username.count('@') == 1 or not '.' in username.split('@')[1]:
+                    raise ValueError('Invalid email format')
+            
+            values['username'] = username.lower()
+        else:
+            if not values.get('social_token'):
+                raise ValueError('Social token is required for social login')
+            if not values.get('email'):
+                raise ValueError('Email is required for social login')
+        return values
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: "User"
 
 class User(BaseModel):
     uid: str = Field(..., description="Firebase user ID")
