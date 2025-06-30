@@ -290,22 +290,35 @@ class TestAIIntegration:
     
     def test_unauthorized_access(self):
         """Test that AI endpoints require authentication."""
-        goal_request = {
-            "goal_description": "Test goal",
-            "life_areas": [],
-            "existing_goals": []
-        }
+        from main import app
+        from dependencies import get_current_user
         
-        response = client.post("/api/ai/decompose-goal", json=goal_request)
-        assert response.status_code == 401
+        # Temporarily clear auth override to test actual auth behavior
+        original_override = app.dependency_overrides.get(get_current_user)
+        if get_current_user in app.dependency_overrides:
+            del app.dependency_overrides[get_current_user]
         
-        chat_request = {
-            "message": "Test message",
-            "conversation_history": []
-        }
-        
-        response = client.post("/api/ai/chat", json=chat_request)
-        assert response.status_code == 401
+        try:
+            goal_request = {
+                "goal_description": "Test goal",
+                "life_areas": [],
+                "existing_goals": []
+            }
+            
+            response = client.post("/api/ai/decompose-goal", json=goal_request)
+            assert response.status_code == 401
+            
+            chat_request = {
+                "message": "Test message",
+                "conversation_history": []
+            }
+            
+            response = client.post("/api/ai/chat", json=chat_request)
+            assert response.status_code == 401
+        finally:
+            # Restore override
+            if original_override:
+                app.dependency_overrides[get_current_user] = original_override
         
         response = client.get("/api/ai/memory/stats")
         assert response.status_code == 401

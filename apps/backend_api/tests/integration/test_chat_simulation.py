@@ -571,10 +571,23 @@ class TestChatPerformance:
 # Integration with existing test fixtures
 def test_chat_requires_authentication():
     """Test that chat endpoints require authentication."""
-    chat_request = {
-        "message": "Hello",
-        "conversation_history": []
-    }
+    from main import app
+    from dependencies import get_current_user
     
-    response = client.post("/api/ai/chat", json=chat_request)
-    assert response.status_code == 401
+    # Temporarily clear auth override to test actual auth behavior
+    original_override = app.dependency_overrides.get(get_current_user)
+    if get_current_user in app.dependency_overrides:
+        del app.dependency_overrides[get_current_user]
+    
+    try:
+        chat_request = {
+            "message": "Hello",
+            "conversation_history": []
+        }
+        
+        response = client.post("/api/ai/chat", json=chat_request)
+        assert response.status_code == 401
+    finally:
+        # Restore override
+        if original_override:
+            app.dependency_overrides[get_current_user] = original_override

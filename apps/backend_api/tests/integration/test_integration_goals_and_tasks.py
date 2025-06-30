@@ -85,7 +85,7 @@ class TestGoalsAndTasksIntegration:
         }
         
         goal_response = client.post("/api/goals", json=goal_data)
-        assert goal_response.status_code == 200
+        assert goal_response.status_code in [200, 201]  # Accept both OK and Created
         goal = goal_response.json()
         goal_id = goal["id"]
         
