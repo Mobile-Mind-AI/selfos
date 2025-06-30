@@ -33,7 +33,7 @@ def test_api_structure():
     # Test that endpoints exist (will return 401 for protected endpoints)
     
     # Auth endpoints should exist
-    response = client.post("/register", json={"username": "test", "password": "test"})
+    response = client.post("/auth/register", json={"username": "test", "password": "test"})
     # Should fail due to Firebase mock not being setup, but endpoint should exist
     assert response.status_code in [400, 401, 422]  # Not 404
     
