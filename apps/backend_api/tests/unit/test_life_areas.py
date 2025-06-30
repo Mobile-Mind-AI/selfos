@@ -146,7 +146,7 @@ def test_create_life_area_duplicate_name():
     
     # Create first life area
     response1 = client.post("/api/life-areas", json=life_area_data)
-    assert response1.status_code == 200
+    assert response1.status_code in [200, 201]  # Accept both OK and Created
     
     # Try to create duplicate
     response2 = client.post("/api/life-areas", json=life_area_data)

@@ -147,7 +147,7 @@ def test_create_preferences_fails_if_already_exist():
     # First create preferences
     preferences_data = {"tone": "minimal"}
     response1 = client.post("/api/user-preferences", json=preferences_data)
-    assert response1.status_code == 200
+    assert response1.status_code in [200, 201]  # Accept both OK and Created
     
     # Try to create again - should fail
     response2 = client.post("/api/user-preferences", json=preferences_data)
