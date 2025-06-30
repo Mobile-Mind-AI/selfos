@@ -1,7 +1,8 @@
 # SelfOS Architecture Overview
 
-**Version:** v0.1  
-**Last Updated:** 2025-06-30
+**Version:** v1.0  
+**Last Updated:** 2024-06-30  
+**Status:** Comprehensive Review Complete
 
 ## System Overview
 
@@ -21,38 +22,46 @@ SelfOS is a modular, microservices-based personal AI assistant platform designed
 
 ## Core Components
 
-### 1. Frontend Application (`apps/frontend/`)
+### 1. Frontend Application (`apps/selfos/`)
 - **Technology**: Flutter (Web, Mobile, Desktop)
-- **State Management**: Riverpod (recommended)
-- **Authentication**: JWT with secure storage
-- **Features**: Chat interface, Goal/Task management, User dashboard
+- **State Management**: Riverpod (implemented)
+- **Authentication**: Firebase + JWT with secure storage (implemented)
+- **Features**: Authentication complete, Main app screens missing
+- **Platform Support**: Android, iOS, macOS, Web, Windows, Linux
 
-**Status**: 🔴 Not implemented (Week 4 priority)
+**Status**: ⚠️ Partially implemented - Authentication complete, core screens missing (MVP BLOCKER)
 
 ### 2. Backend API (`apps/backend_api/`)
 - **Technology**: FastAPI with Python 3.11+
-- **Database**: PostgreSQL with SQLAlchemy ORM
-- **Authentication**: JWT + Firebase integration
-- **Caching**: Redis for session and API caching
+- **Database**: PostgreSQL with SQLAlchemy ORM + Automated archival system
+- **Authentication**: Firebase Admin SDK + Multi-provider social login
+- **Caching**: Redis for session, rate limiting, and API caching
 - **API Documentation**: Auto-generated with OpenAPI/Swagger
+- **Testing**: 87% coverage, 174 tests passing
+- **Advanced Features**: RLHF data collection, AI integration, media management
 
-**Status**: 🟢 Fully implemented
+**Status**: 🟢 Production-ready with comprehensive features
 
 #### Key Endpoints:
 ```
 Authentication:
-├── POST /auth/register
-├── POST /auth/login
+├── POST /auth/register (Email + Social: Google, Apple, Facebook)
+├── POST /auth/login (Multi-provider support)
+├── POST /auth/forgot-password
 └── GET /auth/me
 
-Goals & Tasks:
-├── GET/POST/PUT/DELETE /goals
-└── GET/POST/PUT/DELETE /tasks
+Core Entities:
+├── GET/POST/PUT/DELETE /api/goals/ (Goal management with progress tracking)
+├── GET/POST/PUT/DELETE /api/tasks/ (Task management with dependencies)
+├── GET/POST/PUT/DELETE /api/life_areas/ (Life categorization)
+├── GET/POST/PUT/DELETE /api/media/ (File upload and management)
+└── GET/POST/PUT/DELETE /api/preferences/ (User settings)
 
-AI Services:
-├── POST /ai/decompose-goal
-├── POST /ai/chat
-└── GET /ai/health
+AI & Analytics:
+├── POST /api/ai/* (AI service integration)
+├── POST/GET /api/feedback/ (RLHF data collection)
+├── POST/GET /api/stories/ (AI content generation)
+└── GET /health (System monitoring)
 ```
 
 ### 3. AI Engine (`apps/ai_engine/`)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
+import 'dart:developer' as developer;
 import '../../services/social_login_service.dart';
 
 /// Social login provider enumeration
@@ -208,7 +209,7 @@ class _SocialLoginSectionState extends State<SocialLoginSection> {
           } catch (e) {
             // Apple Sign-In not available, skip it
             if (kDebugMode) {
-              log('Apple Sign-In not available', error: e, name: 'SocialLoginSection');
+              developer.log('Apple Sign-In not available', error: e, name: 'SocialLoginSection');
             }
           }
           break;
