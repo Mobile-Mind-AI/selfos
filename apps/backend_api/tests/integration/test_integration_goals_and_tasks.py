@@ -188,7 +188,7 @@ class TestGoalsAndTasksIntegration:
             "dependencies": [task2_id]
         }
         
-        task3_update_response = client.put(f"/api/tasks/{task3["id"]}", json=task3_update)
+        task3_update_response = client.put(f"/api/tasks/{task3['id']}", json=task3_update)
         assert task3_update_response.status_code == 200
         
         # Step 7: Complete the goal
