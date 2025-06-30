@@ -75,23 +75,21 @@ jobs:
           alembic upgrade head
 
       - name: Run tests
-        continue-on-error: true
         run: |
           cd apps/backend_api
           export $(cat .env.test | xargs)
           # Use the custom test runner to avoid DB isolation issues
           if [ -f run_tests.py ]; then
             echo "Using custom test runner..."
-            python run_tests.py --verbose || echo "Custom test runner completed with some issues"
+            python run_tests.py --verbose
           else
             # Fallback: run tests separately to avoid isolation issues
             echo "Running unit tests..."
-            python -m pytest tests/unit/ -v --tb=short || echo "Unit tests completed with some issues"
+            python -m pytest tests/unit/ -v --tb=short
             echo "Running integration tests..."
-            # Skip the problematic test for now
-            python -m pytest tests/integration/ -v --tb=short --ignore=tests/integration/test_integration_goals_and_tasks.py || echo "Integration tests completed with some issues"
+            python -m pytest tests/integration/ -v --tb=short
             echo "Running main tests..."
-            python -m pytest tests/test_main.py -v --tb=short || echo "Main tests completed with some issues"
+            python -m pytest tests/test_main.py -v --tb=short
           fi
 
   # Basic AI engine testing
