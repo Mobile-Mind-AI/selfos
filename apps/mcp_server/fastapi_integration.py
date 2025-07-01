@@ -13,6 +13,7 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 # Add backend_api to path for imports
 sys.path.append(str(Path(__file__).parent.parent / "backend_api"))
@@ -26,11 +27,12 @@ logger = logging.getLogger(__name__)
 def create_app() -> FastAPI:
     """Create FastAPI application with MCP server integration."""
     
-    # Create FastAPI app
+    # Create FastAPI app with lifespan
     app = FastAPI(
         title="SelfOS MCP Server",
         description="Model Context Protocol server for SelfOS AI integration",
-        version="1.0.0"
+        version="1.0.0",
+        lifespan=lifespan
     )
     
     # Add CORS middleware
@@ -88,21 +90,31 @@ def create_app() -> FastAPI:
     return app
 
 
+@asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     # Startup
     logger.info("Starting SelfOS MCP Server with FastAPI integration")
-    mcp_server = app.state.mcp_server
-    
-    # Initialize transport layers
-    await mcp_server.transports["sse"].start()
-    await mcp_server.transports["websocket"].start()
+    try:
+        mcp_server = app.state.mcp_server
+        
+        # Initialize transport layers
+        await mcp_server.transports["sse"].start()
+        await mcp_server.transports["websocket"].start()
+        
+        logger.info("MCP Server startup completed successfully")
+    except Exception as e:
+        logger.error(f"Failed to start MCP Server: {e}")
+        raise
     
     yield
     
     # Shutdown
     logger.info("Shutting down SelfOS MCP Server")
-    await mcp_server.stop()
+    try:
+        await mcp_server.stop()
+    except Exception as e:
+        logger.error(f"Error during shutdown: {e}")
 
 
 def main():
@@ -141,11 +153,8 @@ def main():
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
     
-    # Create app
+    # Create app (lifespan is already configured in create_app)
     app = create_app()
-    
-    # Configure lifespan
-    app.router.lifespan_context = lifespan
     
     logger.info(f"Starting MCP Server on {args.host}:{args.port}")
     
