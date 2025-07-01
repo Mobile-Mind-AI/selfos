@@ -16,5 +16,8 @@ starlette>=0.27.0
 openai>=1.0.0
 anthropic>=0.18.0
 
+# MCP Dependencies
+mcp>=1.0.0
+
 # Test Dependencies
 aiohttp>=3.8.0

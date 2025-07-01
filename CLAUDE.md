@@ -9,12 +9,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Start core services (PostgreSQL, Redis, Backend API)
 docker-compose up --build
 
+# Start with MCP server for AI integration
+docker-compose up --build backend mcp-server
+
 # Start with frontend (Flutter web)
 docker-compose --profile frontend up --build
 
-# Health check
-curl http://localhost:8000/
+# Health checks
+curl http://localhost:8000/  # Backend API
 # Expected: {"message": "SelfOS Backend API"}
+
+curl http://localhost:8001/health  # MCP Server
+# Expected: {"status": "healthy", "server": "selfos-mcp-server"}
 ```
 
 ### Backend API Development
@@ -32,6 +38,25 @@ pytest -q
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+### MCP Server Development
+```bash
+# Local development (requires Python 3.11+ and backend_api dependencies)
+cd apps/mcp_server
+
+# Run tests
+python run_tests.py                    # All tests
+python run_tests.py --type unit        # Unit tests only
+python run_tests.py --coverage         # With coverage report
+
+# Run MCP server standalone
+python cli.py --transport stdio        # For local AI agents
+python cli.py --transport websocket    # For WebSocket clients
+python fastapi_integration.py          # With FastAPI (Web + WebSocket)
+
+# Test server initialization
+python test_server.py                  # Basic functionality test
+```
+
 ### Database Operations
 ```bash
 # Database migrations (Alembic)
@@ -44,6 +69,7 @@ alembic revision --autogenerate -m "description"  # Create new migration
 
 ### Core Components
 - **Backend API**: FastAPI application with SQLAlchemy ORM
+- **MCP Server**: Model Context Protocol server for AI integration
 - **Database**: PostgreSQL with SQLAlchemy models
 - **Authentication**: Firebase Admin SDK
 - **Caching**: Redis for session storage
@@ -162,30 +188,61 @@ python -m pytest tests/ --lf              # Run last failed tests
 - ✅ Integration workflows
 - ⚠️ **4 failing tests** (auth endpoint edge cases - minor issues)
 
+### MCP Server Tests
+```bash
+cd apps/mcp_server
+
+# Run all MCP server tests
+python run_tests.py                    # All tests (37 passing)
+python run_tests.py --type unit        # Unit tests only
+python run_tests.py --coverage         # With coverage report
+
+# Specific test categories
+python -m pytest tests/test_server.py -v     # Core server tests
+python -m pytest tests/test_tools.py -v      # Tool handler tests
+python -m pytest tests/test_security.py -v   # Security and auth tests
+python -m pytest tests/test_config.py -v     # Configuration tests
+```
+
+### MCP Test Coverage Status
+- ✅ **37 passing tests** across all MCP components
+- ✅ Server initialization and capabilities
+- ✅ Tool handlers (Goals, Projects, Tasks, AI)
+- ✅ Security permissions and authentication
+- ✅ Configuration management
+- ✅ Transport layer integration
+- ✅ Error handling and validation
+
 ## Development Notes
 
 ### Current Status
-- Basic FastAPI backend with authentication
-- Goals and tasks CRUD operations
-- PostgreSQL with SQLAlchemy ORM
-- Docker-based development environment
-- Alembic database migrations
+- ✅ **Backend API**: Complete FastAPI backend with authentication
+- ✅ **Data Models**: Users, Goals, Projects, Tasks, Life Areas with full relationships
+- ✅ **MCP Server**: Model Context Protocol server for AI integration
+- ✅ **Database**: PostgreSQL with SQLAlchemy ORM and Alembic migrations
+- ✅ **Testing**: Comprehensive test suites (30+ backend, 37+ MCP tests)
+- ✅ **Docker**: Complete containerized development environment
+- ✅ **AI Ready**: MCP tools for Goals API with security and permissions
 
 ### Planned Features
-- AI-powered conversational interface
-- Memory/RAG system for personalized responses
-- Story/video generation pipeline
-- Multi-platform Flutter frontend
-- Real-time notifications
-- Social media integrations
+- 🚧 **Projects/Tasks MCP Tools**: Complete CRUD operations via MCP
+- 🚧 **AI Engine**: LangChain-based conversational AI integration
+- 🚧 **Memory/RAG**: Vector embeddings with Weaviate for personalized responses
+- 🚧 **Story Engine**: Automated content/video generation pipeline
+- 🚧 **Flutter Frontend**: Multi-platform (web/mobile/desktop) client
+- 🚧 **Real-time**: Notifications and live updates
+- 🚧 **Social Integration**: Export to TikTok, Instagram, YouTube
 
 ### Key Dependencies
-- **FastAPI**: Web framework
-- **SQLAlchemy**: Database ORM
-- **Alembic**: Database migrations
-- **Firebase Admin**: Authentication
-- **pytest**: Testing framework
-- **uvicorn**: ASGI server
+- **FastAPI**: Web framework and API gateway
+- **MCP**: Model Context Protocol for AI integration
+- **SQLAlchemy**: Database ORM with PostgreSQL
+- **Alembic**: Database schema migrations
+- **Firebase Admin**: Authentication and user management
+- **Weaviate**: Vector database for AI memory
+- **Redis**: Caching and session storage
+- **pytest**: Testing framework with async support
+- **uvicorn**: ASGI server for production deployment
 
 ### Migration Notes
 - Recent migration from `backend-api` to `backend_api` (underscores)
