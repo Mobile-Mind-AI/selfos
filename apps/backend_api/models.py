@@ -75,7 +75,7 @@ class Project(Base):
     user = relationship("User", back_populates="projects")
     life_area = relationship("LifeArea", back_populates="projects")
     goals = relationship("Goal", back_populates="project", cascade="all, delete-orphan")
-    tasks = relationship("Task", back_populates="project")
+    tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
     media_attachments = relationship("MediaAttachment", back_populates="project")
 
 # Performance indexes for Project model

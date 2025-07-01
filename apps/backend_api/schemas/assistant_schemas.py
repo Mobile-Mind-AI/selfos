@@ -38,11 +38,13 @@ class PersonalityStyle(BaseModel):
     empathy: int = Field(..., ge=0, le=100, description="0 = cold, 100 = warm and emotional")
     motivation: int = Field(..., ge=0, le=100, description="0 = passive, 100 = high-energy motivator")
     
-    @validator('*', pre=True)
+    @validator('*')
     def validate_range(cls, v):
         """Ensure all values are within 0-100 range."""
         if isinstance(v, (int, float)):
-            return max(0, min(100, int(v)))
+            if v < 0 or v > 100:
+                raise ValueError('Value must be between 0 and 100')
+            return int(v)
         return v
 
 

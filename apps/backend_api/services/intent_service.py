@@ -119,7 +119,7 @@ class IntentClassifier:
                 r'\bhow\s+(good|bad)\s+is\s+my\s+\w+\b'
             ],
             IntentType.GET_ADVICE: [
-                r'\b(advice|suggestion|help|guidance|recommend)\b',
+                r'\b(advice|suggestions?|help|guidance|recommend)\b',
                 r'\bwhat\s+should\s+i\s+(do|try)\b',
                 r'\bhow\s+(can|do)\s+i\s+\w+\b',
                 r'\bany\s+ideas\s+(for|about)\b',
@@ -193,7 +193,7 @@ class IntentClassifier:
             result.fallback_used = True
         
         # Extract entities
-        result.entities.update(self._extract_entities(message, result.intent))
+        result.entities.update(self._extract_entities(message, result.intent, result.entities))
         
         # Log the conversation
         processing_time = (datetime.now() - start_time).total_seconds() * 1000
@@ -214,6 +214,7 @@ class IntentClassifier:
         # Create conversation request for AI orchestrator
         full_prompt = f"{system_prompt}\n\nUser: {message}"
         conversation_request = ConversationRequest(
+            request_type=ai_models.RequestType.CONVERSATION,
             user_id="intent_classifier",  # Special identifier for intent classification
             prompt=full_prompt,
             message=message,
@@ -274,9 +275,10 @@ class IntentClassifier:
             fallback_used=True
         )
 
-    def _extract_entities(self, message: str, intent: str) -> Dict[str, Any]:
+    def _extract_entities(self, message: str, intent: str, existing_entities: Dict[str, Any] = None) -> Dict[str, Any]:
         """Extract entities from message using regex patterns."""
         entities = {}
+        existing_entities = existing_entities or {}
         message_lower = message.lower()
         
         for entity_type, patterns in self.entity_patterns.items():
@@ -289,8 +291,8 @@ class IntentClassifier:
                         entities[entity_type] = parser
                     break  # Use first match for each entity type
         
-        # Extract title/description (everything after intent keywords)
-        if intent in ['create_goal', 'create_task', 'create_project']:
+        # Extract title/description (everything after intent keywords) only if not already provided
+        if intent in ['create_goal', 'create_task', 'create_project'] and 'title' not in existing_entities:
             title = self._extract_title(message, intent)
             if title:
                 entities['title'] = title

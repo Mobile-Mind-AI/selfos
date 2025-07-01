@@ -8,7 +8,7 @@ from unittest.mock import Mock, AsyncMock, patch
 from datetime import datetime, timedelta
 
 from services.intent_service import IntentClassifier, ConversationFlowManager, IntentType, IntentResult
-from ai_engine.models import AIResponse
+from ai_engine.models import AIResponse, ResponseStatus
 
 
 class TestIntentClassifier:
@@ -24,11 +24,13 @@ class TestIntentClassifier:
         """Test classification of create_goal intent."""
         # Mock LLM response
         mock_response = AIResponse(
+            request_id="test-1",
+            status=ResponseStatus.SUCCESS,
             content='{"intent": "create_goal", "confidence": 0.95, "entities": {"title": "Learn Python"}, "reasoning": "User wants to set a learning goal"}',
-            usage={"tokens": 100},
-            model="gpt-4"
+            token_usage={"tokens": 100},
+            model_used="gpt-4"
         )
-        self.classifier.ai_orchestrator.process_request.return_value = mock_response
+        self.classifier.ai_orchestrator.chat.return_value = mock_response
         
         result = await self.classifier.classify_intent("I want to learn Python")
         
@@ -41,11 +43,13 @@ class TestIntentClassifier:
     async def test_create_task_intent_classification(self):
         """Test classification of create_task intent."""
         mock_response = AIResponse(
+            request_id="test-2",
+            status=ResponseStatus.SUCCESS,
             content='{"intent": "create_task", "confidence": 0.92, "entities": {"title": "Buy groceries", "due_date": "2025-07-02"}, "reasoning": "User wants to create a specific task"}',
-            usage={"tokens": 100},
-            model="gpt-4"
+            token_usage={"tokens": 100},
+            model_used="gpt-4"
         )
-        self.classifier.ai_orchestrator.process_request.return_value = mock_response
+        self.classifier.ai_orchestrator.chat.return_value = mock_response
         
         result = await self.classifier.classify_intent("I need to buy groceries tomorrow")
         
@@ -58,7 +62,7 @@ class TestIntentClassifier:
     async def test_rule_based_fallback(self):
         """Test rule-based fallback when LLM fails."""
         # Mock LLM failure
-        self.classifier.ai_orchestrator.process_request.side_effect = Exception("LLM Error")
+        self.classifier.ai_orchestrator.chat.side_effect = Exception("LLM Error")
         
         result = await self.classifier.classify_intent("Create a goal to exercise daily")
         
@@ -70,11 +74,13 @@ class TestIntentClassifier:
     async def test_low_confidence_fallback(self):
         """Test fallback when LLM confidence is low."""
         mock_response = AIResponse(
+            request_id="test-3",
+            status=ResponseStatus.SUCCESS,
             content='{"intent": "unknown", "confidence": 0.3, "entities": {}, "reasoning": "Unclear message"}',
-            usage={"tokens": 100},
-            model="gpt-4"
+            token_usage={"tokens": 100},
+            model_used="gpt-4"
         )
-        self.classifier.ai_orchestrator.process_request.return_value = mock_response
+        self.classifier.ai_orchestrator.chat.return_value = mock_response
         
         result = await self.classifier.classify_intent("Maybe do something")
         
@@ -212,11 +218,13 @@ class TestIntentClassifier:
     async def test_conversation_logging(self):
         """Test that conversations are logged properly."""
         mock_response = AIResponse(
+            request_id="test-4",
+            status=ResponseStatus.SUCCESS,
             content='{"intent": "create_task", "confidence": 0.88, "entities": {"title": "Test task"}, "reasoning": "Clear task creation"}',
-            usage={"tokens": 100},
-            model="gpt-4"
+            token_usage={"tokens": 100},
+            model_used="gpt-4"
         )
-        self.classifier.ai_orchestrator.process_request.return_value = mock_response
+        self.classifier.ai_orchestrator.chat.return_value = mock_response
         
         with patch.object(self.classifier, '_log_conversation', new_callable=AsyncMock) as mock_log:
             result = await self.classifier.classify_intent("Create a task to test logging")
@@ -507,11 +515,13 @@ async def test_integration_intent_to_action():
     
     # Mock the AI orchestrator
     mock_response = AIResponse(
+        request_id="test-5",
+        status=ResponseStatus.SUCCESS,
         content='{"intent": "create_task", "confidence": 0.94, "entities": {"title": "Buy groceries", "due_date": "2025-07-02", "life_area": "Health"}, "reasoning": "User wants to create a specific task with clear details"}',
-        usage={"tokens": 100},
-        model="gpt-4"
+        token_usage={"tokens": 100},
+        model_used="gpt-4"
     )
-    flow_manager.intent_classifier.ai_orchestrator.process_request = AsyncMock(return_value=mock_response)
+    flow_manager.intent_classifier.ai_orchestrator.chat = AsyncMock(return_value=mock_response)
     
     result = await flow_manager.process_message(
         user_id="integration_test_user",
