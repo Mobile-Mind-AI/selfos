@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/chat_message.dart';
+import '../../services/chat_provider.dart';
+import '../../widgets/chat/chat_input.dart';
+import '../../widgets/chat/message_bubble.dart';
 
-/// AI Chat interface screen
+/// Main chat screen for AI conversations
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
 
@@ -11,14 +13,11 @@ class ChatScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
-  final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<ChatMessage> _messages = [];
-  bool _isLoading = false;
+  bool _isInitialLoad = true;
 
   @override
   void dispose() {
-    _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -26,281 +25,274 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final messages = ref.watch(chatMessagesProvider);
+    final isLoading = ref.watch(isChatLoadingProvider);
+    final chatNotifier = ref.read(chatProvider.notifier);
+
+    // Auto-scroll to bottom when new messages arrive
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients && 
+          (messages.isNotEmpty || !_isInitialLoad)) {
+        _scrollToBottom();
+        _isInitialLoad = false;
+      }
+    });
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('AI Assistant'),
+        centerTitle: true,
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        actions: [
+          if (messages.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.clear_all),
+              onPressed: () => _showClearChatDialog(context, chatNotifier),
+              tooltip: 'Clear chat',
+            ),
+        ],
+      ),
       body: Column(
         children: [
-          // Chat Header
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              border: Border(
-                bottom: BorderSide(
-                  color: theme.colorScheme.outline.withOpacity(0.2),
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  child: Icon(
-                    Icons.psychology,
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'AI Assistant',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'Here to help with your goals',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: () {
-                    // TODO: Show chat options
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          // Messages Area
           Expanded(
-            child: _messages.isEmpty
-              ? _buildEmptyState(theme)
-              : _buildMessagesList(),
+            child: _buildMessagesList(messages, isLoading, chatNotifier),
           ),
-
-          // Message Input
-          _buildMessageInput(theme),
+          ChatInput(
+            onSendMessage: (message) => _sendMessage(message, chatNotifier),
+            isLoading: isLoading,
+            placeholder: 'Tell me about a goal you want to achieve...',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
+  Widget _buildMessagesList(
+    List<dynamic> messages,
+    bool isLoading,
+    dynamic chatNotifier,
+  ) {
+    if (messages.isEmpty && !isLoading) {
+      return _buildEmptyState();
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      itemCount: messages.length + (isLoading ? 1 : 0),
+      itemBuilder: (context, index) {
+        // Show loading indicator at the end if loading
+        if (index == messages.length && isLoading) {
+          return _buildTypingIndicator();
+        }
+
+        final message = messages[index];
+        final isLastMessage = index == messages.length - 1;
+        
+        return MessageBubble(
+          message: message,
+          showTimestamp: _shouldShowTimestamp(messages, index),
+          onRetry: !message.isUser && isLastMessage 
+            ? () => chatNotifier.retryLastMessage()
+            : null,
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.psychology_outlined,
-              size: 64,
-              color: theme.colorScheme.primary.withOpacity(0.5),
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.psychology,
+                size: 40,
+                color: colorScheme.primary,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Text(
-              'Start a conversation',
-              style: theme.textTheme.headlineSmall,
+              'AI Goal Assistant',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
-              'Ask me about your goals, tasks, or anything else!',
+              'Tell me about a goal you want to achieve, and I\'ll help you break it down into actionable steps.',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: colorScheme.onSurface.withOpacity(0.7),
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildSuggestionChip(theme, 'What should I focus on today?'),
-                _buildSuggestionChip(theme, 'Help me break down a goal'),
-                _buildSuggestionChip(theme, 'Review my progress'),
-              ],
-            ),
+            const SizedBox(height: 24),
+            _buildSuggestedPrompts(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSuggestionChip(ThemeData theme, String text) {
-    return ActionChip(
-      label: Text(text),
-      onPressed: () {
-        _messageController.text = text;
-        _sendMessage();
-      },
-    );
-  }
-
-  Widget _buildMessagesList() {
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(16),
-      itemCount: _messages.length,
-      itemBuilder: (context, index) {
-        final message = _messages[index];
-        return _buildMessageBubble(message);
-      },
-    );
-  }
-
-  Widget _buildMessageBubble(ChatMessage message) {
+  Widget _buildSuggestedPrompts() {
     final theme = Theme.of(context);
-    final isUser = message.isUser;
+    final colorScheme = theme.colorScheme;
+    final chatNotifier = ref.read(chatProvider.notifier);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!isUser) ...[
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: theme.colorScheme.primaryContainer,
-              child: Icon(
-                Icons.psychology,
-                size: 16,
-                color: theme.colorScheme.onPrimaryContainer,
+    final prompts = [
+      'I want to learn a new programming language',
+      'Help me get healthier and more fit',
+      'I want to start a side business',
+      'Help me improve my work-life balance',
+    ];
+
+    return Column(
+      children: prompts.map((prompt) {
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 8),
+          child: OutlinedButton(
+            onPressed: () => _sendMessage(prompt, chatNotifier),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              side: BorderSide(
+                color: colorScheme.outline.withOpacity(0.3),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-            const SizedBox(width: 8),
-          ],
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isUser
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.surfaceVariant,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                message.text,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: isUser
-                    ? theme.colorScheme.onPrimary
-                    : theme.colorScheme.onSurfaceVariant,
-                ),
+            child: Text(
+              prompt,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface.withOpacity(0.8),
               ),
             ),
           ),
-          if (isUser) ...[
-            const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: theme.colorScheme.primary,
-              child: Icon(
-                Icons.person,
-                size: 16,
-                color: theme.colorScheme.onPrimary,
-              ),
-            ),
-          ],
-        ],
-      ),
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildMessageInput(ThemeData theme) {
+  Widget _buildTypingIndicator() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: theme.colorScheme.outline.withOpacity(0.2),
-          ),
-        ),
-      ),
+      margin: const EdgeInsets.only(top: 4, bottom: 4, left: 16, right: 48),
       child: Row(
         children: [
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              decoration: InputDecoration(
-                hintText: 'Type your message...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-              ),
-              onSubmitted: (_) => _sendMessage(),
-              enabled: !_isLoading,
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: colorScheme.secondaryContainer,
+            child: Icon(
+              Icons.psychology,
+              size: 18,
+              color: colorScheme.onSecondaryContainer,
             ),
           ),
           const SizedBox(width: 8),
-          IconButton(
-            onPressed: _isLoading ? null : _sendMessage,
-            icon: _isLoading
-              ? SizedBox(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceVariant,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+                bottomLeft: Radius.circular(4),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.send),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      colorScheme.onSurfaceVariant.withOpacity(0.6),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'AI is thinking...',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _sendMessage() {
-    final text = _messageController.text.trim();
-    if (text.isEmpty) return;
-
-    setState(() {
-      _messages.add(ChatMessage(text: text, isUser: true));
-      _isLoading = true;
-    });
-
-    _messageController.clear();
-    _scrollToBottom();
-
-    // TODO: Implement actual AI chat
-    _simulateAIResponse(text);
+  bool _shouldShowTimestamp(List<dynamic> messages, int index) {
+    if (index == 0) return true;
+    
+    final currentMessage = messages[index];
+    final previousMessage = messages[index - 1];
+    
+    final timeDiff = currentMessage.timestamp.difference(previousMessage.timestamp);
+    return timeDiff.inMinutes > 5;
   }
 
-  void _simulateAIResponse(String userMessage) {
-    // Simulate AI thinking time
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _messages.add(ChatMessage(
-            text: 'Thanks for your message: "$userMessage". This is a placeholder response. AI integration will be implemented soon!',
-            isUser: false,
-          ));
-          _isLoading = false;
-        });
-        _scrollToBottom();
-      }
-    });
+  void _sendMessage(String message, dynamic chatNotifier) {
+    chatNotifier.sendMessage(message);
   }
 
   void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  void _showClearChatDialog(BuildContext context, dynamic chatNotifier) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear Chat'),
+        content: const Text(
+          'Are you sure you want to clear all messages? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              chatNotifier.clearChat();
+              Navigator.pop(context);
+            },
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
   }
 }

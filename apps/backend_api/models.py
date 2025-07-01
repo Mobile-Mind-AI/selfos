@@ -13,6 +13,7 @@ class User(Base):
     
     # Relationships
     goals = relationship("Goal", back_populates="user", cascade="all, delete-orphan")
+    projects = relationship("Project", back_populates="user", cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")
     life_areas = relationship("LifeArea", back_populates="user", cascade="all, delete-orphan")
     media_attachments = relationship("MediaAttachment", back_populates="user", cascade="all, delete-orphan")
@@ -26,6 +27,7 @@ class Goal(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String, ForeignKey("users.uid"), nullable=False)
     life_area_id = Column(Integer, ForeignKey("life_areas.id"), nullable=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     title = Column(String, nullable=False)
     description = Column(Text)
     # Status: e.g., todo, in_progress, completed
@@ -38,6 +40,7 @@ class Goal(Base):
     # Relationships
     user = relationship("User", back_populates="goals")
     life_area = relationship("LifeArea", back_populates="goals")
+    project = relationship("Project", back_populates="goals")
     tasks = relationship("Task", back_populates="goal", cascade="all, delete-orphan")
     media_attachments = relationship("MediaAttachment", back_populates="goal")
 
@@ -45,11 +48,47 @@ class Goal(Base):
 Index('ix_goals_user_created', Goal.user_id, Goal.created_at.desc())
 Index('ix_goals_user_status', Goal.user_id, Goal.status)
 Index('ix_goals_life_area_created', Goal.life_area_id, Goal.created_at.desc())
+Index('ix_goals_project_created', Goal.project_id, Goal.created_at.desc())
+
+class Project(Base):
+    __tablename__ = "projects"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.uid"), nullable=False)
+    life_area_id = Column(Integer, ForeignKey("life_areas.id"), nullable=True)
+    title = Column(String, nullable=False)
+    description = Column(Text)
+    # Status: e.g., todo, in_progress, completed, paused
+    status = Column(String, nullable=False, default='todo')
+    # Progress percentage 0.0 - 100.0
+    progress = Column(Float, nullable=False, default=0.0)
+    # Optional start and end dates for the project
+    start_date = Column(DateTime)
+    target_date = Column(DateTime)
+    # Project priority: low, medium, high
+    priority = Column(String, nullable=False, default='medium')
+    # Project phases/milestones as JSON
+    phases = Column(JSON, nullable=False, default=list)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="projects")
+    life_area = relationship("LifeArea", back_populates="projects")
+    goals = relationship("Goal", back_populates="project", cascade="all, delete-orphan")
+    tasks = relationship("Task", back_populates="project")
+    media_attachments = relationship("MediaAttachment", back_populates="project")
+
+# Performance indexes for Project model
+Index('ix_projects_user_created', Project.user_id, Project.created_at.desc())
+Index('ix_projects_user_status', Project.user_id, Project.status)
+Index('ix_projects_life_area_created', Project.life_area_id, Project.created_at.desc())
+Index('ix_projects_user_priority', Project.user_id, Project.priority)
 
 class Task(Base):
     __tablename__ = "tasks"
     id = Column(Integer, primary_key=True, index=True)
-    goal_id = Column(Integer, ForeignKey("goals.id"), nullable=False)
+    goal_id = Column(Integer, ForeignKey("goals.id"), nullable=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     user_id = Column(String, ForeignKey("users.uid"), nullable=False)
     life_area_id = Column(Integer, ForeignKey("life_areas.id"), nullable=True)
     title = Column(String, nullable=False)
@@ -70,6 +109,7 @@ class Task(Base):
     # Relationships
     user = relationship("User", back_populates="tasks")
     goal = relationship("Goal", back_populates="tasks")
+    project = relationship("Project", back_populates="tasks")
     life_area = relationship("LifeArea", back_populates="tasks")
     media_attachments = relationship("MediaAttachment", back_populates="task")
 
@@ -77,6 +117,7 @@ class Task(Base):
 Index('ix_tasks_user_created', Task.user_id, Task.created_at.desc())
 Index('ix_tasks_user_status', Task.user_id, Task.status)
 Index('ix_tasks_goal_created', Task.goal_id, Task.created_at.desc())
+Index('ix_tasks_project_created', Task.project_id, Task.created_at.desc())
 Index('ix_tasks_due_date', Task.user_id, Task.due_date)
 # Partial index for completed tasks (PostgreSQL specific, will be in migration)
 Index('ix_tasks_completed', Task.user_id, Task.created_at.desc(), postgresql_where=(Task.status == 'completed'))
@@ -100,6 +141,7 @@ class LifeArea(Base):
     # Relationships
     user = relationship("User", back_populates="life_areas")
     goals = relationship("Goal", back_populates="life_area")
+    projects = relationship("Project", back_populates="life_area")
     tasks = relationship("Task", back_populates="life_area")
 
 # Performance indexes for LifeArea model
@@ -112,6 +154,7 @@ class MediaAttachment(Base):
     user_id = Column(String, ForeignKey("users.uid"), nullable=False)
     # What this attachment is linked to
     goal_id = Column(Integer, ForeignKey("goals.id"), nullable=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
     # File information
     filename = Column(String, nullable=False)
@@ -133,12 +176,14 @@ class MediaAttachment(Base):
     # Relationships
     user = relationship("User", back_populates="media_attachments")
     goal = relationship("Goal", back_populates="media_attachments")
+    project = relationship("Project", back_populates="media_attachments")
     task = relationship("Task", back_populates="media_attachments")
 
 # Performance indexes for MediaAttachment model
 Index('ix_media_user_created', MediaAttachment.user_id, MediaAttachment.created_at.desc())
 Index('ix_media_user_type', MediaAttachment.user_id, MediaAttachment.file_type)
 Index('ix_media_goal', MediaAttachment.goal_id, MediaAttachment.created_at.desc())
+Index('ix_media_project', MediaAttachment.project_id, MediaAttachment.created_at.desc())
 Index('ix_media_task', MediaAttachment.task_id, MediaAttachment.created_at.desc())
 
 class MemoryItem(Base):
