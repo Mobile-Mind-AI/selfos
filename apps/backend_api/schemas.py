@@ -104,14 +104,14 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
-class AuthResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user: "User"
-
 class User(BaseModel):
     uid: str = Field(..., description="Firebase user ID")
     email: str = Field(..., description="User email address")
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: User
 
 class UserCreate(BaseModel):
     """Schema for creating a new user"""
@@ -859,3 +859,11 @@ class PublishRequest(BaseModel):
     platforms: List[str] = Field(..., min_items=1, description="Platforms to publish to")
     scheduled_time: Optional[datetime] = Field(None, description="When to schedule the post")
     custom_message: Optional[str] = Field(None, max_length=500, description="Custom message for the post")
+
+
+# Rebuild models to resolve forward references for Pydantic V2
+ProjectOut.model_rebuild()
+TaskOut.model_rebuild()
+GoalOut.model_rebuild()
+UserPreferencesOut.model_rebuild()
+UserOut.model_rebuild()

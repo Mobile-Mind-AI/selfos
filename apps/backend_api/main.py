@@ -24,6 +24,8 @@ from routers.feedback_logs import router as feedback_logs_router
 from routers.story_sessions import router as story_sessions_router
 from routers.health import router as health_router
 from routers.ai import router as ai_router
+from routers.conversation import router as conversation_router
+from routers.assistant_profiles import router as assistant_profiles_router
 
 # Import event system
 import event_consumers
@@ -79,3 +81,5 @@ app.include_router(user_preferences_router, prefix="/api", tags=["preferences"])
 app.include_router(feedback_logs_router, prefix="/api", tags=["feedback"])
 app.include_router(story_sessions_router, prefix="/api", tags=["stories"])
 app.include_router(ai_router, prefix="/api", tags=["ai"])
+app.include_router(conversation_router, tags=["conversation"])
+app.include_router(assistant_profiles_router, prefix="/api", tags=["assistant_profiles"])

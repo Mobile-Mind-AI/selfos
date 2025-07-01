@@ -59,6 +59,8 @@ Core Entities:
 
 AI & Analytics:
 ├── POST /api/ai/* (AI service integration)
+├── CRUD /api/assistant_profiles/ (AI personality customization)
+├── POST /api/conversation/ (Intent classification & chat)
 ├── POST/GET /api/feedback/ (RLHF data collection)
 ├── POST/GET /api/stories/ (AI content generation)
 └── GET /health (System monitoring)
@@ -106,6 +108,51 @@ PromptEngine
 - **Templates**: Goal decomposition, Conversation, System prompts
 
 **Status**: 🟢 Both fully implemented
+
+### 6. Assistant Personalization System
+- **Technology**: AI personality customization with multi-trait personality engine
+- **Database**: JSON-based personality storage with performance indexes
+- **Integration**: Seamlessly integrated with conversation and intent classification systems
+- **Features**: Multi-assistant support, onboarding flow, real-time personality preview
+
+**Status**: 🟢 Fully implemented
+
+#### Core Features:
+- **5-Trait Personality System**: Formality, Directness, Humor, Empathy, Motivation (0-100 scale)
+- **Multi-Assistant Support**: Up to 5 custom assistants per user with default management
+- **Temperature Control**: Separate settings for dialogue creativity and intent classification consistency
+- **Language & Model Support**: 8 languages, multiple AI models (GPT-3.5/4, Claude 3)
+- **Onboarding Flow**: Guided assistant creation with personality preview
+
+#### Database Schema:
+```sql
+CREATE TABLE assistant_profiles (
+    id UUID PRIMARY KEY,
+    user_id VARCHAR REFERENCES users(uid),
+    name VARCHAR NOT NULL,
+    style JSON NOT NULL DEFAULT '{"formality": 50, "directness": 50, "humor": 30, "empathy": 70, "motivation": 60}',
+    dialogue_temperature FLOAT DEFAULT 0.8,
+    intent_temperature FLOAT DEFAULT 0.3,
+    ai_model VARCHAR DEFAULT 'gpt-3.5-turbo',
+    language VARCHAR DEFAULT 'en',
+    is_default BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### API Endpoints:
+```
+/api/assistant_profiles/
+├── POST /onboarding          (Guided assistant creation)
+├── GET /config              (Supported languages/models)
+├── POST /preview            (Personality style preview)
+├── GET /default             (Default assistant profile)
+├── GET /                    (List user's assistants)
+├── POST /                   (Create new assistant)
+├── GET /{id}               (Get specific assistant)
+├── PATCH /{id}             (Update assistant)
+└── DELETE /{id}            (Delete assistant)
+```
 
 ## Data Architecture
 

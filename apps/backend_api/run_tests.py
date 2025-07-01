@@ -43,7 +43,14 @@ def run_module_by_module():
         "tests/unit/test_user_preferences.py",
         "tests/unit/test_feedback_logs.py",
         "tests/unit/test_story_sessions.py",
-        "tests/integration/"
+        "tests/unit/test_assistant_profiles.py",
+        "tests/unit/test_intent_service.py",
+        "tests/unit/test_projects.py",
+        "tests/integration/test_advanced_chat_scenarios.py",
+        "tests/integration/test_ai_integration.py",
+        "tests/integration/test_assistant_conversation_integration.py",
+        "tests/integration/test_chat_simulation.py",
+        "tests/integration/test_integration_goals_and_tasks.py"
     ]
     
     total_tests = 0
