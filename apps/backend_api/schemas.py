@@ -859,3 +859,11 @@ class PublishRequest(BaseModel):
     platforms: List[str] = Field(..., min_items=1, description="Platforms to publish to")
     scheduled_time: Optional[datetime] = Field(None, description="When to schedule the post")
     custom_message: Optional[str] = Field(None, max_length=500, description="Custom message for the post")
+
+
+# Rebuild models to resolve forward references for Pydantic V2
+ProjectOut.model_rebuild()
+TaskOut.model_rebuild()
+GoalOut.model_rebuild()
+UserPreferencesOut.model_rebuild()
+UserOut.model_rebuild()
