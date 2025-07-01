@@ -347,3 +347,183 @@ Index('ix_story_user_status', StorySession.user_id, StorySession.processing_stat
 Index('ix_story_user_period', StorySession.user_id, StorySession.summary_period)
 Index('ix_story_posted_at', StorySession.posted_at)  # For archival queries
 Index('ix_story_content_type', StorySession.content_type, StorySession.created_at.desc())
+
+
+class ConversationLog(Base):
+    """
+    Log of conversation interactions for intent classification debugging and tuning.
+    Stores user inputs, detected intents, confidence scores, and extracted entities.
+    """
+    __tablename__ = "conversation_logs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.uid"), nullable=False)
+    session_id = Column(String, nullable=True)  # For grouping related messages
+    
+    # Input and classification results
+    user_message = Column(Text, nullable=False)
+    intent = Column(String, nullable=False)
+    confidence = Column(Float, nullable=False)
+    entities = Column(JSON, nullable=False, default=dict)
+    
+    # Classification metadata
+    reasoning = Column(Text, nullable=True)
+    fallback_used = Column(Boolean, nullable=False, default=False)
+    processing_time_ms = Column(Float, nullable=True)
+    
+    # Conversation context
+    conversation_turn = Column(Integer, nullable=False, default=1)
+    previous_intent = Column(String, nullable=True)
+    user_context = Column(JSON, nullable=True)  # User state at time of message
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="conversation_logs")
+
+
+class ConversationSession(Base):
+    """
+    Conversation session tracking for multi-turn interactions.
+    Groups related messages and tracks conversation state.
+    """
+    __tablename__ = "conversation_sessions"
+    
+    id = Column(String, primary_key=True, index=True)  # UUID
+    user_id = Column(String, ForeignKey("users.uid"), nullable=False)
+    
+    # Session metadata
+    session_type = Column(String, nullable=False, default='chat')  # chat, onboarding, support
+    status = Column(String, nullable=False, default='active')  # active, completed, abandoned
+    
+    # Conversation state
+    current_intent = Column(String, nullable=True)
+    incomplete_entities = Column(JSON, nullable=False, default=dict)
+    context_data = Column(JSON, nullable=False, default=dict)
+    
+    # Session metrics
+    turn_count = Column(Integer, nullable=False, default=0)
+    successful_intents = Column(Integer, nullable=False, default=0)
+    failed_intents = Column(Integer, nullable=False, default=0)
+    avg_confidence = Column(Float, nullable=True)
+    
+    # Timestamps
+    started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    last_activity = Column(DateTime, default=datetime.utcnow, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="conversation_sessions")
+
+
+class IntentFeedback(Base):
+    """
+    User feedback on intent classification accuracy for model improvement.
+    Allows users to correct misclassified intents.
+    """
+    __tablename__ = "intent_feedback"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.uid"), nullable=False)
+    conversation_log_id = Column(Integer, ForeignKey("conversation_logs.id"), nullable=False)
+    
+    # Original classification
+    original_intent = Column(String, nullable=False)
+    original_confidence = Column(Float, nullable=False)
+    original_entities = Column(JSON, nullable=False, default=dict)
+    
+    # User corrections
+    corrected_intent = Column(String, nullable=False)
+    corrected_entities = Column(JSON, nullable=False, default=dict)
+    feedback_type = Column(String, nullable=False)  # wrong_intent, missing_entity, wrong_entity
+    
+    # Feedback metadata
+    user_comment = Column(Text, nullable=True)
+    feedback_quality = Column(String, nullable=True)  # helpful, not_helpful, spam
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="intent_feedback")
+    conversation_log = relationship("ConversationLog")
+
+
+# Add new relationships to User model
+User.conversation_logs = relationship("ConversationLog", back_populates="user", cascade="all, delete-orphan")
+User.conversation_sessions = relationship("ConversationSession", back_populates="user", cascade="all, delete-orphan")
+User.intent_feedback = relationship("IntentFeedback", back_populates="user", cascade="all, delete-orphan")
+
+# Performance indexes for ConversationLog model
+Index('ix_conversation_logs_user_created', ConversationLog.user_id, ConversationLog.created_at.desc())
+Index('ix_conversation_logs_session_turn', ConversationLog.session_id, ConversationLog.conversation_turn)
+Index('ix_conversation_logs_intent_confidence', ConversationLog.intent, ConversationLog.confidence.desc())
+Index('ix_conversation_logs_fallback', ConversationLog.fallback_used, ConversationLog.created_at.desc())
+
+# Performance indexes for ConversationSession model
+Index('ix_conversation_sessions_user_activity', ConversationSession.user_id, ConversationSession.last_activity.desc())
+Index('ix_conversation_sessions_status_created', ConversationSession.status, ConversationSession.started_at.desc())
+Index('ix_conversation_sessions_type_user', ConversationSession.session_type, ConversationSession.user_id)
+
+# Performance indexes for IntentFeedback model
+Index('ix_intent_feedback_user_created', IntentFeedback.user_id, IntentFeedback.created_at.desc())
+Index('ix_intent_feedback_original_intent', IntentFeedback.original_intent, IntentFeedback.feedback_type)
+Index('ix_intent_feedback_quality', IntentFeedback.feedback_quality, IntentFeedback.created_at.desc())
+
+
+class AssistantProfile(Base):
+    """
+    AI Assistant Personality Profiles for personalized conversations.
+    Each user can have multiple assistant profiles with different personalities.
+    """
+    __tablename__ = "assistant_profiles"
+    
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid4()))
+    user_id = Column(String, ForeignKey("users.uid"), nullable=False)
+    
+    # Basic profile information
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    avatar_url = Column(String, nullable=True)
+    
+    # AI model and language settings
+    ai_model = Column(String, nullable=False, default="gpt-3.5-turbo")
+    language = Column(String, nullable=False, default="en")
+    
+    # Behavior settings
+    requires_confirmation = Column(Boolean, nullable=False, default=True)
+    is_default = Column(Boolean, nullable=False, default=False)
+    
+    # Personality style (0-100 scale for each trait)
+    style = Column(JSON, nullable=False, default=lambda: {
+        "formality": 50,      # 0 = very formal, 100 = extremely casual
+        "directness": 50,     # 0 = very indirect, 100 = extremely direct
+        "humor": 30,          # 0 = serious, 100 = humorous
+        "empathy": 70,        # 0 = cold, 100 = warm and emotional
+        "motivation": 60      # 0 = passive, 100 = high-energy motivator
+    })
+    
+    # Temperature settings for different use cases
+    dialogue_temperature = Column(Float, nullable=False, default=0.8)
+    intent_temperature = Column(Float, nullable=False, default=0.3)
+    
+    # Additional configuration
+    prompt_modifiers = Column(JSON, nullable=True, default=dict)
+    custom_instructions = Column(Text, nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="assistant_profiles")
+
+
+# Add assistant_profiles relationship to User model
+User.assistant_profiles = relationship("AssistantProfile", back_populates="user", cascade="all, delete-orphan")
+
+# Performance indexes for AssistantProfile model
+Index('ix_assistant_profiles_user_default', AssistantProfile.user_id, AssistantProfile.is_default)
+Index('ix_assistant_profiles_user_created', AssistantProfile.user_id, AssistantProfile.created_at.desc())
+Index('ix_assistant_profiles_model', AssistantProfile.ai_model)
