@@ -21,6 +21,6 @@ class AppConfig {
   static const String appVersion = '1.0.0';
   
   // Timeouts
-  static const Duration apiTimeout = Duration(seconds: 30);
-  static const Duration connectTimeout = Duration(seconds: 10);
+  static const Duration apiTimeout = Duration(seconds: 60);
+  static const Duration connectTimeout = Duration(seconds: 15);
 }

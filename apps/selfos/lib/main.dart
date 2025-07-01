@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'config/routes.dart';
 import 'services/storage_service.dart';
+import 'screens/splash_screen.dart';
 
 /// SelfOS Flutter Application
 /// 

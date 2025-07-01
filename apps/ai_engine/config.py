@@ -43,10 +43,11 @@ class AIConfig:
         "goal_decomposition": {
             AIProvider.OPENAI: ModelConfig(
                 provider=AIProvider.OPENAI,
-                model_name="gpt-4",
+                model_name="gpt-3.5-turbo",
                 max_tokens=2000,
                 temperature=0.7,
-                cost_per_token=0.00003
+                timeout=45,  # Increased timeout for complex goal decomposition
+                cost_per_token=0.0000015
             ),
             AIProvider.ANTHROPIC: ModelConfig(
                 provider=AIProvider.ANTHROPIC,
@@ -69,6 +70,7 @@ class AIConfig:
                 model_name="gpt-3.5-turbo",
                 max_tokens=1500,
                 temperature=0.6,
+                timeout=10,
                 cost_per_token=0.0000015
             ),
             AIProvider.ANTHROPIC: ModelConfig(
@@ -92,6 +94,7 @@ class AIConfig:
                 model_name="gpt-3.5-turbo",
                 max_tokens=1000,
                 temperature=0.8,
+                timeout=10,
                 cost_per_token=0.0000015
             ),
             AIProvider.ANTHROPIC: ModelConfig(
@@ -197,8 +200,13 @@ class AIConfig:
             "max_retries": 2,
             "rate_limit_requests": 30,  # Lower limit for development
             "enable_logging": True,
-            "log_level": "DEBUG"
+            "log_level": "DEBUG",
+            "fallback_provider": "local"  # Always fallback to mock for development
         })
+        
+        # Use local provider by default in development if AI_USE_MOCK is set
+        if os.getenv("AI_USE_MOCK", "false").lower() == "true":
+            config.default_provider = AIProvider.LOCAL
         
         return config
     

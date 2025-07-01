@@ -21,15 +21,15 @@ class AuthStateInitial extends AuthState {
 /// User is authenticated with valid session
 class AuthStateAuthenticated extends AuthState {
   final User user;
-  
+
   const AuthStateAuthenticated(this.user);
-  
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is AuthStateAuthenticated && other.user == user;
   }
-  
+
   @override
   int get hashCode => user.hashCode;
 }
@@ -42,7 +42,7 @@ class AuthStateUnauthenticated extends AuthState {
 /// Authentication operation in progress
 class AuthStateLoading extends AuthState {
   final String? message;
-  
+
   const AuthStateLoading([this.message]);
 }
 
@@ -50,15 +50,15 @@ class AuthStateLoading extends AuthState {
 class AuthStateError extends AuthState {
   final String message;
   final Exception? exception;
-  
+
   const AuthStateError(this.message, [this.exception]);
-  
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is AuthStateError && other.message == message;
   }
-  
+
   @override
   int get hashCode => message.hashCode;
 }
@@ -84,25 +84,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final AuthService _authService;
 
   AuthNotifier(this._authService) : super(const AuthStateInitial()) {
-    _initializeAuth();
+    initialize();
   }
 
   /// Initializes authentication state on app startup
-  /// 
-  /// Checks if user has valid stored authentication data and updates
-  /// state accordingly.
-  Future<void> _initializeAuth() async {
+  ///
+  /// This method should be called from the splash screen to determine
+  /// the user's authentication status and load cached user data.
+  Future<void> initialize() async {
     try {
       if (kDebugMode) {
         print('🔐 AUTH: Initializing authentication state...');
       }
-      
+
+      state = const AuthStateLoading('Checking authentication...');
+
       final isAuthenticated = await _authService.isAuthenticated();
-      
+
       if (kDebugMode) {
         print('🔐 AUTH: Is authenticated: $isAuthenticated');
       }
-      
+
       if (isAuthenticated) {
         final user = await _authService.getStoredUser();
         if (kDebugMode) {
@@ -113,7 +115,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           if (kDebugMode) {
             print('🔐 AUTH: Set state to authenticated');
           }
-          
+
           // Optionally refresh user data from server
           _refreshUserData();
         } else {
@@ -156,14 +158,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Returns true on success, false on failure
   Future<bool> login(LoginRequest request) async {
     state = const AuthStateLoading('Signing in...');
-    
+
     try {
       final authResponse = await _authService.login(request);
-      
+
       if (kDebugMode) {
         print('🔐 AUTH: Login successful, storing credentials...');
       }
-      
+
       // Get user data from response
       User? user = authResponse.user;
       if (user == null) {
@@ -176,14 +178,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
           print('🔐 AUTH: Using user from auth response: ${user.email}');
         }
       }
-      
+
       state = AuthStateAuthenticated(user);
       return true;
     } on AuthException catch (e) {
       state = AuthStateError(e.message, e);
       return false;
     } catch (e) {
-      state = AuthStateError('Login failed: $e', e is Exception ? e : Exception(e.toString()));
+      state = AuthStateError(
+          'Login failed: $e', e is Exception ? e : Exception(e.toString()));
       return false;
     }
   }
@@ -195,22 +198,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Returns true on success, false on failure
   Future<bool> register(RegisterRequest request) async {
     state = const AuthStateLoading('Creating account...');
-    
+
     try {
       await _authService.register(request);
-      
+
       // After successful registration, attempt to login
       final loginRequest = LoginRequest.emailPassword(
         email: request.username,
         password: request.password,
       );
-      
+
       return await login(loginRequest);
     } on AuthException catch (e) {
       state = AuthStateError(e.message, e);
       return false;
     } catch (e) {
-      state = AuthStateError('Registration failed: $e', e is Exception ? e : Exception(e.toString()));
+      state = AuthStateError('Registration failed: $e',
+          e is Exception ? e : Exception(e.toString()));
       return false;
     }
   }
@@ -220,7 +224,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// [notifyServer] - Whether to notify the server about logout
   Future<void> logout({bool notifyServer = true}) async {
     state = const AuthStateLoading('Signing out...');
-    
+
     try {
       if (kDebugMode) {
         print('🔐 AUTH: Logging out user...');
@@ -252,19 +256,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
     String? email,
   }) async {
     state = AuthStateLoading('Signing in with ${provider.toUpperCase()}...');
-    
+
     try {
       if (kDebugMode) {
-        print('🔐 AUTH: Social login attempt - provider: $provider, email: $email');
+        print(
+            '🔐 AUTH: Social login attempt - provider: $provider, email: $email');
         print('🔐 AUTH: Social token length: ${socialToken.length}');
       }
-      
+
       final authResponse = await _authService.socialLogin(
         provider: provider,
         socialToken: socialToken,
         email: email,
       );
-      
+
       // Get user data from response
       User? user = authResponse.user;
       if (user == null) {
@@ -277,14 +282,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
           print('🔐 AUTH: Using user from auth response: ${user.email}');
         }
       }
-      
+
       state = AuthStateAuthenticated(user);
       return true;
     } on AuthException catch (e) {
       state = AuthStateError(e.message, e);
       return false;
     } catch (e) {
-      state = AuthStateError('Social login failed: $e', e is Exception ? e : Exception(e.toString()));
+      state = AuthStateError('Social login failed: $e',
+          e is Exception ? e : Exception(e.toString()));
       return false;
     }
   }
@@ -297,7 +303,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<bool> signInWithGoogle() async {
     try {
       final result = await SocialLoginService.signInWithGoogle();
-      
+
       return await socialLogin(
         provider: result.provider,
         socialToken: result.accessToken,
@@ -307,7 +313,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = AuthStateError(e.message, e);
       return false;
     } catch (e) {
-      state = AuthStateError('Google Sign-In failed: $e', e is Exception ? e : Exception(e.toString()));
+      state = AuthStateError('Google Sign-In failed: $e',
+          e is Exception ? e : Exception(e.toString()));
       return false;
     }
   }
@@ -320,7 +327,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<bool> signInWithApple() async {
     try {
       final result = await SocialLoginService.signInWithApple();
-      
+
       // For Apple Sign-In, use userIdentifier as the consistent token
       // This ensures the same user gets the same UID across sign-ins
       return await socialLogin(
@@ -332,7 +339,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = AuthStateError(e.message, e);
       return false;
     } catch (e) {
-      state = AuthStateError('Apple Sign-In failed: $e', e is Exception ? e : Exception(e.toString()));
+      state = AuthStateError('Apple Sign-In failed: $e',
+          e is Exception ? e : Exception(e.toString()));
       return false;
     }
   }
@@ -342,7 +350,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Updates the user data while maintaining authenticated state.
   Future<void> refreshUser() async {
     if (state is! AuthStateAuthenticated) return;
-    
+
     try {
       final user = await _authService.getCurrentUser();
       state = AuthStateAuthenticated(user);
@@ -363,7 +371,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String newPassword,
   }) async {
     if (state is! AuthStateAuthenticated) return false;
-    
+
     try {
       await _authService.changePassword(
         currentPassword: currentPassword,
@@ -374,7 +382,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = AuthStateError(e.message, e);
       return false;
     } catch (e) {
-      state = AuthStateError('Password change failed: $e', e is Exception ? e : Exception(e.toString()));
+      state = AuthStateError('Password change failed: $e',
+          e is Exception ? e : Exception(e.toString()));
       return false;
     }
   }
@@ -386,7 +395,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Returns true on success, false on failure
   Future<bool> requestPasswordReset(String email) async {
     state = const AuthStateLoading('Sending reset email...');
-    
+
     try {
       await _authService.requestPasswordReset(email);
       state = const AuthStateUnauthenticated();
@@ -395,7 +404,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = AuthStateError(e.message, e);
       return false;
     } catch (e) {
-      state = AuthStateError('Password reset failed: $e', e is Exception ? e : Exception(e.toString()));
+      state = AuthStateError('Password reset failed: $e',
+          e is Exception ? e : Exception(e.toString()));
       return false;
     }
   }

@@ -15,6 +15,7 @@ from middleware import ErrorHandlingMiddleware, RequestLoggingMiddleware, RateLi
 # Include API routers
 from routers.auth import router as auth_router
 from routers.goals import router as goals_router
+from routers.projects import router as projects_router
 from routers.tasks import router as tasks_router
 from routers.life_areas import router as life_areas_router
 from routers.media_attachments import router as media_attachments_router
@@ -70,6 +71,7 @@ async def on_shutdown():
 app.include_router(health_router)
 app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 app.include_router(goals_router, prefix="/api", tags=["goals"])
+app.include_router(projects_router, prefix="/api", tags=["projects"])
 app.include_router(tasks_router, prefix="/api", tags=["tasks"])
 app.include_router(life_areas_router, prefix="/api", tags=["life_areas"])
 app.include_router(media_attachments_router, prefix="/api", tags=["media"])

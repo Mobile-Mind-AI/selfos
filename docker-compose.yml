@@ -61,6 +61,34 @@ services:
     ports:
       - "8000:8000"
 
+  mcp-server:
+    build:
+      context: .
+      dockerfile: infra/docker/mcp.Dockerfile
+    depends_on:
+      - db
+      - redis
+      - backend
+    env_file:
+      - .env
+      - apps/backend_api/.env
+    environment:
+      # Database connection
+      DATABASE_URL: postgresql://selfos:selfos@db:5432/selfos_dev
+      REDIS_URL: redis://redis:6379
+      # Firebase credentials
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/selfos-firebase.json
+      # MCP specific settings
+      MCP_LOG_LEVEL: INFO
+      MCP_MAX_CONNECTIONS: 100
+      MCP_REQUIRE_AUTH: true
+    volumes:
+      - ./apps/backend_api/firebase-service-account.json:/secrets/selfos-firebase.json:ro
+      - ./logs:/app/logs
+    ports:
+      - "8001:8001"  # MCP WebSocket/SSE endpoints
+    command: ["python", "fastapi_integration.py", "--host", "0.0.0.0", "--port", "8001"]
+
   frontend:
     # Frontend service is behind 'frontend' profile; activate with --profile frontend
     profiles:

@@ -163,10 +163,99 @@ class GoalBase(BaseModel):
 
 class GoalCreate(GoalBase):
     """Schema for creating a new Goal"""
-    pass
+    project_id: Optional[int] = Field(None, gt=0, description="Associated project ID (positive integer)")
 
 class Goal(GoalBase):
     id: int = Field(..., description="Unique goal ID")
+    user_id: str = Field(..., description="Owner user ID")
+    project_id: Optional[int] = Field(None, description="Associated project ID")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+    class Config:
+        from_attributes = True
+
+class ProjectBase(BaseModel):
+    title: constr(min_length=1, max_length=200, strip_whitespace=True) = Field(
+        ..., 
+        description="Title of the project (1-200 characters)"
+    )
+    description: Optional[constr(max_length=2000, strip_whitespace=True)] = Field(
+        None, 
+        description="Detailed description of the project (max 2000 characters)"
+    )
+    status: Optional[Literal['todo', 'in_progress', 'completed', 'paused']] = Field(
+        'todo', 
+        description="Status of the project"
+    )
+    progress: Optional[float] = Field(
+        0.0, 
+        ge=0.0, 
+        le=100.0, 
+        description="Progress percentage (0-100)"
+    )
+    life_area_id: Optional[int] = Field(
+        None, 
+        gt=0, 
+        description="Associated life area ID (positive integer)"
+    )
+    start_date: Optional[datetime] = Field(None, description="Optional start date for the project")
+    target_date: Optional[datetime] = Field(None, description="Optional target completion date")
+    priority: Optional[Literal['low', 'medium', 'high']] = Field(
+        'medium', 
+        description="Priority level of the project"
+    )
+    phases: Optional[List[Dict[str, Any]]] = Field(
+        default_factory=list, 
+        description="Project phases/milestones",
+        max_items=20
+    )
+    
+    @validator('title')
+    def validate_title(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Project title cannot be empty')
+        return v.strip()
+    
+    @validator('description')
+    def validate_description(cls, v):
+        if v is not None:
+            v = v.strip()
+            if len(v) == 0:
+                return None
+        return v
+    
+    @validator('start_date')
+    def validate_start_date(cls, v):
+        if v is not None:
+            # Don't allow start dates more than 10 years in the future
+            from datetime import datetime, timedelta
+            max_future = datetime.utcnow() + timedelta(days=3650)
+            if v > max_future:
+                raise ValueError('Start date cannot be more than 10 years in the future')
+        return v
+    
+    @validator('target_date')
+    def validate_target_date(cls, v, values):
+        if v is not None:
+            # Don't allow target dates more than 10 years in the future
+            from datetime import datetime, timedelta
+            max_future = datetime.utcnow() + timedelta(days=3650)
+            if v > max_future:
+                raise ValueError('Target date cannot be more than 10 years in the future')
+            
+            # Target date should be after start date if both are provided
+            if 'start_date' in values and values['start_date'] is not None:
+                if v < values['start_date']:
+                    raise ValueError('Target date must be after start date')
+        return v
+
+class ProjectCreate(ProjectBase):
+    """Schema for creating a new Project"""
+    pass
+
+class Project(ProjectBase):
+    id: int = Field(..., description="Unique project ID")
     user_id: str = Field(..., description="Owner user ID")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
@@ -244,11 +333,24 @@ class TaskBase(BaseModel):
         return []
 
 class TaskCreate(TaskBase):
-    goal_id: int = Field(..., description="Parent goal ID")
+    goal_id: Optional[int] = Field(None, description="Parent goal ID")
+    project_id: Optional[int] = Field(None, description="Parent project ID")
+    
+    @root_validator(skip_on_failure=True)
+    def validate_parent_reference(cls, values):
+        goal_id = values.get('goal_id')
+        project_id = values.get('project_id')
+        
+        # At least one parent (goal or project) must be specified
+        if not goal_id and not project_id:
+            raise ValueError('Either goal_id or project_id must be specified')
+        
+        return values
 
 class Task(TaskBase):
     id: int = Field(..., description="Unique task ID")
-    goal_id: int = Field(..., description="Associated goal ID")
+    goal_id: Optional[int] = Field(None, description="Associated goal ID")
+    project_id: Optional[int] = Field(None, description="Associated project ID")
     user_id: str = Field(..., description="Owner user ID")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
@@ -407,19 +509,22 @@ class MediaAttachmentBase(BaseModel):
 class MediaAttachmentCreate(MediaAttachmentBase):
     """Schema for creating a new MediaAttachment"""
     goal_id: Optional[int] = Field(None, description="ID of associated goal")
+    project_id: Optional[int] = Field(None, description="ID of associated project")
     task_id: Optional[int] = Field(None, description="ID of associated task")
 
 class MediaAttachmentUpdate(BaseModel):
     """Schema for updating a MediaAttachment (metadata only)"""
     title: Optional[str] = Field(None, description="User-defined title for the attachment", max_length=200)
     description: Optional[str] = Field(None, description="User description for storytelling", max_length=1000)
-    goal_id: Optional[int] = Field(None, description="ID of associated goal")  
+    goal_id: Optional[int] = Field(None, description="ID of associated goal")
+    project_id: Optional[int] = Field(None, description="ID of associated project")
     task_id: Optional[int] = Field(None, description="ID of associated task")
 
 class MediaAttachment(MediaAttachmentBase):
     id: int = Field(..., description="Unique media attachment ID")
     user_id: str = Field(..., description="Owner user ID")
     goal_id: Optional[int] = Field(None, description="Associated goal ID")
+    project_id: Optional[int] = Field(None, description="Associated project ID")
     task_id: Optional[int] = Field(None, description="Associated task ID")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
@@ -490,16 +595,25 @@ class LifeAreaOut(LifeArea):
     """Enhanced life area output schema"""
     pass
 
+class ProjectOut(Project):
+    """Enhanced project output schema with nested relationships"""
+    goals: List['Goal'] = Field(default_factory=list, description="Associated goals")
+    tasks: List['Task'] = Field(default_factory=list, description="Associated tasks")
+    media: List['MediaAttachmentOut'] = Field(default_factory=list, description="Associated media attachments")
+    life_area: Optional['LifeAreaOut'] = Field(None, description="Associated life area details")
+
 class TaskOut(Task):
     """Enhanced task output schema with nested relationships"""
     media: List['MediaAttachmentOut'] = Field(default_factory=list, description="Associated media attachments")
     life_area: Optional['LifeAreaOut'] = Field(None, description="Associated life area details")
+    project: Optional['ProjectOut'] = Field(None, description="Associated project details")
 
 class GoalOut(Goal):
     """Enhanced goal output schema with nested relationships"""
     tasks: List['TaskOut'] = Field(default_factory=list, description="Associated tasks")
     media: List['MediaAttachmentOut'] = Field(default_factory=list, description="Associated media attachments")
     life_area: Optional['LifeAreaOut'] = Field(None, description="Associated life area details")
+    project: Optional['ProjectOut'] = Field(None, description="Associated project details")
 
 class UserPreferencesOut(UserPreferences):
     """Enhanced user preferences output schema"""

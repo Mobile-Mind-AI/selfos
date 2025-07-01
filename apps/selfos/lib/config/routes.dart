@@ -3,22 +3,30 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_provider.dart';
+import '../screens/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
+import '../screens/main_shell.dart';
+import '../screens/home/today_screen.dart';
+import '../screens/chat/chat_screen.dart';
+import '../screens/goals/goals_screen.dart';
+import '../screens/progress/progress_screen.dart';
+import '../screens/settings/settings_screen.dart';
+import '../screens/tasks/tasks_screen.dart';
 
 /// Application routing configuration using GoRouter
-/// 
+///
 /// This configuration provides:
 /// - Route definitions for all screens
 /// - Authentication-based route protection
 /// - Automatic redirects based on auth state
 /// - Deep linking support
 /// - Type-safe navigation
-/// 
+///
 /// Routes:
 /// - `/` - Splash/Initial screen (redirects based on auth)
 /// - `/login` - Login screen
-/// - `/signup` - Signup screen  
+/// - `/signup` - Signup screen
 /// - `/home` - Main dashboard (protected)
 /// - `/goals` - Goals management (protected)
 /// - `/tasks` - Tasks management (protected)
@@ -30,8 +38,10 @@ class RoutePaths {
   static const String login = '/login';
   static const String signup = '/signup';
   static const String home = '/home';
+  static const String chat = '/chat';
   static const String goals = '/goals';
   static const String tasks = '/tasks';
+  static const String progress = '/progress';
   static const String settings = '/settings';
 }
 
@@ -56,95 +66,98 @@ final routerProvider = Provider<GoRouter>((ref) {
       
       final currentPath = state.matchedLocation;
       final isAuthRoute = currentPath == RoutePaths.login || currentPath == RoutePaths.signup;
-      
+      final isSplashRoute = currentPath == RoutePaths.splash;
+
       if (kDebugMode) {
         print('🚦 ROUTER: Current path: $currentPath');
         print('🚦 ROUTER: Auth state: ${authState.runtimeType}');
-        print('🚦 ROUTER: Is authenticated: $isAuthenticated');
-        print('🚦 ROUTER: Is initial: $isInitial');
-        print('🚦 ROUTER: Is loading: $isLoading');
       }
-      
-      // If still initializing, stay on current route
-      if (isInitial || isLoading) {
-        if (kDebugMode) {
-          print('🚦 ROUTER: Staying on current route (initializing/loading)');
-        }
+
+      // Stay on splash while initializing
+      if ((isInitial || isLoading) && isSplashRoute) {
         return null;
       }
-      
-      // If authenticated and not on home, redirect to home
-      if (isAuthenticated && currentPath != RoutePaths.home) {
-        if (kDebugMode) {
-          print('🚦 ROUTER: Redirecting authenticated user to home');
-        }
+
+      // Redirect authenticated users from auth/splash to home
+      if (isAuthenticated && (isAuthRoute || isSplashRoute)) {
         return RoutePaths.home;
       }
-      
-      // If not authenticated and not on auth routes, redirect to login
-      if (!isAuthenticated && !isAuthRoute) {
-        if (kDebugMode) {
-          print('🚦 ROUTER: Redirecting unauthenticated user to login');
-        }
+
+      // Redirect unauthenticated users from splash to login
+      if (!isAuthenticated && !isInitial && !isLoading && isSplashRoute) {
         return RoutePaths.login;
       }
-      
-      if (kDebugMode) {
-        print('🚦 ROUTER: No redirect needed');
+
+      // Redirect unauthenticated users from protected routes to login
+      if (!isAuthenticated && !isAuthRoute && !isSplashRoute) {
+        return RoutePaths.login;
       }
-      // No redirect needed
+
       return null;
     },
     
     routes: [
-      // Splash/Initial route
       GoRoute(
         path: RoutePaths.splash,
         name: 'splash',
         builder: (context, state) => const SplashScreen(),
       ),
-      
-      // Authentication routes
+
       GoRoute(
         path: RoutePaths.login,
         name: 'login',
         builder: (context, state) => const LoginScreen(),
       ),
-      
+
       GoRoute(
         path: RoutePaths.signup,
         name: 'signup',
         builder: (context, state) => const SignupScreen(),
       ),
-      
-      // Protected routes
-      GoRoute(
-        path: RoutePaths.home,
-        name: 'home',
-        builder: (context, state) => const HomeScreen(),
-      ),
-      
-      GoRoute(
-        path: RoutePaths.goals,
-        name: 'goals',
-        builder: (context, state) => const GoalsScreen(),
-      ),
-      
-      GoRoute(
-        path: RoutePaths.tasks,
-        name: 'tasks',
-        builder: (context, state) => const TasksScreen(),
-      ),
-      
-      GoRoute(
-        path: RoutePaths.settings,
-        name: 'settings',
-        builder: (context, state) => const SettingsScreen(),
+      // Protected routes with shell wrapper
+      ShellRoute(
+        builder: (context, state, child) => MainShell(child: child),
+        routes: [
+          GoRoute(
+            path: RoutePaths.home,
+            name: 'home',
+            builder: (context, state) => const TodayScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.chat,
+            name: 'chat',
+            builder: (context, state) => const ChatScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.goals,
+            name: 'goals',
+            builder: (context, state) => const GoalsScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.tasks,
+            name: 'tasks',
+            builder: (context, state) => const TasksScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.progress,
+            name: 'progress',
+            builder: (context, state) => const ProgressScreen(),
+          ),
+          GoRoute(
+            path: RoutePaths.settings,
+            name: 'settings',
+            builder: (context, state) => const SettingsScreen(),
+          ),
+        ],
       ),
     ],
-    
+
     // Error page
-    errorBuilder: (context, state) => ErrorScreen(error: state.error),
+    errorBuilder: (context, state) => Scaffold(
+      body: Center(
+        child: Text('Page not found: ${state.matchedLocation}'),
+      ),
+    ),
   );
 });
 

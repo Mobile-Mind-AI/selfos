@@ -17,7 +17,9 @@
 
 - **Conversational Life Planning**: Set goals and dreams through natural chat. The AI breaks them down into structured, adaptable tasks.
 - **Life Area Balance**: Define your core values (e.g., Health, Relationships, Creativity) and track balance across them.
+- **Hierarchical Project Management**: Organize with Life Areas → Projects → Goals → Tasks structure.
 - **Media-Aware Task Management**: Attach sketches, videos, and audio to any task or project.
+- **AI Integration via MCP**: Standardized Model Context Protocol server for seamless AI agent interactions.
 - **Proactive Coaching**: Get nudges when an area is neglected, or energy/motivation shifts.
 - **Personal Memory Engine**: Remembers what matters to *you* — from routines to dreams.
 - **Narrative & Video Storytelling**: Auto-generates story scripts and short videos of your project journeys.
@@ -45,12 +47,12 @@
 ```
 User ↔️ Flutter Frontend (Web/Mobile/Desktop)
              ↓
-        API Gateway
+        API Gateway (FastAPI)
              ↓
-├── Task & Life Manager
-├── Personalization Engine
+├── Backend API (Core CRUD & Business Logic)
+├── MCP Server (Model Context Protocol for AI Integration)
 ├── AI Engine (Claude/GPT + Local LLM)
-├── Memory Engine (RAG + Pinecone)
+├── Memory Engine (RAG + Vector Embeddings)
 ├── Storytelling Engine (Narrative + Media)
 ├── Email Service (SMTP + Templates)
 ├── Notification Service
@@ -58,9 +60,9 @@ User ↔️ Flutter Frontend (Web/Mobile/Desktop)
 └── Integrations (Calendar, Obsidian, Trello, Social APIs)
              ↓
      Persistence Layer
-(PostgreSQL, MongoDB, S3, Redis, Vector DB)
+(PostgreSQL, Redis, Weaviate Vector DB)
              ↓
-      Event Bus (Kafka/Redis Streams)
+      Event Bus (Redis Streams)
 ```
 
 > 📁 See `docs/components/` for detailed breakdowns of each service, their APIs, and design decisions.
@@ -79,19 +81,33 @@ User ↔️ Flutter Frontend (Web/Mobile/Desktop)
 ```bash
 # Before starting, set Firebase service account (required for auth):
 # export GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccountKey.json
-#
-# Build and run DB, Redis, and Backend API
+
+# Start core services (DB, Redis, Backend API)
 docker-compose up --build
 
-# (Frontend is in 'frontend' profile – activate it when ready)
+# Start with MCP server for AI integration
+docker-compose up --build backend mcp-server
+
+# Start with frontend (Flutter web)
 docker-compose --profile frontend up --build
+
+# Or use the convenience script:
+./apps/mcp_server/start_mcp_server.sh docker
 ```
 
-### API Health Check
+### Health Checks
 ```bash
+# Backend API
 curl http://localhost:8000/
-```  
-Expected: { "message": "SelfOS Backend API" }
+# Expected: {"message": "SelfOS Backend API"}
+
+# MCP Server (if running)
+curl http://localhost:8001/health
+# Expected: {"status": "healthy", "server": "selfos-mcp-server"}
+
+# MCP Server capabilities
+curl http://localhost:8001/mcp/capabilities
+```
 
 ### Run Backend Tests
 ```bash
@@ -101,6 +117,11 @@ source .venv/bin/activate
 pip install -r requirements.txt
 pytest -q
 ```
+
+### Quick Reference
+- **📋 [Quick Reference Guide](docs/QUICK_REFERENCE.md)** - Essential commands and endpoints
+- **🤖 [MCP Server Documentation](docs/MCP_SERVER.md)** - AI integration details
+- **👨‍💻 [Developer Guide](CLAUDE.md)** - Comprehensive development instructions
 
 ---
 ## 🛠 Get Involved

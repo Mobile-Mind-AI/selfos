@@ -176,3 +176,4 @@ cython_debug/
 /apps/backend_api/firebase-service-account.json
 !/apps/selfos/ios/Runner/GoogleService-Info.plist
 !/apps/selfos/macos/Runner/GoogleService-Info.plist
+/.idea/encodings.xml
