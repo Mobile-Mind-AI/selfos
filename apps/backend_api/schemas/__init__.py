@@ -20,31 +20,73 @@ try:
     parent_schemas = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(parent_schemas)
     
-    # Import specific schema classes that are needed
+    # Import all schema classes that are used across the application
+    # Authentication schemas
     RegisterRequest = parent_schemas.RegisterRequest
     LoginRequest = parent_schemas.LoginRequest
     TokenResponse = parent_schemas.TokenResponse
     AuthResponse = parent_schemas.AuthResponse
     User = parent_schemas.User
     UserOut = parent_schemas.UserOut
+    UserCreate = parent_schemas.UserCreate
     
-    # Import other commonly used schemas
+    # Goal schemas
+    Goal = parent_schemas.Goal
     GoalCreate = parent_schemas.GoalCreate
-    GoalUpdate = parent_schemas.GoalUpdate
     GoalOut = parent_schemas.GoalOut
+    
+    # Task schemas  
+    Task = parent_schemas.Task
     TaskCreate = parent_schemas.TaskCreate
-    TaskUpdate = parent_schemas.TaskUpdate
     TaskOut = parent_schemas.TaskOut
+    
+    # Project schemas
+    Project = parent_schemas.Project
     ProjectCreate = parent_schemas.ProjectCreate
-    ProjectUpdate = parent_schemas.ProjectUpdate
     ProjectOut = parent_schemas.ProjectOut
+    
+    # Life Area schemas
+    LifeArea = parent_schemas.LifeArea
+    LifeAreaCreate = parent_schemas.LifeAreaCreate
+    LifeAreaUpdate = parent_schemas.LifeAreaUpdate
+    LifeAreaOut = parent_schemas.LifeAreaOut
+    
+    # Media Attachment schemas
+    MediaAttachment = parent_schemas.MediaAttachment
+    MediaAttachmentCreate = parent_schemas.MediaAttachmentCreate
+    MediaAttachmentUpdate = parent_schemas.MediaAttachmentUpdate
+    MediaAttachmentOut = parent_schemas.MediaAttachmentOut
+    
+    # User Preferences schemas
+    UserPreferencesCreate = parent_schemas.UserPreferencesCreate
+    UserPreferencesUpdate = parent_schemas.UserPreferencesUpdate
+    UserPreferencesOut = parent_schemas.UserPreferencesOut
+    
+    # User Preferences base model
+    UserPreferences = parent_schemas.UserPreferences
+    
+    # Feedback Log schemas
+    FeedbackLog = parent_schemas.FeedbackLog
+    FeedbackLogCreate = parent_schemas.FeedbackLogCreate
+    FeedbackLogUpdate = parent_schemas.FeedbackLogUpdate
+    FeedbackLogSummary = parent_schemas.FeedbackLogSummary
+    
+    # Story Session schemas
+    StorySession = parent_schemas.StorySession
+    StorySessionCreate = parent_schemas.StorySessionCreate
+    StorySessionUpdate = parent_schemas.StorySessionUpdate
     
     # Export all imported schemas
     __all__ = [
-        'RegisterRequest', 'LoginRequest', 'TokenResponse', 'AuthResponse', 'User', 'UserOut',
-        'GoalCreate', 'GoalUpdate', 'GoalOut',
-        'TaskCreate', 'TaskUpdate', 'TaskOut', 
-        'ProjectCreate', 'ProjectUpdate', 'ProjectOut'
+        'RegisterRequest', 'LoginRequest', 'TokenResponse', 'AuthResponse', 'User', 'UserOut', 'UserCreate',
+        'Goal', 'GoalCreate', 'GoalOut',
+        'Task', 'TaskCreate', 'TaskOut', 
+        'Project', 'ProjectCreate', 'ProjectOut',
+        'LifeArea', 'LifeAreaCreate', 'LifeAreaUpdate', 'LifeAreaOut',
+        'MediaAttachment', 'MediaAttachmentCreate', 'MediaAttachmentUpdate', 'MediaAttachmentOut',
+        'UserPreferences', 'UserPreferencesCreate', 'UserPreferencesUpdate', 'UserPreferencesOut',
+        'FeedbackLog', 'FeedbackLogCreate', 'FeedbackLogUpdate', 'FeedbackLogSummary',
+        'StorySession', 'StorySessionCreate', 'StorySessionUpdate'
     ]
     
 except (ImportError, AttributeError) as e:
