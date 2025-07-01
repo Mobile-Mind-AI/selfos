@@ -75,6 +75,9 @@ try:
     StorySession = parent_schemas.StorySession
     StorySessionCreate = parent_schemas.StorySessionCreate
     StorySessionUpdate = parent_schemas.StorySessionUpdate
+    StorySessionSummary = parent_schemas.StorySessionSummary
+    GenerationRequest = parent_schemas.GenerationRequest
+    PublishRequest = parent_schemas.PublishRequest
     
     # Export all imported schemas
     __all__ = [
@@ -86,7 +89,7 @@ try:
         'MediaAttachment', 'MediaAttachmentCreate', 'MediaAttachmentUpdate', 'MediaAttachmentOut',
         'UserPreferences', 'UserPreferencesCreate', 'UserPreferencesUpdate', 'UserPreferencesOut',
         'FeedbackLog', 'FeedbackLogCreate', 'FeedbackLogUpdate', 'FeedbackLogSummary',
-        'StorySession', 'StorySessionCreate', 'StorySessionUpdate'
+        'StorySession', 'StorySessionCreate', 'StorySessionUpdate', 'StorySessionSummary', 'GenerationRequest', 'PublishRequest'
     ]
     
 except (ImportError, AttributeError) as e:
