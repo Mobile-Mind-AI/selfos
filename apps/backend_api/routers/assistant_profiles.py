@@ -43,7 +43,7 @@ async def list_assistant_profiles(
         desc(AssistantProfile.created_at)
     ).offset(offset).limit(limit).all()
     
-    return [AssistantProfileOut.from_orm(profile) for profile in profiles]
+    return [AssistantProfileOut.model_validate(profile) for profile in profiles]
 
 
 @router.get("/config", response_model=AssistantConfigResponse)
@@ -105,7 +105,7 @@ async def get_default_assistant_profile(
     if not profile:
         raise HTTPException(status_code=404, detail="No default assistant profile found")
     
-    return AssistantProfileOut.from_orm(profile)
+    return AssistantProfileOut.model_validate(profile)
 
 
 @router.post("/onboarding", response_model=OnboardingResponse)
@@ -134,7 +134,7 @@ async def complete_onboarding(
         ai_model=request.ai_model,
         language=request.language,
         requires_confirmation=request.requires_confirmation,
-        style=request.style.dict(),
+        style=request.style.model_dump(),
         custom_instructions=request.custom_instructions,
         is_default=True  # First profile is always default
     )
@@ -158,7 +158,7 @@ async def complete_onboarding(
     logger.info(f"Onboarding completed for user {user_id}: created assistant '{profile.name}'")
     
     return OnboardingResponse(
-        assistant_profile=AssistantProfileOut.from_orm(profile),
+        assistant_profile=AssistantProfileOut.model_validate(profile),
         onboarding_completed=True,
         welcome_message=welcome_message
     )
@@ -203,7 +203,7 @@ async def create_assistant_profile(
         ai_model=profile_data.ai_model,
         language=profile_data.language,
         requires_confirmation=profile_data.requires_confirmation,
-        style=profile_data.style.dict(),
+        style=profile_data.style.model_dump(),
         dialogue_temperature=profile_data.dialogue_temperature,
         intent_temperature=profile_data.intent_temperature,
         custom_instructions=profile_data.custom_instructions,
@@ -216,7 +216,7 @@ async def create_assistant_profile(
     
     logger.info(f"Created assistant profile '{profile.name}' for user {user_id}")
     
-    return AssistantProfileOut.from_orm(profile)
+    return AssistantProfileOut.model_validate(profile)
 
 
 @router.get("/{profile_id}", response_model=AssistantProfileOut)
@@ -240,7 +240,7 @@ async def get_assistant_profile(
     if not profile:
         raise HTTPException(status_code=404, detail="Assistant profile not found")
     
-    return AssistantProfileOut.from_orm(profile)
+    return AssistantProfileOut.model_validate(profile)
 
 
 @router.patch("/{profile_id}", response_model=AssistantProfileOut)
@@ -266,7 +266,7 @@ async def update_assistant_profile(
         raise HTTPException(status_code=404, detail="Assistant profile not found")
     
     # Update fields that were provided
-    update_data = profile_data.dict(exclude_unset=True)
+    update_data = profile_data.model_dump(exclude_unset=True)
     
     # Handle default profile logic
     if "is_default" in update_data and update_data["is_default"]:
@@ -281,7 +281,10 @@ async def update_assistant_profile(
     
     # Convert style object to dict if provided
     if "style" in update_data and update_data["style"]:
-        update_data["style"] = update_data["style"].dict()
+        # Check if it's already a dict or if it's a Pydantic model
+        if hasattr(update_data["style"], 'model_dump'):
+            update_data["style"] = update_data["style"].model_dump()
+        # If it's already a dict, leave it as is
     
     # Apply updates
     for field, value in update_data.items():
@@ -292,7 +295,7 @@ async def update_assistant_profile(
     
     logger.info(f"Updated assistant profile '{profile.name}' for user {user_id}")
     
-    return AssistantProfileOut.from_orm(profile)
+    return AssistantProfileOut.model_validate(profile)
 
 
 @router.delete("/{profile_id}")

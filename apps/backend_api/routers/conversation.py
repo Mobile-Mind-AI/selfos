@@ -126,6 +126,9 @@ async def process_message(
             session_id=session_id
         )
         
+    except HTTPException:
+        # Re-raise HTTP exceptions (like 404 for missing assistant profile)
+        raise
     except Exception as e:
         logger.error(f"Error processing message for user {current_user['uid']}: {e}")
         raise HTTPException(status_code=500, detail="Failed to process message")

@@ -104,14 +104,14 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
-class AuthResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user: "User"
-
 class User(BaseModel):
     uid: str = Field(..., description="Firebase user ID")
     email: str = Field(..., description="User email address")
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: User
 
 class UserCreate(BaseModel):
     """Schema for creating a new user"""
