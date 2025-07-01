@@ -21,3 +21,4 @@ mcp>=1.0.0
 
 # Test Dependencies
 aiohttp>=3.8.0
+pytest-asyncio>=0.21.0
