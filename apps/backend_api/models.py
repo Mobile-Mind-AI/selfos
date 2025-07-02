@@ -509,7 +509,6 @@ class AssistantProfile(Base):
     intent_temperature = Column(Float, nullable=False, default=0.3)
     
     # Additional configuration
-    prompt_modifiers = Column(JSON, nullable=True, default=dict)
     custom_instructions = Column(Text, nullable=True)
     
     # Timestamps

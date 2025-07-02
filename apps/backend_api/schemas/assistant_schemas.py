@@ -103,7 +103,6 @@ class AssistantProfile(AssistantProfileBase):
     id: str = Field(..., description="Unique assistant profile ID")
     user_id: str = Field(..., description="Owner user ID")
     is_default: bool = Field(..., description="Whether this is the default assistant")
-    prompt_modifiers: Dict[str, Any] = Field(default_factory=dict, description="Additional prompt modifiers")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -178,7 +177,8 @@ class LifeAreasSelectionData(BaseModel):
 
 class FirstGoalData(BaseModel):
     """Data for first goal creation step."""
-    title: str = Field(..., min_length=1, max_length=200, description="Goal title")
+    skip_goal_creation: bool = Field(False, description="Skip goal creation and complete onboarding")
+    title: Optional[str] = Field(None, min_length=1, max_length=200, description="Goal title")
     description: Optional[str] = Field(None, max_length=1000, description="Goal description")
     life_area_id: Optional[int] = Field(None, description="Associated life area")
     generate_tasks: bool = Field(True, description="Auto-generate tasks using AI")

@@ -139,8 +139,8 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
       );
 
       if (response.statusCode == 200) {
-        // Refresh onboarding status
-        await checkOnboardingStatus();
+        // Don't refresh status immediately to avoid router conflicts
+        // The status will be checked when completing onboarding
         return true;
       }
       return false;
@@ -200,6 +200,43 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
       return false;
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
+      return false;
+    }
+  }
+
+  /// Reset onboarding to allow user to go through it again
+  Future<bool> resetOnboarding() async {
+    try {
+      final token = await StorageService.getAccessToken();
+      if (token == null) {
+        print('🔄 ONBOARDING: No access token found for reset');
+        return false;
+      }
+
+      print('🔄 ONBOARDING: Calling reset endpoint...');
+      final response = await _dio.post(
+        '${ApiConfig.baseUrl}/api/onboarding/reset',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      print('🔄 ONBOARDING: Reset response: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        print('🔄 ONBOARDING: Reset successful, updating state to notStarted');
+        state = const AsyncValue.data(OnboardingStatus.notStarted);
+        return true;
+      }
+      print('🔄 ONBOARDING: Reset failed with status: ${response.statusCode}');
+      return false;
+    } catch (e) {
+      print('🔄 ONBOARDING: Reset error: $e');
+      // Don't set error state immediately - try to recover
+      print('🔄 ONBOARDING: Attempting to recover by checking current status');
+      await checkOnboardingStatus();
       return false;
     }
   }

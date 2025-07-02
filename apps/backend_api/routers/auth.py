@@ -78,7 +78,7 @@ async def register(req: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=AuthResponse)
-async def login(req: LoginRequest):
+async def login(req: LoginRequest, db: Session = Depends(get_db)):
     """
     Issue a custom Firebase Auth token for the given user UID.
     Supports both email/password and social login.
@@ -108,6 +108,17 @@ async def login(req: LoginRequest):
                         email_verified=True  # Google emails are pre-verified
                     )
                 
+                # Ensure user exists in local database
+                existing_user = db.query(models.User).filter(models.User.uid == uid).first()
+                if not existing_user:
+                    db_user = models.User(
+                        uid=uid,
+                        email=email
+                    )
+                    db.add(db_user)
+                    db.commit()
+                    db.refresh(db_user)
+                
                 custom_token = firebase_auth.create_custom_token(uid)
                 token_str = custom_token.decode("utf-8")
                 user = User(uid=uid, email=email)
@@ -127,6 +138,17 @@ async def login(req: LoginRequest):
                         email=email,
                         email_verified=True  # Apple emails are pre-verified
                     )
+                
+                # Ensure user exists in local database
+                existing_user = db.query(models.User).filter(models.User.uid == uid).first()
+                if not existing_user:
+                    db_user = models.User(
+                        uid=uid,
+                        email=email
+                    )
+                    db.add(db_user)
+                    db.commit()
+                    db.refresh(db_user)
                 
                 custom_token = firebase_auth.create_custom_token(uid)
                 token_str = custom_token.decode("utf-8")

@@ -90,8 +90,8 @@ class _AssistantCreationStepState extends State<AssistantCreationStep>
   void _handleNext() {
     if (_isNameValid) {
       final data = {
-        'assistant_name': _nameController.text.trim(),
-        'assistant_avatar': _selectedAvatar,
+        'name': _nameController.text.trim(),
+        'avatar_url': _selectedAvatar,
       };
       widget.onNext(data);
     }

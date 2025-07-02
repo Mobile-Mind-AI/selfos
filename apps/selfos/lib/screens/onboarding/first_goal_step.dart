@@ -53,15 +53,23 @@ class _FirstGoalStepState extends State<FirstGoalStep> {
     });
   }
 
-  void _handleNext() {
+  void _handleCreateGoal() {
     if (_isGoalValid) {
       final data = {
-        'goal_title': _goalController.text.trim(),
-        'goal_description': _descriptionController.text.trim(),
+        'skip_goal_creation': false,
+        'title': _goalController.text.trim(),
+        'description': _descriptionController.text.trim(),
         'generate_tasks': _generateTasks,
       };
       widget.onNext(data);
     }
+  }
+
+  void _handleSkipGoal() {
+    final data = {
+      'skip_goal_creation': true,
+    };
+    widget.onNext(data);
   }
 
   @override
@@ -109,7 +117,7 @@ class _FirstGoalStepState extends State<FirstGoalStep> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'What would you like to achieve? Don\'t worry about making it perfect - you can always refine it later.',
+                          'What would you like to achieve? You can create your first goal now, or skip this step and create goals, tasks, and projects later from the main dashboard.',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurface.withOpacity(0.7),
                           ),
@@ -223,10 +231,11 @@ class _FirstGoalStepState extends State<FirstGoalStep> {
           // Bottom actions
           Column(
             children: [
+              // Create Goal button (only enabled if goal is valid)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isGoalValid ? _handleNext : null,
+                  onPressed: _isGoalValid ? _handleCreateGoal : null,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -254,7 +263,42 @@ class _FirstGoalStepState extends State<FirstGoalStep> {
                   ),
                 ),
               ),
+              
               const SizedBox(height: 12),
+              
+              // Skip Goal button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _handleSkipGoal,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Skip for Now',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              
+              // Info text about skipping
+              const SizedBox(height: 8),
+              Text(
+                'You can create goals, tasks, and projects later from the dashboard',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              
+              const SizedBox(height: 16),
+              
               TextButton(
                 onPressed: widget.onPrevious,
                 child: Text(

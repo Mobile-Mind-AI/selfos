@@ -18,23 +18,23 @@ class LifeAreasStep extends StatefulWidget {
 }
 
 class _LifeAreasStepState extends State<LifeAreasStep> {
-  final Set<String> _selectedAreas = {};
+  final Set<int> _selectedAreas = {};
   final TextEditingController _customAreaController = TextEditingController();
 
   final List<Map<String, dynamic>> _lifeAreas = [
-    {'id': 'health', 'name': 'Health & Fitness', 'icon': Icons.favorite, 'color': Colors.red},
-    {'id': 'career', 'name': 'Career & Work', 'icon': Icons.work, 'color': Colors.blue},
-    {'id': 'relationships', 'name': 'Relationships', 'icon': Icons.people, 'color': Colors.green},
-    {'id': 'finance', 'name': 'Finance', 'icon': Icons.attach_money, 'color': Colors.orange},
-    {'id': 'creativity', 'name': 'Creativity & Arts', 'icon': Icons.palette, 'color': Colors.purple},
-    {'id': 'learning', 'name': 'Learning & Growth', 'icon': Icons.school, 'color': Colors.teal},
-    {'id': 'spirituality', 'name': 'Spirituality', 'icon': Icons.self_improvement, 'color': Colors.indigo},
-    {'id': 'fun', 'name': 'Fun & Recreation', 'icon': Icons.sports_esports, 'color': Colors.pink},
+    {'id': 1, 'name': 'Health & Fitness', 'icon': Icons.favorite, 'color': Colors.red},
+    {'id': 2, 'name': 'Career & Work', 'icon': Icons.work, 'color': Colors.blue},
+    {'id': 3, 'name': 'Relationships', 'icon': Icons.people, 'color': Colors.green},
+    {'id': 4, 'name': 'Finance', 'icon': Icons.attach_money, 'color': Colors.orange},
+    {'id': 5, 'name': 'Creativity & Arts', 'icon': Icons.palette, 'color': Colors.purple},
+    {'id': 6, 'name': 'Learning & Growth', 'icon': Icons.school, 'color': Colors.teal},
+    {'id': 7, 'name': 'Spirituality', 'icon': Icons.self_improvement, 'color': Colors.indigo},
+    {'id': 8, 'name': 'Fun & Recreation', 'icon': Icons.sports_esports, 'color': Colors.pink},
   ];
 
   void _handleNext() {
     final data = {
-      'selected_life_areas': _selectedAreas.toList(),
+      'life_area_ids': _selectedAreas.toList(),
       'custom_life_areas': [], // TODO: Implement custom areas
     };
     widget.onNext(data);

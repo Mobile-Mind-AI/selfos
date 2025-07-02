@@ -97,15 +97,21 @@ def update_onboarding_step(
     
     # Update completed steps
     step_number = _get_step_number(request.step)
+    print(f"🎯 ONBOARDING: Processing step {request.step} (number {step_number})")
+    print(f"🎯 ONBOARDING: Current completed_steps before: {state.completed_steps}")
+    
     if step_number not in state.completed_steps:
         state.completed_steps = state.completed_steps + [step_number]
+        print(f"🎯 ONBOARDING: Added step {step_number} to completed_steps: {state.completed_steps}")
     
     # Update current step
     if step_number < 6:
         state.current_step = step_number + 1
+        print(f"🎯 ONBOARDING: Updated current_step to: {state.current_step}")
     else:
         state.onboarding_completed = True
         state.completed_at = datetime.utcnow()
+        print(f"🎯 ONBOARDING: Marked onboarding as completed (step {step_number} >= 6)")
     
     db.commit()
     db.refresh(state)
@@ -136,11 +142,15 @@ def complete_onboarding(
             detail="Onboarding state not found"
         )
     
-    # Verify all required steps are completed
-    required_steps = [2, 3, 4, 5, 6]  # Skip welcome step
+    print(f"🎯 ONBOARDING: Complete requested for user {current_user['uid']}")
+    print(f"🎯 ONBOARDING: Current state - completed_steps: {state.completed_steps}, onboarding_completed: {state.onboarding_completed}")
+    
+    # Verify required steps are completed (goal creation is optional)
+    required_steps = [2, 3, 4, 5]  # Assistant, Personality, Language, Life areas (goal creation is optional)
     missing_steps = [s for s in required_steps if s not in state.completed_steps]
     
     if missing_steps:
+        print(f"🎯 ONBOARDING: Missing required steps: {missing_steps}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot complete onboarding. Missing steps: {missing_steps}"
@@ -213,6 +223,59 @@ def skip_onboarding(
         "message": "Onboarding skipped. Default assistant created.",
         "assistant_id": default_assistant.id
     }
+
+
+@router.post("/reset")
+def reset_onboarding(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Reset onboarding state to allow user to go through it again."""
+    # Get existing onboarding state
+    state = db.query(OnboardingState).filter(
+        OnboardingState.user_id == current_user["uid"]
+    ).first()
+    
+    if state:
+        # Reset onboarding state
+        state.current_step = 1
+        state.completed_steps = []
+        state.onboarding_completed = False
+        state.completed_at = None
+        state.temp_data = {}
+        state.skip_intro = False
+        state.last_activity = datetime.utcnow()
+        
+        # Keep assistant_profile_id, selected_life_areas, first_goal_id, first_task_id
+        # so user doesn't lose their existing data
+        
+        db.commit()
+        db.refresh(state)
+        
+        return {
+            "success": True,
+            "message": "Onboarding reset successfully. You can now go through the onboarding process again.",
+            "current_step": state.current_step,
+            "onboarding_completed": state.onboarding_completed
+        }
+    else:
+        # Create new onboarding state if none exists
+        state = OnboardingState(
+            user_id=current_user["uid"],
+            current_step=1,
+            completed_steps=[]
+        )
+        db.add(state)
+        db.commit()
+        db.refresh(state)
+        
+        return {
+            "success": True,
+            "message": "Onboarding state created. You can now go through the onboarding process.",
+            "current_step": state.current_step,
+            "onboarding_completed": state.onboarding_completed
+        }
+
 
 
 # Helper functions
@@ -369,6 +432,20 @@ def _handle_first_goal(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid goal data: {str(e)}"
+        )
+    
+    # Check if user wants to skip goal creation
+    if goal_data.skip_goal_creation:
+        return {
+            "skipped": True,
+            "message": "Goal creation skipped. You can create goals, tasks, and projects later from the main dashboard."
+        }
+    
+    # Validate required fields when not skipping
+    if not goal_data.title:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Goal title is required when not skipping goal creation"
         )
     
     # Create the goal

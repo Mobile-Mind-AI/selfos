@@ -66,11 +66,53 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
     _progressAnimationController.animateTo(progress);
   }
 
-  void _nextStep([Map<String, dynamic>? stepData]) {
+  void _nextStep([Map<String, dynamic>? stepData]) async {
     if (stepData != null) {
       _onboardingData.addAll(stepData);
     }
     
+    // For welcome step (step 0), just proceed without API call
+    if (_currentStep == 0) {
+      if (_currentStep < _totalSteps - 1) {
+        setState(() {
+          _currentStep++;
+        });
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+        _updateProgress();
+      }
+      return;
+    }
+    
+    // For other steps (1-5), send step update to backend
+    if (_currentStep >= 1 && _currentStep <= 5) {
+      final stepName = _getStepName(_currentStep);
+      if (stepName != null && stepData != null) {
+        print('🎯 FLUTTER: Sending step update: $stepName with data: $stepData');
+        
+        final success = await ref.read(onboardingProvider.notifier)
+            .updateOnboardingStep(stepName, stepData);
+        
+        if (!success) {
+          // Show error and don't proceed
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Failed to save progress. Please try again.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return; // Don't proceed to next step if API call failed
+        }
+        
+        print('🎯 FLUTTER: Step update successful, proceeding to next step');
+      }
+    }
+    
+    // Only proceed to next step if API call was successful (or not needed)
     if (_currentStep < _totalSteps - 1) {
       setState(() {
         _currentStep++;
@@ -80,6 +122,7 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
         curve: Curves.easeInOut,
       );
       _updateProgress();
+      print('🎯 FLUTTER: Advanced to step ${_currentStep + 1}');
     }
   }
 
@@ -325,6 +368,23 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
         return 'Ready to Begin!';
       default:
         return 'Setup';
+    }
+  }
+
+  String? _getStepName(int step) {
+    switch (step) {
+      case 1:
+        return 'assistant_creation';
+      case 2:
+        return 'personality_setup';
+      case 3:
+        return 'language_preferences';
+      case 4:
+        return 'life_areas';
+      case 5:
+        return 'first_goal';
+      default:
+        return null;
     }
   }
 }

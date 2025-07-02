@@ -155,7 +155,7 @@ class _PersonalitySetupStepState extends State<PersonalitySetupStep>
 
   void _handleNext() {
     final data = {
-      'personality_style': {
+      'style': {
         'formality': _formality.round(),
         'directness': 50, // Default for now
         'humor': _humor.round(),
