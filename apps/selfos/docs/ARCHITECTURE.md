@@ -27,19 +27,31 @@ SelfOS is a personal growth operating system built with Flutter, supporting mult
 ```
 lib/
 ├── config/              # Configuration files
+│   ├── api_config.dart       # API configuration and endpoints
 │   ├── api_endpoints.dart    # API endpoint definitions
 │   ├── app_config.dart       # App configuration
-│   └── routes.dart           # Route definitions
+│   └── routes.dart           # Route definitions with onboarding logic
 ├── models/              # Data models
 │   ├── auth_request.dart     # Authentication request models
 │   ├── auth_response.dart    # Authentication response models
 │   ├── chat_message.dart     # Chat message model
 │   └── user.dart            # User data model
+├── providers/           # State management providers
+│   └── onboarding_provider.dart # Onboarding state management
 ├── screens/             # UI screens
 │   ├── auth/               # Authentication screens
 │   ├── chat/               # Chat interface
 │   ├── goals/              # Goals management
 │   ├── home/               # Today/home screen
+│   ├── onboarding/         # User onboarding flow (6 steps)
+│   │   ├── onboarding_flow_screen.dart     # Main flow controller
+│   │   ├── welcome_step.dart               # Step 1: Welcome
+│   │   ├── assistant_creation_step.dart    # Step 2: Assistant setup
+│   │   ├── personality_setup_step.dart     # Step 3: Personality config
+│   │   ├── language_preferences_step.dart  # Step 4: Language settings
+│   │   ├── life_areas_step.dart           # Step 5: Life areas
+│   │   ├── first_goal_step.dart           # Step 6: Goal creation
+│   │   └── completion_step.dart           # Step 7: Completion
 │   ├── progress/           # Progress tracking
 │   ├── settings/           # App settings
 │   ├── tasks/              # Task management
@@ -91,6 +103,8 @@ class AuthError extends AuthState {
 - `currentUserProvider` - Current user data
 - `authLoadingProvider` - Loading state indicator
 - `authErrorProvider` - Error message provider
+- `onboardingProvider` - Onboarding flow state and progress tracking
+- `isOnboardingCompletedProvider` - Boolean onboarding completion status
 
 ## Navigation Architecture
 
@@ -112,11 +126,13 @@ ShellRoute(
 )
 ```
 
-### Authentication Flow
+### Authentication & Onboarding Flow
 - Unauthenticated users are redirected to login
-- Authenticated users access the main app shell
+- Authenticated users with incomplete onboarding are redirected to `/onboarding`
+- Authenticated users with completed onboarding access the main app shell
 - Automatic token refresh and session management
-- Persistent login state across app restarts
+- Persistent login state and onboarding status across app restarts
+- Route protection ensures onboarding completion before app access
 
 ## UI Components Architecture
 
@@ -277,6 +293,32 @@ flutter build web --release
 - **macOS**: Native macOS styling, proper sandboxing
 - **Web**: Progressive Web App features, responsive design
 
+## Recent Features
+
+### Onboarding Flow (2025-07-02)
+A comprehensive 6-step onboarding experience that guides new users through:
+1. **Welcome Introduction**: Narrative "Start Your Story" concept
+2. **Assistant Creation**: Personal AI assistant naming and avatar selection
+3. **Personality Setup**: 5-trait personality customization with live preview
+4. **Language Preferences**: Multi-language support and confirmation settings
+5. **Life Areas Selection**: Personal categorization with custom options
+6. **First Goal Creation**: Initial goal setup with optional AI task generation
+
+**Key Features**:
+- Gamified experience with progress tracking and animations
+- Backend integration with step-by-step state persistence
+- Route protection ensuring completion before app access
+- Skip functionality with default assistant creation
+- Real-time personality preview and validation
+
+**Technical Implementation**:
+- Riverpod provider architecture for state management
+- Complete API integration with error handling
+- Responsive UI design with accessibility features
+- Database persistence of user preferences and progress
+
+*See [ONBOARDING.md](ONBOARDING.md) for detailed implementation guide*
+
 ## Future Enhancements
 
 ### Planned Features
@@ -284,7 +326,7 @@ flutter build web --release
 2. **Push Notifications**: Real-time user notifications
 3. **Biometric Authentication**: Face ID/Touch ID support
 4. **Advanced Analytics**: User behavior tracking
-5. **Internationalization**: Multi-language support
+5. **Enhanced Internationalization**: Additional language support
 
 ### Technical Improvements
 1. **Enhanced Testing**: Increase test coverage

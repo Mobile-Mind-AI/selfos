@@ -3,9 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_provider.dart';
+import '../providers/onboarding_provider.dart';
 import '../screens/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
+import '../screens/onboarding/onboarding_flow_screen.dart';
 import '../screens/main_shell.dart';
 import '../screens/home/today_screen.dart';
 import '../screens/chat/chat_screen.dart';
@@ -37,6 +39,7 @@ class RoutePaths {
   static const String splash = '/';
   static const String login = '/login';
   static const String signup = '/signup';
+  static const String onboarding = '/onboarding';
   static const String home = '/home';
   static const String chat = '/chat';
   static const String goals = '/goals';
@@ -51,6 +54,7 @@ class RoutePaths {
 /// It automatically redirects users based on their authentication state.
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
+  final onboardingStatus = ref.watch(onboardingProvider);
   
   return GoRouter(
     debugLogDiagnostics: true,
@@ -58,7 +62,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     // Initial location
     initialLocation: RoutePaths.splash,
     
-    // Redirect logic based on authentication state
+    // Redirect logic based on authentication and onboarding state
     redirect: (context, state) {
       final isAuthenticated = authState is AuthStateAuthenticated;
       final isInitial = authState is AuthStateInitial;
@@ -67,10 +71,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final currentPath = state.matchedLocation;
       final isAuthRoute = currentPath == RoutePaths.login || currentPath == RoutePaths.signup;
       final isSplashRoute = currentPath == RoutePaths.splash;
+      final isOnboardingRoute = currentPath == RoutePaths.onboarding;
 
       if (kDebugMode) {
         print('🚦 ROUTER: Current path: $currentPath');
         print('🚦 ROUTER: Auth state: ${authState.runtimeType}');
+        print('🚦 ROUTER: Onboarding status: ${onboardingStatus.value}');
       }
 
       // Stay on splash while initializing
@@ -78,9 +84,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
-      // Redirect authenticated users from auth/splash to home
-      if (isAuthenticated && (isAuthRoute || isSplashRoute)) {
-        return RoutePaths.home;
+      // If authenticated, check onboarding status
+      if (isAuthenticated) {
+        final onboardingCompleted = onboardingStatus.when(
+          data: (status) => status == OnboardingStatus.completed,
+          loading: () => false,
+          error: (_, __) => false,
+        );
+
+        // If coming from auth/splash and onboarding not completed, go to onboarding
+        if ((isAuthRoute || isSplashRoute) && !onboardingCompleted) {
+          return RoutePaths.onboarding;
+        }
+
+        // If coming from auth/splash and onboarding is completed, go to home
+        if ((isAuthRoute || isSplashRoute) && onboardingCompleted) {
+          return RoutePaths.home;
+        }
+
+        // If trying to access protected routes without completing onboarding
+        if (!onboardingCompleted && !isOnboardingRoute && !isAuthRoute && !isSplashRoute) {
+          return RoutePaths.onboarding;
+        }
       }
 
       // Redirect unauthenticated users from splash to login
@@ -89,7 +114,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // Redirect unauthenticated users from protected routes to login
-      if (!isAuthenticated && !isAuthRoute && !isSplashRoute) {
+      if (!isAuthenticated && !isAuthRoute && !isSplashRoute && !isOnboardingRoute) {
         return RoutePaths.login;
       }
 
@@ -114,6 +139,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'signup',
         builder: (context, state) => const SignupScreen(),
       ),
+
+      GoRoute(
+        path: RoutePaths.onboarding,
+        name: 'onboarding',
+        builder: (context, state) => const OnboardingFlowScreen(),
+      ),
+
       // Protected routes with shell wrapper
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),
@@ -165,11 +197,32 @@ final routerProvider = Provider<GoRouter>((ref) {
 /// 
 /// This screen is displayed while the app determines the user's
 /// authentication state and decides which screen to show.
-class SplashScreen extends ConsumerWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends ConsumerState<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    // Check if user is authenticated
+    final authState = ref.read(authProvider);
+    
+    // If authenticated, check onboarding status
+    if (authState is AuthStateAuthenticated) {
+      await ref.read(onboardingProvider.notifier).checkOnboardingStatus();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
     return Scaffold(

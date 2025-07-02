@@ -2,7 +2,7 @@
 Pydantic schemas for AI Assistant Profile management.
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime
 from pydantic import BaseModel, Field, validator
 from enum import Enum
@@ -116,6 +116,74 @@ class AssistantProfileOut(AssistantProfile):
     pass
 
 
+class OnboardingStep(str, Enum):
+    """Onboarding flow steps."""
+    WELCOME = "welcome"
+    ASSISTANT_CREATION = "assistant_creation"
+    PERSONALITY_SETUP = "personality_setup"
+    LANGUAGE_PREFERENCES = "language_preferences"
+    LIFE_AREAS = "life_areas"
+    FIRST_GOAL = "first_goal"
+    COMPLETION = "completion"
+
+
+class OnboardingStepRequest(BaseModel):
+    """Base request for any onboarding step."""
+    step: OnboardingStep = Field(..., description="Current onboarding step")
+    data: Dict[str, Any] = Field(..., description="Step-specific data")
+
+
+class OnboardingStateOut(BaseModel):
+    """Current onboarding state for a user."""
+    id: str
+    user_id: str
+    current_step: int
+    completed_steps: List[int]
+    onboarding_completed: bool
+    assistant_profile_id: Optional[str]
+    selected_life_areas: List[int]
+    first_goal_id: Optional[int]
+    first_task_id: Optional[int]
+    theme_preference: Optional[str]
+    started_at: datetime
+    completed_at: Optional[datetime]
+    last_activity: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AssistantCreationData(BaseModel):
+    """Data for assistant creation step."""
+    name: str = Field(..., min_length=1, max_length=100, description="Assistant name")
+    avatar_url: Optional[str] = Field(None, max_length=500, description="Avatar image URL")
+
+
+class PersonalitySetupData(BaseModel):
+    """Data for personality setup step."""
+    style: PersonalityStyle = Field(..., description="Personality style configuration")
+
+
+class LanguagePreferencesData(BaseModel):
+    """Data for language preferences step."""
+    language: SupportedLanguage = Field(..., description="Primary language")
+    requires_confirmation: bool = Field(True, description="Require confirmation for actions")
+
+
+class LifeAreasSelectionData(BaseModel):
+    """Data for life areas selection step."""
+    life_area_ids: List[int] = Field(..., min_items=1, description="Selected life area IDs")
+    custom_life_areas: Optional[List[str]] = Field(None, description="Custom life areas to create")
+
+
+class FirstGoalData(BaseModel):
+    """Data for first goal creation step."""
+    title: str = Field(..., min_length=1, max_length=200, description="Goal title")
+    description: Optional[str] = Field(None, max_length=1000, description="Goal description")
+    life_area_id: Optional[int] = Field(None, description="Associated life area")
+    generate_tasks: bool = Field(True, description="Auto-generate tasks using AI")
+
+
 class OnboardingRequest(BaseModel):
     """Request schema for assistant onboarding flow."""
     name: str = Field(..., min_length=1, max_length=100, description="Assistant name")
@@ -132,6 +200,16 @@ class OnboardingResponse(BaseModel):
     assistant_profile: AssistantProfileOut
     onboarding_completed: bool = True
     welcome_message: str
+
+
+class OnboardingStepResponse(BaseModel):
+    """Response for onboarding step updates."""
+    success: bool
+    current_step: int
+    completed_steps: List[int]
+    next_step: Optional[int]
+    message: str
+    data: Optional[Dict[str, Any]] = None
 
 
 class AssistantConfigResponse(BaseModel):

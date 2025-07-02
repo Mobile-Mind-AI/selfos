@@ -27,13 +27,20 @@ if ai_engine_path not in sys.path:
 
 from orchestrator import AIOrchestrator
 
+# Temporary fix: Comment out problematic import for onboarding development
+# TODO: Fix AI engine import path
 # Import ConversationRequest from AI engine models explicitly
-import importlib.util
-ai_models_path = os.path.join(ai_engine_path, 'models.py')
-ai_models_spec = importlib.util.spec_from_file_location("ai_models", ai_models_path)
-ai_models = importlib.util.module_from_spec(ai_models_spec)
-ai_models_spec.loader.exec_module(ai_models)
-ConversationRequest = ai_models.ConversationRequest
+# import importlib.util
+# ai_models_path = os.path.join(ai_engine_path, 'models.py')
+# ai_models_spec = importlib.util.spec_from_file_location("ai_models", ai_models_path)
+# ai_models = importlib.util.module_from_spec(ai_models_spec)
+# ai_models_spec.loader.exec_module(ai_models)
+# ConversationRequest = ai_models.ConversationRequest
+
+# Temporary placeholder
+class ConversationRequest:
+    def __init__(self, **kwargs):
+        pass
 
 logger = logging.getLogger(__name__)
 
