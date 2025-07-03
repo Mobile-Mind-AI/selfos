@@ -76,7 +76,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (kDebugMode) {
         print('🚦 ROUTER: Current path: $currentPath');
         print('🚦 ROUTER: Auth state: ${authState.runtimeType}');
-        print('🚦 ROUTER: Onboarding status: ${onboardingStatus.value}');
+        print('🚦 ROUTER: Onboarding status: $onboardingStatus');
       }
 
       // Stay on splash while initializing
@@ -89,7 +89,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         final onboardingCompleted = onboardingStatus.when(
           data: (status) => status == OnboardingStatus.completed,
           loading: () => false,
-          error: (_, __) => false,
+          error: (error, __) {
+            print('🔴 ROUTER: Onboarding status error: $error');
+            // If there's an error checking status, assume not completed
+            // This prevents the exception from crashing the app
+            return false;
+          },
         );
 
         // Don't redirect if user is already on onboarding route - let them stay there

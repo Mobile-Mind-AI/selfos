@@ -40,11 +40,14 @@ def get_onboarding_state(
     db: Session = Depends(get_db)
 ):
     """Get current onboarding state for the user."""
+    print(f"🔍 BACKEND: Getting onboarding state for user {current_user['uid']}")
+    
     state = db.query(OnboardingState).filter(
         OnboardingState.user_id == current_user["uid"]
     ).first()
     
     if not state:
+        print(f"🔍 BACKEND: No onboarding state found, creating new one")
         # Create initial onboarding state
         state = OnboardingState(
             user_id=current_user["uid"],
@@ -54,6 +57,8 @@ def get_onboarding_state(
         db.add(state)
         db.commit()
         db.refresh(state)
+    else:
+        print(f"🔍 BACKEND: Found onboarding state - completed: {state.onboarding_completed}, steps: {state.completed_steps}")
     
     return state
 
@@ -85,7 +90,13 @@ def update_onboarding_step(
     response_data = {}
     
     if request.step == OnboardingStep.ASSISTANT_CREATION:
+        # Handle combined assistant creation (includes personality and language)
         response_data = _handle_assistant_creation(request.data, state, current_user, db)
+        # Since assistant creation now includes personality and language, mark those steps as complete too
+        if 3 not in state.completed_steps:
+            state.completed_steps = state.completed_steps + [3]
+        if 4 not in state.completed_steps:
+            state.completed_steps = state.completed_steps + [4]
     elif request.step == OnboardingStep.PERSONALITY_SETUP:
         response_data = _handle_personality_setup(request.data, state, db)
     elif request.step == OnboardingStep.LANGUAGE_PREFERENCES:
@@ -144,16 +155,35 @@ def complete_onboarding(
     
     print(f"🎯 ONBOARDING: Complete requested for user {current_user['uid']}")
     print(f"🎯 ONBOARDING: Current state - completed_steps: {state.completed_steps}, onboarding_completed: {state.onboarding_completed}")
+    print(f"🎯 ONBOARDING: Assistant profile ID: {state.assistant_profile_id}")
+    print(f"🎯 ONBOARDING: Selected life areas: {state.selected_life_areas}")
     
-    # Verify required steps are completed (goal creation is optional)
-    required_steps = [2, 3, 4, 5]  # Assistant, Personality, Language, Life areas (goal creation is optional)
-    missing_steps = [s for s in required_steps if s not in state.completed_steps]
+    # Verify required steps are completed (more flexible approach)
+    has_assistant = state.assistant_profile_id is not None
+    has_life_areas = state.selected_life_areas and len(state.selected_life_areas) > 0
+    has_basic_steps = len(state.completed_steps) >= 2  # At least assistant and life areas
     
-    if missing_steps:
-        print(f"🎯 ONBOARDING: Missing required steps: {missing_steps}")
+    print(f"🎯 ONBOARDING: Validation - has_assistant: {has_assistant}, has_life_areas: {has_life_areas}, has_basic_steps: {has_basic_steps}")
+    
+    if not has_assistant:
+        print(f"🎯 ONBOARDING: Missing assistant profile")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot complete onboarding. Missing steps: {missing_steps}"
+            detail="Cannot complete onboarding. Assistant profile not created."
+        )
+    
+    if not has_life_areas:
+        print(f"🎯 ONBOARDING: Missing life areas")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot complete onboarding. Life areas not selected."
+        )
+    
+    if not has_basic_steps:
+        print(f"🎯 ONBOARDING: Insufficient completed steps")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot complete onboarding. Not enough steps completed."
         )
     
     state.onboarding_completed = True
@@ -300,23 +330,70 @@ def _handle_assistant_creation(
     current_user: dict,
     db: Session
 ) -> Dict[str, Any]:
-    """Handle assistant creation step."""
-    try:
-        creation_data = AssistantCreationData(**data)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid assistant creation data: {str(e)}"
-        )
+    """Handle combined assistant creation step (includes personality and language)."""
+    # Create the assistant profile directly since we're combining all steps
+    from schemas.assistant_schemas import SupportedLanguage
     
-    # Store in temp data for later use
+    # Get language enum value
+    language_code = data.get("language", "en")
+    try:
+        language = SupportedLanguage(language_code)
+    except ValueError:
+        language = SupportedLanguage.ENGLISH
+    
+    # Create or update assistant profile
+    existing_assistant = db.query(AssistantProfile).filter(
+        AssistantProfile.user_id == state.user_id,
+        AssistantProfile.is_default == True
+    ).first()
+    
+    if existing_assistant:
+        # Update existing assistant
+        existing_assistant.name = data.get("name", "Assistant")
+        existing_assistant.avatar_url = data.get("avatar_url")
+        existing_assistant.language = language.value
+        existing_assistant.requires_confirmation = data.get("requires_confirmation", True)
+        existing_assistant.style = data.get("style", {
+            "formality": 50,
+            "directness": 50,
+            "humor": 30,
+            "empathy": 70,
+            "motivation": 60
+        })
+        assistant = existing_assistant
+    else:
+        # Create new assistant
+        assistant = AssistantProfile(
+            user_id=state.user_id,
+            name=data.get("name", "Assistant"),
+            avatar_url=data.get("avatar_url"),
+            style=data.get("style", {
+                "formality": 50,
+                "directness": 50,
+                "humor": 30,
+                "empathy": 70,
+                "motivation": 60
+            }),
+            language=language.value,
+            requires_confirmation=data.get("requires_confirmation", True),
+            is_default=True
+        )
+        db.add(assistant)
+    
+    db.flush()
+    state.assistant_profile_id = assistant.id
+    
+    # Store data in temp_data for backward compatibility
     state.temp_data = {
         **state.temp_data,
-        "assistant_name": creation_data.name,
-        "avatar_url": creation_data.avatar_url
+        "assistant_name": data.get("name"),
+        "avatar_url": data.get("avatar_url"),
+        "language": data.get("language"),
+        "requires_confirmation": data.get("requires_confirmation"),
+        "style": data.get("style")
     }
     
-    return {"assistant_name": creation_data.name}
+    return {"assistant_id": assistant.id, "assistant_name": data.get("name")}
 
 
 def _handle_personality_setup(

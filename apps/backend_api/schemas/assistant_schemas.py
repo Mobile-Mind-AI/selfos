@@ -18,6 +18,7 @@ class SupportedLanguage(str, Enum):
     PORTUGUESE = "pt"
     CHINESE = "zh"
     JAPANESE = "ja"
+    RUSSIAN = "ru"
 
 
 class SupportedAIModel(str, Enum):
@@ -143,6 +144,7 @@ class OnboardingStateOut(BaseModel):
     selected_life_areas: List[int]
     first_goal_id: Optional[int]
     first_task_id: Optional[int]
+    temp_data: Dict[str, Any] = Field(default_factory=dict)
     theme_preference: Optional[str]
     started_at: datetime
     completed_at: Optional[datetime]

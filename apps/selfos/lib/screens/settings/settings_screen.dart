@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/auth_provider.dart';
 import '../../models/user.dart';
+import 'assistant_configuration_screen.dart';
 
 /// Settings and preferences screen
 class SettingsScreen extends ConsumerWidget {
@@ -81,7 +82,12 @@ class SettingsScreen extends ConsumerWidget {
                     'AI Preferences',
                     'Customize your AI assistant',
                     () {
-                      // TODO: Open AI settings
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AssistantConfigurationScreen(),
+                        ),
+                      );
                     },
                   ),
                   _buildSettingsItem(

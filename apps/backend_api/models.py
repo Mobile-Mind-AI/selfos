@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Float, JSON, Boolean, Enum, Time, func, Index
+from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Float, JSON, Boolean, Enum, Time, func, Index, LargeBinary
 from sqlalchemy.orm import relationship
 import db
 Base = db.Base
@@ -575,3 +575,48 @@ Index('ix_onboarding_state_user', OnboardingState.user_id)
 Index('ix_onboarding_state_completed', OnboardingState.onboarding_completed, OnboardingState.completed_at.desc())
 Index('ix_onboarding_state_activity', OnboardingState.last_activity.desc())
 Index('ix_assistant_profiles_model', AssistantProfile.ai_model)
+
+
+class AvatarImage(Base):
+    """
+    Storage for custom uploaded avatar images.
+    Stores image data and metadata for user-uploaded assistant avatars.
+    """
+    __tablename__ = "avatar_images"
+    
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid4()))
+    user_id = Column(String, ForeignKey("users.uid"), nullable=False)
+    
+    # Image metadata
+    filename = Column(String, nullable=False)
+    content_type = Column(String, nullable=False)  # image/jpeg, image/png, etc.
+    size_bytes = Column(Integer, nullable=False)
+    
+    # Storage information
+    storage_type = Column(String, nullable=False, default="database")  # database, s3, local
+    image_data = Column(LargeBinary, nullable=True)  # For database storage
+    storage_url = Column(String, nullable=True)  # For external storage (S3, etc.)
+    
+    # Image properties
+    width = Column(Integer, nullable=True)
+    height = Column(Integer, nullable=True)
+    thumbnail_data = Column(LargeBinary, nullable=True)  # Small thumbnail for quick loading
+    
+    # Usage tracking
+    is_active = Column(Boolean, nullable=False, default=True)
+    usage_count = Column(Integer, nullable=False, default=0)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    last_used_at = Column(DateTime, nullable=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="avatar_images")
+
+
+# Add avatar_images relationship to User model
+User.avatar_images = relationship("AvatarImage", back_populates="user", cascade="all, delete-orphan")
+
+# Performance indexes for AvatarImage model
+Index('ix_avatar_images_user_created', AvatarImage.user_id, AvatarImage.created_at.desc())
+Index('ix_avatar_images_user_active', AvatarImage.user_id, AvatarImage.is_active)

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../config/api_config.dart';
@@ -22,6 +23,7 @@ class OnboardingState {
   final List<int> selectedLifeAreas;
   final int? firstGoalId;
   final int? firstTaskId;
+  final Map<String, dynamic> tempData;
   final DateTime startedAt;
   final DateTime? completedAt;
   final DateTime lastActivity;
@@ -36,6 +38,7 @@ class OnboardingState {
     required this.selectedLifeAreas,
     this.firstGoalId,
     this.firstTaskId,
+    required this.tempData,
     required this.startedAt,
     this.completedAt,
     required this.lastActivity,
@@ -52,6 +55,7 @@ class OnboardingState {
       selectedLifeAreas: List<int>.from(json['selected_life_areas'] as List),
       firstGoalId: json['first_goal_id'] as int?,
       firstTaskId: json['first_task_id'] as int?,
+      tempData: Map<String, dynamic>.from(json['temp_data'] as Map? ?? {}),
       startedAt: DateTime.parse(json['started_at'] as String),
       completedAt: json['completed_at'] != null
           ? DateTime.parse(json['completed_at'] as String)
@@ -67,6 +71,10 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
 
   final Dio _dio = Dio();
   OnboardingState? _onboardingState;
+  
+  // Rate limiting for step updates
+  DateTime? _lastStepUpdate;
+  Timer? _stepUpdateTimer;
 
   /// Get the current onboarding state data
   OnboardingState? get onboardingState => _onboardingState;
@@ -82,6 +90,7 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
         return false;
       }
 
+      print('🔍 ONBOARDING: Checking onboarding status...');
       final response = await _dio.get(
         '${ApiConfig.baseUrl}/api/onboarding/state',
         options: Options(
@@ -94,6 +103,7 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
+        print('🔍 ONBOARDING: Status response: $data');
         _onboardingState = OnboardingState.fromJson(data);
 
         if (_onboardingState!.onboardingCompleted) {
@@ -112,6 +122,7 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
         return false;
       }
     } catch (e) {
+      print('🔴 ONBOARDING: Check status error: $e');
       // On error, assume onboarding not completed
       state = AsyncValue.error(e, StackTrace.current);
       return false;
@@ -121,9 +132,19 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
   /// Update onboarding step
   Future<bool> updateOnboardingStep(String step, Map<String, dynamic> data) async {
     try {
+      // Rate limiting: minimum 2 seconds between step updates
+      if (_lastStepUpdate != null && 
+          DateTime.now().difference(_lastStepUpdate!) < const Duration(seconds: 2)) {
+        print('🚦 ONBOARDING: Rate limiting step update for $step');
+        return false;
+      }
+      
+      _lastStepUpdate = DateTime.now();
+      
       final token = await StorageService.getAccessToken();
       if (token == null) return false;
 
+      print('🚦 ONBOARDING: Making step update request for $step');
       final response = await _dio.post(
         '${ApiConfig.baseUrl}/api/onboarding/step',
         data: {
@@ -139,12 +160,27 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
       );
 
       if (response.statusCode == 200) {
+        print('🚦 ONBOARDING: Step update successful for $step');
         // Don't refresh status immediately to avoid router conflicts
         // The status will be checked when completing onboarding
         return true;
       }
+      print('🚦 ONBOARDING: Step update failed with status ${response.statusCode}');
       return false;
     } catch (e) {
+      print('🚦 ONBOARDING: Step update error for $step: $e');
+      if (e is DioException && e.response?.statusCode == 429) {
+        print('🚦 ONBOARDING: Rate limited by server (429), will retry in 3 seconds');
+        // Schedule a retry for rate limited requests
+        _stepUpdateTimer?.cancel();
+        _stepUpdateTimer = Timer(const Duration(seconds: 3), () {
+          // Retry the step update after the rate limit period
+          print('🚦 ONBOARDING: Retrying step update for $step after rate limit');
+          updateOnboardingStep(step, data);
+        });
+        // Don't set error state for rate limiting, just return false
+        return false;
+      }
       state = AsyncValue.error(e, StackTrace.current);
       return false;
     }
@@ -172,7 +208,13 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
       }
       return false;
     } catch (e) {
-      state = AsyncValue.error(e, StackTrace.current);
+      print('🔴 ONBOARDING: Complete onboarding failed: $e');
+      if (e is DioException && e.response != null) {
+        print('🔴 ONBOARDING: Error response: ${e.response?.data}');
+        print('🔴 ONBOARDING: Status code: ${e.response?.statusCode}');
+      }
+      // Don't set error state if we're completing onboarding
+      // Just log the error and return false
       return false;
     }
   }
@@ -241,10 +283,82 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
     }
   }
 
+  /// Get assistant profile data
+  Future<Map<String, dynamic>?> getAssistantProfile(String profileId) async {
+    try {
+      final token = await StorageService.getAccessToken();
+      if (token == null) return null;
+
+      final response = await _dio.get(
+        '${ApiConfig.baseUrl}/api/assistant_profiles/$profileId',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      print('Failed to get assistant profile: $e');
+      return null;
+    }
+  }
+
+  /// Get temp data from onboarding state
+  Future<Map<String, dynamic>?> getTempData() async {
+    try {
+      final token = await StorageService.getAccessToken();
+      if (token == null) {
+        print('🔄 GET_TEMP_DATA: No access token found');
+        return null;
+      }
+
+      print('🔄 GET_TEMP_DATA: Making request to ${ApiConfig.baseUrl}/api/onboarding/state');
+      
+      final response = await _dio.get(
+        '${ApiConfig.baseUrl}/api/onboarding/state',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      print('🔄 GET_TEMP_DATA: Response status: ${response.statusCode}');
+      print('🔄 GET_TEMP_DATA: Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        final tempData = data['temp_data'] as Map<String, dynamic>?;
+        print('🔄 GET_TEMP_DATA: Extracted temp_data: $tempData');
+        return tempData;
+      }
+      return null;
+    } catch (e) {
+      print('Failed to get temp data: $e');
+      return null;
+    }
+  }
+
   /// Reset onboarding status (for development/testing)
   void reset() {
     state = const AsyncValue.data(OnboardingStatus.unknown);
     _onboardingState = null;
+    _lastStepUpdate = null;
+    _stepUpdateTimer?.cancel();
+    _stepUpdateTimer = null;
+  }
+  
+  @override
+  void dispose() {
+    _stepUpdateTimer?.cancel();
+    super.dispose();
   }
 }
 

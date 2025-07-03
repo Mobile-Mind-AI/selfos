@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,8 +6,6 @@ import '../../providers/onboarding_provider.dart';
 import '../../config/routes.dart';
 import 'welcome_step.dart';
 import 'assistant_creation_step.dart';
-import 'personality_setup_step.dart';
-import 'language_preferences_step.dart';
 import 'life_areas_step.dart';
 import 'first_goal_step.dart';
 import 'completion_step.dart';
@@ -31,10 +30,15 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
   late Animation<double> _progressAnimation;
   
   int _currentStep = 0;
-  final int _totalSteps = 7;
+  final int _totalSteps = 5;
   
   // Onboarding data collected across steps
   final Map<String, dynamic> _onboardingData = {};
+  
+  // Rate limiting for navigation
+  Timer? _navigationTimer;
+  bool _isNavigating = false;
+  DateTime? _lastNavigationAttempt;
 
   @override
   void initState() {
@@ -58,6 +62,7 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
   void dispose() {
     _pageController.dispose();
     _progressAnimationController.dispose();
+    _navigationTimer?.cancel();
     super.dispose();
   }
 
@@ -67,12 +72,72 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
   }
 
   void _nextStep([Map<String, dynamic>? stepData]) async {
+    // Prevent rapid navigation (minimum 2 seconds between step updates)
+    if (_isNavigating) {
+      print('🎯 FLUTTER: Navigation in progress, ignoring request');
+      return;
+    }
+    
+    if (_lastNavigationAttempt != null && 
+        DateTime.now().difference(_lastNavigationAttempt!) < const Duration(seconds: 2)) {
+      print('🎯 FLUTTER: Rate limiting navigation - too soon since last attempt');
+      return;
+    }
+    
+    setState(() {
+      _isNavigating = true;
+    });
+    _lastNavigationAttempt = DateTime.now();
+    
     if (stepData != null) {
       _onboardingData.addAll(stepData);
     }
     
-    // For welcome step (step 0), just proceed without API call
-    if (_currentStep == 0) {
+    try {
+      // For welcome step (step 0), just proceed without API call
+      if (_currentStep == 0) {
+        if (_currentStep < _totalSteps - 1) {
+          setState(() {
+            _currentStep++;
+          });
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+          _updateProgress();
+        }
+        return;
+      }
+      
+      // For other steps (1-3), send step update to backend
+      if (_currentStep >= 1 && _currentStep <= 3) {
+        final stepName = _getStepName(_currentStep);
+        if (stepName != null && stepData != null) {
+          print('🎯 FLUTTER: Sending step update: $stepName (step $_currentStep) with data: $stepData');
+          
+          final success = await ref.read(onboardingProvider.notifier)
+              .updateOnboardingStep(stepName, stepData);
+          
+          if (!success) {
+            // Show error and don't proceed
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Failed to save progress. Please try again.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            return; // Don't proceed to next step if API call failed
+          }
+          
+          print('🎯 FLUTTER: Step update successful, proceeding to next step');
+        } else {
+          print('🎯 FLUTTER: WARNING - No step name or data for step $_currentStep');
+        }
+      }
+      
+      // Only proceed to next step if API call was successful (or not needed)
       if (_currentStep < _totalSteps - 1) {
         setState(() {
           _currentStep++;
@@ -82,47 +147,18 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
           curve: Curves.easeInOut,
         );
         _updateProgress();
+        print('🎯 FLUTTER: Advanced to step ${_currentStep + 1}');
       }
-      return;
-    }
-    
-    // For other steps (1-5), send step update to backend
-    if (_currentStep >= 1 && _currentStep <= 5) {
-      final stepName = _getStepName(_currentStep);
-      if (stepName != null && stepData != null) {
-        print('🎯 FLUTTER: Sending step update: $stepName with data: $stepData');
-        
-        final success = await ref.read(onboardingProvider.notifier)
-            .updateOnboardingStep(stepName, stepData);
-        
-        if (!success) {
-          // Show error and don't proceed
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Failed to save progress. Please try again.'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return; // Don't proceed to next step if API call failed
+    } finally {
+      // Reset navigation state after a delay
+      _navigationTimer?.cancel();
+      _navigationTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _isNavigating = false;
+          });
         }
-        
-        print('🎯 FLUTTER: Step update successful, proceeding to next step');
-      }
-    }
-    
-    // Only proceed to next step if API call was successful (or not needed)
-    if (_currentStep < _totalSteps - 1) {
-      setState(() {
-        _currentStep++;
       });
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-      _updateProgress();
-      print('🎯 FLUTTER: Advanced to step ${_currentStep + 1}');
     }
   }
 
@@ -141,12 +177,18 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
 
   Future<void> _completeOnboarding() async {
     try {
+      print('🎯 FLUTTER: Attempting to complete onboarding...');
+      print('🎯 FLUTTER: Current onboarding data: $_onboardingData');
+      
       // Complete onboarding via provider
       final success = await ref.read(onboardingProvider.notifier).completeOnboarding();
+      
+      print('🎯 FLUTTER: Complete onboarding result: $success');
       
       if (success) {
         // Navigate to main app
         if (mounted) {
+          print('🎯 FLUTTER: Navigating to home...');
           context.go(RoutePaths.home);
         }
       } else {
@@ -161,6 +203,7 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
         }
       }
     } catch (e) {
+      print('🎯 FLUTTER: Error completing onboarding: $e');
       // Show error message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -243,6 +286,32 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
             // Header with progress bar
             _buildHeader(theme),
             
+            // Navigation status indicator
+            if (_isNavigating)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Saving progress...',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            
             // Main content
             Expanded(
               child: PageView(
@@ -254,14 +323,6 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
                     onSkip: _skipOnboarding,
                   ),
                   AssistantCreationStep(
-                    onNext: _nextStep,
-                    onPrevious: _previousStep,
-                  ),
-                  PersonalitySetupStep(
-                    onNext: _nextStep,
-                    onPrevious: _previousStep,
-                  ),
-                  LanguagePreferencesStep(
                     onNext: _nextStep,
                     onPrevious: _previousStep,
                   ),
@@ -357,14 +418,10 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
       case 1:
         return 'Meet Your Assistant';
       case 2:
-        return 'Personality Setup';
-      case 3:
-        return 'Language & Preferences';
-      case 4:
         return 'Life Areas';
-      case 5:
+      case 3:
         return 'Your First Goal';
-      case 6:
+      case 4:
         return 'Ready to Begin!';
       default:
         return 'Setup';
@@ -374,15 +431,11 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
   String? _getStepName(int step) {
     switch (step) {
       case 1:
-        return 'assistant_creation';
+        return 'assistant_creation';  // Maps to backend step 2 (and auto-marks 3,4)
       case 2:
-        return 'personality_setup';
+        return 'life_areas';         // Maps to backend step 5
       case 3:
-        return 'language_preferences';
-      case 4:
-        return 'life_areas';
-      case 5:
-        return 'first_goal';
+        return 'first_goal';         // Maps to backend step 6
       default:
         return null;
     }

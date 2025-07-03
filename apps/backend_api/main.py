@@ -27,6 +27,8 @@ from routers.ai import router as ai_router
 from routers.conversation import router as conversation_router
 from routers.assistant_profiles import router as assistant_profiles_router
 from routers.onboarding import router as onboarding_router
+from routers.avatars import router as avatars_router
+from routers.assistant import router as assistant_router
 
 # Import event system
 import event_consumers
@@ -85,3 +87,5 @@ app.include_router(ai_router, prefix="/api", tags=["ai"])
 app.include_router(conversation_router, tags=["conversation"])
 app.include_router(assistant_profiles_router, prefix="/api", tags=["assistant_profiles"])
 app.include_router(onboarding_router, prefix="/api", tags=["onboarding"])
+app.include_router(avatars_router, tags=["avatars"])
+app.include_router(assistant_router, tags=["assistant"])
