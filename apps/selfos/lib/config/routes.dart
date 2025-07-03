@@ -3,9 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_provider.dart';
+import '../providers/onboarding_provider.dart';
 import '../screens/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
+import '../screens/onboarding/onboarding_flow_screen.dart';
 import '../screens/main_shell.dart';
 import '../screens/home/today_screen.dart';
 import '../screens/chat/chat_screen.dart';
@@ -37,6 +39,7 @@ class RoutePaths {
   static const String splash = '/';
   static const String login = '/login';
   static const String signup = '/signup';
+  static const String onboarding = '/onboarding';
   static const String home = '/home';
   static const String chat = '/chat';
   static const String goals = '/goals';
@@ -51,6 +54,7 @@ class RoutePaths {
 /// It automatically redirects users based on their authentication state.
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
+  final onboardingStatus = ref.watch(onboardingProvider);
   
   return GoRouter(
     debugLogDiagnostics: true,
@@ -58,7 +62,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     // Initial location
     initialLocation: RoutePaths.splash,
     
-    // Redirect logic based on authentication state
+    // Redirect logic based on authentication and onboarding state
     redirect: (context, state) {
       final isAuthenticated = authState is AuthStateAuthenticated;
       final isInitial = authState is AuthStateInitial;
@@ -67,10 +71,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final currentPath = state.matchedLocation;
       final isAuthRoute = currentPath == RoutePaths.login || currentPath == RoutePaths.signup;
       final isSplashRoute = currentPath == RoutePaths.splash;
+      final isOnboardingRoute = currentPath == RoutePaths.onboarding;
 
       if (kDebugMode) {
         print('🚦 ROUTER: Current path: $currentPath');
         print('🚦 ROUTER: Auth state: ${authState.runtimeType}');
+        print('🚦 ROUTER: Onboarding status: $onboardingStatus');
       }
 
       // Stay on splash while initializing
@@ -78,9 +84,42 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
-      // Redirect authenticated users from auth/splash to home
-      if (isAuthenticated && (isAuthRoute || isSplashRoute)) {
-        return RoutePaths.home;
+      // If authenticated, check onboarding status
+      if (isAuthenticated) {
+        final onboardingCompleted = onboardingStatus.when(
+          data: (status) => status == OnboardingStatus.completed,
+          loading: () => false,
+          error: (error, __) {
+            print('🔴 ROUTER: Onboarding status error: $error');
+            // If there's an error checking status, assume not completed
+            // This prevents the exception from crashing the app
+            return false;
+          },
+        );
+
+        // Don't redirect if user is already on onboarding route - let them stay there
+        if (isOnboardingRoute) {
+          // Only redirect away from onboarding if it's actually completed
+          if (onboardingCompleted) {
+            return RoutePaths.home;
+          }
+          return null; // Stay on onboarding for all other cases
+        }
+
+        // If coming from auth/splash and onboarding not completed, go to onboarding
+        if ((isAuthRoute || isSplashRoute) && !onboardingCompleted) {
+          return RoutePaths.onboarding;
+        }
+
+        // If coming from auth/splash and onboarding is completed, go to home
+        if ((isAuthRoute || isSplashRoute) && onboardingCompleted) {
+          return RoutePaths.home;
+        }
+
+        // If trying to access protected routes without completing onboarding
+        if (!onboardingCompleted && !isAuthRoute && !isSplashRoute) {
+          return RoutePaths.onboarding;
+        }
       }
 
       // Redirect unauthenticated users from splash to login
@@ -89,7 +128,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // Redirect unauthenticated users from protected routes to login
-      if (!isAuthenticated && !isAuthRoute && !isSplashRoute) {
+      if (!isAuthenticated && !isAuthRoute && !isSplashRoute && !isOnboardingRoute) {
         return RoutePaths.login;
       }
 
@@ -114,6 +153,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'signup',
         builder: (context, state) => const SignupScreen(),
       ),
+
+      GoRoute(
+        path: RoutePaths.onboarding,
+        name: 'onboarding',
+        builder: (context, state) => const OnboardingFlowScreen(),
+      ),
+
       // Protected routes with shell wrapper
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),
@@ -165,11 +211,32 @@ final routerProvider = Provider<GoRouter>((ref) {
 /// 
 /// This screen is displayed while the app determines the user's
 /// authentication state and decides which screen to show.
-class SplashScreen extends ConsumerWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends ConsumerState<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    // Check if user is authenticated
+    final authState = ref.read(authProvider);
+    
+    // If authenticated, check onboarding status
+    if (authState is AuthStateAuthenticated) {
+      await ref.read(onboardingProvider.notifier).checkOnboardingStatus();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
     return Scaffold(
@@ -356,21 +423,165 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final onboardingStatus = ref.watch(onboardingProvider);
+    
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Settings screen coming soon...'),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () => ref.read(authProvider.notifier).logout(),
-              child: const Text('Sign Out'),
+            const Text(
+              'Account',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            
+            // Reset Onboarding option
+            onboardingStatus.when(
+              data: (status) {
+                if (status == OnboardingStatus.completed) {
+                  return ListTile(
+                    leading: const Icon(Icons.refresh),
+                    title: const Text('Reset Onboarding'),
+                    subtitle: const Text('Go through the setup process again'),
+                    onTap: () => _showResetOnboardingDialog(context, ref),
+                  );
+                } else {
+                  return const SizedBox.shrink();
+                }
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+            
+            const Divider(),
+            
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Sign Out'),
+              subtitle: const Text('Sign out of your account'),
+              onTap: () => _showSignOutDialog(context, ref),
+            ),
+            
+            const Spacer(),
+            
+            const Center(
+              child: Text(
+                'More settings coming soon...',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showResetOnboardingDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Reset Onboarding'),
+          content: const Text(
+            'This will reset your onboarding progress and allow you to go through the setup process again. Your existing data (goals, tasks, etc.) will be preserved.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                
+                // Show loading indicator
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Row(
+                      children: [
+                        SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 16),
+                        Text('Resetting onboarding...'),
+                      ],
+                    ),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+                
+                final success = await ref.read(onboardingProvider.notifier).resetOnboarding();
+                
+                // Clear the loading snackbar
+                ScaffoldMessenger.of(context).clearSnackBars();
+                
+                if (context.mounted) {
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Onboarding reset successfully! Redirecting...'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    // Small delay to ensure state is properly updated
+                    await Future.delayed(const Duration(milliseconds: 500));
+                    if (context.mounted) {
+                      context.go(RoutePaths.onboarding);
+                    }
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Failed to reset onboarding. Please try again.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.primary,
+              ),
+              child: const Text('Reset'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showSignOutDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Sign Out'),
+          content: const Text('Are you sure you want to sign out?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await ref.read(authProvider.notifier).logout();
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              child: const Text('Sign Out'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

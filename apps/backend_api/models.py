@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Float, JSON, Boolean, Enum, Time, func, Index
+from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Float, JSON, Boolean, Enum, Time, func, Index, LargeBinary
 from sqlalchemy.orm import relationship
 import db
 Base = db.Base
@@ -509,7 +509,6 @@ class AssistantProfile(Base):
     intent_temperature = Column(Float, nullable=False, default=0.3)
     
     # Additional configuration
-    prompt_modifiers = Column(JSON, nullable=True, default=dict)
     custom_instructions = Column(Text, nullable=True)
     
     # Timestamps
@@ -526,4 +525,98 @@ User.assistant_profiles = relationship("AssistantProfile", back_populates="user"
 # Performance indexes for AssistantProfile model
 Index('ix_assistant_profiles_user_default', AssistantProfile.user_id, AssistantProfile.is_default)
 Index('ix_assistant_profiles_user_created', AssistantProfile.user_id, AssistantProfile.created_at.desc())
+
+
+class OnboardingState(Base):
+    """
+    Tracks user's progress through the onboarding flow.
+    Stores current step, completed steps, and collected data.
+    """
+    __tablename__ = "onboarding_states"
+    
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid4()))
+    user_id = Column(String, ForeignKey("users.uid"), unique=True, nullable=False)
+    
+    # Onboarding progress tracking
+    current_step = Column(Integer, nullable=False, default=1)  # Current step number (1-6)
+    completed_steps = Column(JSON, nullable=False, default=list)  # List of completed step numbers
+    onboarding_completed = Column(Boolean, nullable=False, default=False)
+    
+    # Data collected during onboarding
+    assistant_profile_id = Column(String, ForeignKey("assistant_profiles.id"), nullable=True)
+    selected_life_areas = Column(JSON, nullable=False, default=list)  # Life area IDs selected
+    first_goal_id = Column(Integer, ForeignKey("goals.id"), nullable=True)
+    first_task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
+    
+    # Temporary data during onboarding
+    temp_data = Column(JSON, nullable=False, default=dict)  # Temporary storage for incomplete steps
+    
+    # Onboarding preferences
+    skip_intro = Column(Boolean, nullable=False, default=False)
+    theme_preference = Column(String, nullable=True)  # light, dark, auto
+    
+    # Timestamps
+    started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+    last_activity = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="onboarding_state")
+    assistant_profile = relationship("AssistantProfile")
+    first_goal = relationship("Goal")
+    first_task = relationship("Task")
+
+
+# Add onboarding_state relationship to User model
+User.onboarding_state = relationship("OnboardingState", back_populates="user", cascade="all, delete-orphan", uselist=False)
+
+# Performance indexes for OnboardingState model
+Index('ix_onboarding_state_user', OnboardingState.user_id)
+Index('ix_onboarding_state_completed', OnboardingState.onboarding_completed, OnboardingState.completed_at.desc())
+Index('ix_onboarding_state_activity', OnboardingState.last_activity.desc())
 Index('ix_assistant_profiles_model', AssistantProfile.ai_model)
+
+
+class AvatarImage(Base):
+    """
+    Storage for custom uploaded avatar images.
+    Stores image data and metadata for user-uploaded assistant avatars.
+    """
+    __tablename__ = "avatar_images"
+    
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid4()))
+    user_id = Column(String, ForeignKey("users.uid"), nullable=False)
+    
+    # Image metadata
+    filename = Column(String, nullable=False)
+    content_type = Column(String, nullable=False)  # image/jpeg, image/png, etc.
+    size_bytes = Column(Integer, nullable=False)
+    
+    # Storage information
+    storage_type = Column(String, nullable=False, default="database")  # database, s3, local
+    image_data = Column(LargeBinary, nullable=True)  # For database storage
+    storage_url = Column(String, nullable=True)  # For external storage (S3, etc.)
+    
+    # Image properties
+    width = Column(Integer, nullable=True)
+    height = Column(Integer, nullable=True)
+    thumbnail_data = Column(LargeBinary, nullable=True)  # Small thumbnail for quick loading
+    
+    # Usage tracking
+    is_active = Column(Boolean, nullable=False, default=True)
+    usage_count = Column(Integer, nullable=False, default=0)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    last_used_at = Column(DateTime, nullable=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="avatar_images")
+
+
+# Add avatar_images relationship to User model
+User.avatar_images = relationship("AvatarImage", back_populates="user", cascade="all, delete-orphan")
+
+# Performance indexes for AvatarImage model
+Index('ix_avatar_images_user_created', AvatarImage.user_id, AvatarImage.created_at.desc())
+Index('ix_avatar_images_user_active', AvatarImage.user_id, AvatarImage.is_active)

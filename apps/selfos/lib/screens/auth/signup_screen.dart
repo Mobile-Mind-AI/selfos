@@ -71,48 +71,60 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         isLoading: isLoading,
         message: authState is AuthStateLoading ? authState.message : null,
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Header
                   _buildHeader(theme),
                   
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
                   
                   // Registration form
                   _buildRegistrationForm(),
                   
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   
                   // Terms and conditions
                   _buildTermsSection(theme),
                   
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
                   
                   // Sign up button
                   _buildSignUpButton(),
                   
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   
                   // Error message
                   if (errorMessage != null) _buildErrorMessage(theme, errorMessage),
                   
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
                   
                   // Social registration section
                   _buildSocialSignup(),
                   
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
                   
                   // Sign in link
                   _buildSignInLink(theme),
-                ],
-              ),
-            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),

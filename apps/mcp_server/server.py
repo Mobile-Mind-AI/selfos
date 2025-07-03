@@ -26,6 +26,7 @@ from tools.goals_tools import GoalsToolsHandler
 from tools.projects_tools import ProjectsToolsHandler
 from tools.tasks_tools import TasksToolsHandler
 from tools.ai_tools import AIToolsHandler
+from tools.onboarding_tools import OnboardingToolsHandler
 from resources.user_resources import UserResourcesHandler
 from resources.context_resources import ContextResourcesHandler
 from transport.stdio_transport import StdioTransport
@@ -55,6 +56,7 @@ class SelfOSMcpServer:
         self.projects_tools = ProjectsToolsHandler()
         self.tasks_tools = TasksToolsHandler()
         self.ai_tools = AIToolsHandler()
+        self.onboarding_tools = OnboardingToolsHandler()
         
         # Resource handlers
         self.user_resources = UserResourcesHandler()
@@ -83,6 +85,7 @@ class SelfOSMcpServer:
             tools.extend(await self.projects_tools.list_tools())
             tools.extend(await self.tasks_tools.list_tools())
             tools.extend(await self.ai_tools.list_tools())
+            tools.extend(await self.onboarding_tools.list_tools())
             
             return tools
         
@@ -107,6 +110,8 @@ class SelfOSMcpServer:
                     result = await self.tasks_tools.call_tool(name, arguments)
                 elif name.startswith("ai_"):
                     result = await self.ai_tools.call_tool(name, arguments)
+                elif name.startswith("onboarding_"):
+                    result = await self.onboarding_tools.call_tool(name, arguments)
                 else:
                     result = {"error": f"Unknown tool: {name}"}
                 

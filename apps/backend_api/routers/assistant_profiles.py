@@ -61,7 +61,8 @@ async def get_assistant_config():
             "it": "Italian",
             "pt": "Portuguese",
             "zh": "Chinese",
-            "ja": "Japanese"
+            "ja": "Japanese",
+            "ru": "Russian"
         },
         supported_models={
             "gpt-3.5-turbo": "GPT-3.5 Turbo (Fast & Efficient)",

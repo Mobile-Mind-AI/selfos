@@ -28,6 +28,10 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs access to camera to take photos for your avatar.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to photo library to select images for your avatar.</string>
 	<key>GIDClientID</key>
 	<string>114066140224-rscdfkjf675udrjkf13t1srhcj35jpuv.apps.googleusercontent.com</string>
 	<key>CFBundleURLTypes</key>

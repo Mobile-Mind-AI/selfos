@@ -58,50 +58,65 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         isLoading: isLoading,
         message: authState is AuthStateLoading ? authState.message : null,
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 40),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: 4),
                   
-                  // App logo/title
-                  _buildHeader(theme),
+                          // App logo/title
+                          _buildHeader(theme),
                   
-                  const SizedBox(height: 48),
+                          const SizedBox(height: 16),
                   
-                  // Login form
-                  _buildLoginForm(),
+                          // Login form
+                          _buildLoginForm(),
                   
-                  const SizedBox(height: 24),
+                          const SizedBox(height: 8),
                   
-                  // Remember me and forgot password
-                  _buildFormOptions(theme),
+                          // Remember me and forgot password
+                          _buildFormOptions(theme),
                   
-                  const SizedBox(height: 32),
+                          const SizedBox(height: 12),
                   
-                  // Login button
-                  _buildLoginButton(),
+                          // Login button
+                          _buildLoginButton(),
                   
-                  const SizedBox(height: 16),
+                          const SizedBox(height: 6),
                   
                   // Error message
                   if (errorMessage != null) _buildErrorMessage(theme, errorMessage),
                   
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
                   
                   // Social login section
                   _buildSocialLogin(),
                   
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
                   
                   // Sign up link
                   _buildSignUpLink(theme),
-                ],
-              ),
-            ),
+                  
+                  const SizedBox(height: 8),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -113,28 +128,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       children: [
         // App icon/logo placeholder
         Container(
-          width: 80,
-          height: 80,
+          width: 70,
+          height: 70,
           decoration: BoxDecoration(
             color: theme.colorScheme.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(18),
           ),
           child: Icon(
             Icons.psychology,
-            size: 40,
+            size: 36,
             color: theme.colorScheme.primary,
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
         
         Text(
           'Welcome to SelfOS',
-          style: theme.textTheme.headlineMedium?.copyWith(
+          style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         
         Text(
           'Sign in to continue your personal growth journey',

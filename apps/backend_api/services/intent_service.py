@@ -27,13 +27,34 @@ if ai_engine_path not in sys.path:
 
 from orchestrator import AIOrchestrator
 
-# Import ConversationRequest from AI engine models explicitly
-import importlib.util
-ai_models_path = os.path.join(ai_engine_path, 'models.py')
-ai_models_spec = importlib.util.spec_from_file_location("ai_models", ai_models_path)
-ai_models = importlib.util.module_from_spec(ai_models_spec)
-ai_models_spec.loader.exec_module(ai_models)
-ConversationRequest = ai_models.ConversationRequest
+# Temporary fix: Comment out problematic import for onboarding development
+# TODO: Fix AI engine import path
+try:
+    # Try to import the AI models
+    import importlib.util
+    ai_engine_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'ai_engine')
+    ai_models_path = os.path.join(ai_engine_path, 'models.py')
+    ai_models_spec = importlib.util.spec_from_file_location("ai_models", ai_models_path)
+    ai_models = importlib.util.module_from_spec(ai_models_spec)
+    ai_models_spec.loader.exec_module(ai_models)
+    ConversationRequest = ai_models.ConversationRequest
+    AI_MODELS_AVAILABLE = True
+except (ImportError, FileNotFoundError, AttributeError):
+    # Fallback to placeholder classes for testing
+    class ConversationRequest:
+        def __init__(self, **kwargs):
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+    
+    class RequestType:
+        CONVERSATION = "conversation"
+    
+    # Create a mock ai_models module
+    class AIModels:
+        RequestType = RequestType
+    
+    ai_models = AIModels()
+    AI_MODELS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +100,11 @@ class IntentClassifier:
     """
     
     def __init__(self):
-        self.ai_orchestrator = AIOrchestrator()
+        try:
+            self.ai_orchestrator = AIOrchestrator()
+        except Exception as e:
+            logger.warning(f"Failed to initialize AI orchestrator: {e}, falling back to rule-based classification")
+            self.ai_orchestrator = None
         self.confidence_threshold = 0.85
         
         # Rule-based patterns for fallback
@@ -174,18 +199,24 @@ class IntentClassifier:
         start_time = datetime.now()
         
         try:
-            # Try LLM-based classification first
-            result = await self._llm_classify(message, user_context, assistant_profile)
-            
-            # If confidence is low, try rule-based fallback
-            if result.confidence < self.confidence_threshold:
-                logger.info(f"LLM confidence {result.confidence:.2f} below threshold, trying rule-based fallback")
-                fallback_result = self._rule_based_classify(message)
+            # Try LLM-based classification first if orchestrator is available
+            if self.ai_orchestrator and AI_MODELS_AVAILABLE:
+                result = await self._llm_classify(message, user_context, assistant_profile)
                 
-                # Use fallback if it has higher confidence
-                if fallback_result.confidence > result.confidence:
-                    result = fallback_result
-                    result.fallback_used = True
+                # If confidence is low, try rule-based fallback
+                if result.confidence < self.confidence_threshold:
+                    logger.info(f"LLM confidence {result.confidence:.2f} below threshold, trying rule-based fallback")
+                    fallback_result = self._rule_based_classify(message)
+                    
+                    # Use fallback if it has higher confidence
+                    if fallback_result.confidence > result.confidence:
+                        result = fallback_result
+                        result.fallback_used = True
+            else:
+                # No AI orchestrator available, use rule-based classification
+                logger.info("AI orchestrator not available, using rule-based classification")
+                result = self._rule_based_classify(message)
+                result.fallback_used = True
         
         except Exception as e:
             logger.error(f"LLM classification failed: {e}, falling back to rules")
@@ -203,6 +234,11 @@ class IntentClassifier:
 
     async def _llm_classify(self, message: str, user_context: Optional[Dict] = None, assistant_profile: Optional[Any] = None) -> IntentResult:
         """Use LLM for intent classification and entity extraction."""
+        
+        # If AI models aren't available, fall back to rule-based classification
+        if not AI_MODELS_AVAILABLE:
+            logger.warning("AI models not available, falling back to rule-based classification")
+            return self._rule_based_classify(message)
         
         system_prompt = self._build_classification_prompt(user_context)
         
