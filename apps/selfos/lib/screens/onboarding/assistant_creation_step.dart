@@ -423,37 +423,6 @@ class _AssistantCreationStepState extends ConsumerState<AssistantCreationStep>
     }
   }
 
-  Future<void> _loadFromTempData() async {
-    try {
-      // Load temp data from onboarding state
-      final response = await ref.read(onboardingProvider.notifier).getTempData();
-      print('🔄 TEMP_DATA: Response: $response');
-      
-      if (response != null) {
-        print('🔄 TEMP_DATA: Loading data - name: ${response['assistant_name']}, avatar: ${response['avatar_url']}');
-        
-        setState(() {
-          _nameController.text = response['assistant_name'] ?? '';
-          _selectedAvatar = response['avatar_url'] ?? 'ai_robot_blue';
-          _selectedLanguage = response['language'] ?? 'en';
-          _requiresConfirmation = response['requires_confirmation'] ?? true;
-          
-          final style = response['style'] as Map<String, dynamic>? ?? {};
-          _formality = (style['formality'] ?? 50).toDouble();
-          _humor = (style['humor'] ?? 30).toDouble();
-          _motivation = (style['motivation'] ?? 60).toDouble();
-        });
-        
-        _validateName();
-        _updatePreview();
-        print('🔄 TEMP_DATA: Data loaded successfully');
-      } else {
-        print('🔄 TEMP_DATA: No temp data found');
-      }
-    } catch (e) {
-      print('Failed to load temp data: $e');
-    }
-  }
 
   Future<void> _loadCustomAvatars() async {
     try {

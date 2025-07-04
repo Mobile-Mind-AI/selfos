@@ -293,9 +293,9 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app,
-        requests_per_minute: int = 60,
-        requests_per_hour: int = 1000,
-        burst_limit: int = 10
+        requests_per_minute: int = 120,  # Doubled from 60
+        requests_per_hour: int = 2000,   # Doubled from 1000  
+        burst_limit: int = 50            # Much higher burst for auto-save
     ):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
@@ -361,7 +361,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
     def _check_rate_limits(self, client_ip: str, current_time: float) -> Optional[JSONResponse]:
         """Check if client has exceeded rate limits."""
         
-        # Check burst limit (10 requests in 10 seconds)
+        # Check burst limit (50 requests in 10 seconds)
         burst_window = self.burst_windows[client_ip]
         burst_cutoff = current_time - 10  # 10 seconds
         burst_count = sum(1 for timestamp in burst_window if timestamp > burst_cutoff)

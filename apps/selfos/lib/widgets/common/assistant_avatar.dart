@@ -90,7 +90,7 @@ class AssistantAvatar extends StatelessWidget {
         height: size,
         fit: BoxFit.cover, // Fill the entire square
       );
-    } else if (isBackendStored) {
+    } else if (isBackendStored && avatarId.isNotEmpty) {
       // Load image from backend API with authentication
       return _AuthenticatedImage(
         avatarId: avatarId,
@@ -163,6 +163,15 @@ class _AuthenticatedImageState extends State<_AuthenticatedImage> {
   }
 
   Future<void> _loadImage() async {
+    // Don't try to load if avatarId is empty
+    if (widget.avatarId.isEmpty) {
+      setState(() {
+        _error = true;
+        _loading = false;
+      });
+      return;
+    }
+    
     try {
       final authHeader = await StorageService.getAuthorizationHeader();
       if (authHeader == null) {

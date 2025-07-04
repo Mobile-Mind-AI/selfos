@@ -6,9 +6,8 @@ import '../../providers/onboarding_provider.dart';
 import '../../config/routes.dart';
 import 'welcome_step.dart';
 import 'assistant_creation_step.dart';
-import 'life_areas_step.dart';
-import 'first_goal_step.dart';
-import 'completion_step.dart';
+import 'enhanced_personal_configuration_step.dart';
+
 
 /// Onboarding flow screen that guides users through setting up their assistant
 /// and initial preferences in a gamified, narrative style.
@@ -30,7 +29,7 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
   late Animation<double> _progressAnimation;
   
   int _currentStep = 0;
-  final int _totalSteps = 5;
+  final int _totalSteps = 3;
   
   // Onboarding data collected across steps
   final Map<String, dynamic> _onboardingData = {};
@@ -39,6 +38,7 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
   Timer? _navigationTimer;
   bool _isNavigating = false;
   DateTime? _lastNavigationAttempt;
+  
 
   @override
   void initState() {
@@ -109,8 +109,8 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
         return;
       }
       
-      // For other steps (1-3), send step update to backend
-      if (_currentStep >= 1 && _currentStep <= 3) {
+      // For other steps (1-2), send step update to backend
+      if (_currentStep >= 1 && _currentStep <= 2) {
         final stepName = _getStepName(_currentStep);
         if (stepName != null && stepData != null) {
           print('🎯 FLUTTER: Sending step update: $stepName (step $_currentStep) with data: $stepData');
@@ -148,6 +148,10 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
         );
         _updateProgress();
         print('🎯 FLUTTER: Advanced to step ${_currentStep + 1}');
+      } else {
+        // We've reached the end of the onboarding flow, complete it
+        print('🎯 FLUTTER: Reached end of onboarding flow, completing...');
+        _completeOnboarding();
       }
     } finally {
       // Reset navigation state after a delay
@@ -326,17 +330,11 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
                     onNext: _nextStep,
                     onPrevious: _previousStep,
                   ),
-                  LifeAreasStep(
-                    onNext: _nextStep,
-                    onPrevious: _previousStep,
-                  ),
-                  FirstGoalStep(
-                    onNext: _nextStep,
-                    onPrevious: _previousStep,
-                  ),
-                  CompletionStep(
+                  EnhancedPersonalConfigurationStep(
                     onboardingData: _onboardingData,
-                    onComplete: _completeOnboarding,
+                    onNext: _nextStep,
+                    onPrevious: _previousStep,
+                    shouldReloadData: false,
                   ),
                 ],
               ),
@@ -416,13 +414,9 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
       case 0:
         return 'Welcome to SelfOS';
       case 1:
-        return 'Meet Your Assistant';
+        return 'Step 1: AI Assistant Configuration';
       case 2:
-        return 'Life Areas';
-      case 3:
-        return 'Your First Goal';
-      case 4:
-        return 'Ready to Begin!';
+        return 'Step 2: Personal Configuration';
       default:
         return 'Setup';
     }
@@ -433,9 +427,7 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen>
       case 1:
         return 'assistant_creation';  // Maps to backend step 2 (and auto-marks 3,4)
       case 2:
-        return 'life_areas';         // Maps to backend step 5
-      case 3:
-        return 'first_goal';         // Maps to backend step 6
+        return 'personal_config';    // Maps to backend step 5 (life areas + goal setup)
       default:
         return null;
     }

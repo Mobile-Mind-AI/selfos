@@ -1,6 +1,6 @@
 """Add OnboardingState table
 
-Revision ID: 78b46d09ae15
+Revision ID: 005
 Revises: 004
 Create Date: 2025-07-01 14:09:54.796113
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '78b46d09ae15'
+revision = '005'
 down_revision = '004'
 branch_labels = None
 depends_on = None

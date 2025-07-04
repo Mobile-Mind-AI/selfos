@@ -67,14 +67,23 @@ class OnboardingState {
 
 /// Onboarding notifier for managing onboarding state
 class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
-  OnboardingNotifier() : super(const AsyncValue.data(OnboardingStatus.unknown));
+  OnboardingNotifier() : super(const AsyncValue.data(OnboardingStatus.unknown)) {
+    _startLeakyBucket();
+  }
 
   final Dio _dio = Dio();
   OnboardingState? _onboardingState;
   
-  // Rate limiting for step updates
-  DateTime? _lastStepUpdate;
-  Timer? _stepUpdateTimer;
+  
+  // Leaky bucket rate limiting
+  static const int _bucketCapacity = 3; // Max 3 requests
+  static const Duration _refillInterval = Duration(seconds: 2); // Refill 1 token every 2 seconds
+  int _bucketTokens = 3;
+  Timer? _refillTimer;
+  
+  // Queue for pending saves
+  final List<_PendingSave> _saveQueue = [];
+  Timer? _processQueueTimer;
 
   /// Get the current onboarding state data
   OnboardingState? get onboardingState => _onboardingState;
@@ -129,22 +138,73 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
     }
   }
 
-  /// Update onboarding step
-  Future<bool> updateOnboardingStep(String step, Map<String, dynamic> data) async {
-    try {
-      // Rate limiting: minimum 2 seconds between step updates
-      if (_lastStepUpdate != null && 
-          DateTime.now().difference(_lastStepUpdate!) < const Duration(seconds: 2)) {
-        print('🚦 ONBOARDING: Rate limiting step update for $step');
-        return false;
+  /// Start the leaky bucket timer
+  void _startLeakyBucket() {
+    _refillTimer = Timer.periodic(_refillInterval, (timer) {
+      if (_bucketTokens < _bucketCapacity) {
+        _bucketTokens++;
+        print('🪣 LEAKY_BUCKET: Refilled token, now have $_bucketTokens tokens');
+        
+        // Process queue if we have tokens and pending saves
+        if (_saveQueue.isNotEmpty) {
+          _processQueue();
+        }
       }
-      
-      _lastStepUpdate = DateTime.now();
-      
-      final token = await StorageService.getAccessToken();
-      if (token == null) return false;
+    });
+  }
 
-      print('🚦 ONBOARDING: Making step update request for $step');
+  /// Add save to queue and process if possible
+  Future<bool> updateOnboardingStep(String step, Map<String, dynamic> data) async {
+    // Remove any existing save for the same step (latest request replaces old one)
+    final removedCount = _saveQueue.length;
+    _saveQueue.removeWhere((save) => save.step == step);
+    final actualRemovedCount = removedCount - _saveQueue.length;
+    
+    if (actualRemovedCount > 0) {
+      print('🔄 REPLACE_QUEUE: Removed $actualRemovedCount existing pending save(s) for $step');
+    }
+    
+    // Add new save to queue
+    _saveQueue.add(_PendingSave(step, data, DateTime.now()));
+    
+    print('🪣 LEAKY_BUCKET: Added $step to queue (${_saveQueue.length} items)');
+    
+    // Try to process immediately
+    _processQueue();
+    
+    return true;
+  }
+
+  /// Process the save queue using leaky bucket
+  void _processQueue() {
+    if (_saveQueue.isEmpty || _bucketTokens <= 0) {
+      return;
+    }
+    
+    final save = _saveQueue.removeAt(0);
+    _bucketTokens--;
+    
+    print('🪣 LEAKY_BUCKET: Processing ${save.step}, tokens remaining: $_bucketTokens');
+    
+    // Perform the actual save
+    _performSave(save.step, save.data);
+    
+    // Schedule next processing if more items in queue
+    if (_saveQueue.isNotEmpty && _bucketTokens > 0) {
+      Future.delayed(const Duration(milliseconds: 100), () => _processQueue());
+    }
+  }
+
+  /// Perform the actual API call
+  Future<void> _performSave(String step, Map<String, dynamic> data) async {
+    try {
+      final token = await StorageService.getAccessToken();
+      if (token == null) {
+        print('🚦 ONBOARDING: No access token for $step');
+        return;
+      }
+
+      print('🚦 ONBOARDING: Making API request for $step');
       final response = await _dio.post(
         '${ApiConfig.baseUrl}/api/onboarding/step',
         data: {
@@ -161,28 +221,20 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
 
       if (response.statusCode == 200) {
         print('🚦 ONBOARDING: Step update successful for $step');
-        // Don't refresh status immediately to avoid router conflicts
-        // The status will be checked when completing onboarding
-        return true;
+      } else {
+        print('🚦 ONBOARDING: Step update failed with status ${response.statusCode} for $step');
       }
-      print('🚦 ONBOARDING: Step update failed with status ${response.statusCode}');
-      return false;
     } catch (e) {
       print('🚦 ONBOARDING: Step update error for $step: $e');
       if (e is DioException && e.response?.statusCode == 429) {
-        print('🚦 ONBOARDING: Rate limited by server (429), will retry in 3 seconds');
-        // Schedule a retry for rate limited requests
-        _stepUpdateTimer?.cancel();
-        _stepUpdateTimer = Timer(const Duration(seconds: 3), () {
-          // Retry the step update after the rate limit period
-          print('🚦 ONBOARDING: Retrying step update for $step after rate limit');
-          updateOnboardingStep(step, data);
-        });
-        // Don't set error state for rate limiting, just return false
-        return false;
+        print('🚦 ONBOARDING: Rate limited by server (429), re-queuing data');
+        
+        print('🔄 RETRY: Re-queuing $step');
+        
+        // Add data back to queue for retry (replace any duplicates)
+        _saveQueue.removeWhere((save) => save.step == step); // Remove any existing
+        _saveQueue.insert(0, _PendingSave(step, data, DateTime.now()));
       }
-      state = AsyncValue.error(e, StackTrace.current);
-      return false;
     }
   }
 
@@ -309,19 +361,19 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
     }
   }
 
-  /// Get temp data from onboarding state
-  Future<Map<String, dynamic>?> getTempData() async {
+  /// Get assistant profile data from the backend
+  Future<Map<String, dynamic>?> getAssistantData() async {
     try {
       final token = await StorageService.getAccessToken();
       if (token == null) {
-        print('🔄 GET_TEMP_DATA: No access token found');
+        print('🔄 GET_ASSISTANT_DATA: No access token found');
         return null;
       }
 
-      print('🔄 GET_TEMP_DATA: Making request to ${ApiConfig.baseUrl}/api/onboarding/state');
+      print('🔄 GET_ASSISTANT_DATA: Making request to ${ApiConfig.baseUrl}/api/assistant_profiles/default');
       
       final response = await _dio.get(
-        '${ApiConfig.baseUrl}/api/onboarding/state',
+        '${ApiConfig.baseUrl}/api/assistant_profiles/default',
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
@@ -330,34 +382,146 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
         ),
       );
 
-      print('🔄 GET_TEMP_DATA: Response status: ${response.statusCode}');
-      print('🔄 GET_TEMP_DATA: Response data: ${response.data}');
+      print('🔄 GET_ASSISTANT_DATA: Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        final data = response.data as Map<String, dynamic>;
-        final tempData = data['temp_data'] as Map<String, dynamic>?;
-        print('🔄 GET_TEMP_DATA: Extracted temp_data: $tempData');
-        return tempData;
+        final assistantData = response.data as Map<String, dynamic>;
+        print('🔄 GET_ASSISTANT_DATA: Assistant data: $assistantData');
+        
+        // Convert to format expected by the frontend
+        final result = {
+          'assistant_name': assistantData['name'],
+          'avatar_url': assistantData['avatar_url'],
+          'language': assistantData['language'],
+          'requires_confirmation': assistantData['requires_confirmation'],
+          'style': assistantData['style'],
+        };
+        
+        print('🔄 GET_ASSISTANT_DATA: Converted result: $result');
+        return result;
       }
       return null;
     } catch (e) {
-      print('Failed to get temp data: $e');
+      if (e is DioException && e.response?.statusCode == 404) {
+        print('🔄 GET_ASSISTANT_DATA: No default assistant found (404) - this is normal for new users');
+        return null;
+      }
+      print('Failed to get assistant data: $e');
       return null;
     }
   }
+
+  /// Get personal config data from the backend
+  Future<Map<String, dynamic>?> getPersonalConfigData() async {
+    try {
+      final token = await StorageService.getAccessToken();
+      if (token == null) {
+        print('🔄 GET_PERSONAL_CONFIG: No access token found');
+        return null;
+      }
+
+      print('🔄 GET_PERSONAL_CONFIG: Making requests to personal config endpoints');
+      
+      final Map<String, dynamic> result = {};
+      
+      // Get personal profile
+      try {
+        final profileResponse = await _dio.get(
+          '${ApiConfig.baseUrl}/api/personal-config/profile',
+          options: Options(
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          ),
+        );
+        
+        if (profileResponse.statusCode == 200 && profileResponse.data != null) {
+          final profileData = profileResponse.data as Map<String, dynamic>;
+          result['preferred_name'] = profileData['preferred_name'] ?? '';
+          result['current_situation'] = profileData['current_situation'] ?? '';
+          result['aspirations'] = profileData['aspirations'] ?? '';
+          result['interests'] = profileData['interests'] ?? [];
+          result['challenges'] = profileData['challenges'] ?? [];
+          result['preferences'] = profileData['preferences'] ?? {};
+          result['custom_answers'] = profileData['custom_answers'] ?? {};
+          result['avatar_id'] = profileData['avatar_id'] ?? '';
+          result['life_area_ids'] = profileData['selected_life_areas'] ?? [];
+        }
+      } catch (e) {
+        if (e is DioException) {
+          if (e.response?.statusCode == 429) {
+            print('🔄 GET_PERSONAL_CONFIG: Profile request rate limited (429), skipping');
+          } else if (e.response?.statusCode == 500) {
+            print('🔄 GET_PERSONAL_CONFIG: Profile request server error (500) - endpoint may not exist yet');
+          } else {
+            print('🔄 GET_PERSONAL_CONFIG: Profile request failed: ${e.response?.statusCode} - ${e.message}');
+          }
+        } else {
+          print('🔄 GET_PERSONAL_CONFIG: Profile request failed: $e');
+        }
+        // If profile endpoint fails, just continue with empty profile data
+        result['preferred_name'] = '';
+        result['current_situation'] = '';
+        result['aspirations'] = '';
+        result['interests'] = [];
+        result['challenges'] = [];
+        result['preferences'] = {};
+        result['custom_answers'] = {};
+        result['avatar_id'] = '';
+        result['life_area_ids'] = [];
+      }
+      
+      // Get custom life areas - skip if rate limited
+      try {
+        await Future.delayed(const Duration(milliseconds: 200)); // Small delay to avoid rate limiting
+        final lifeAreasResponse = await _dio.get(
+          '${ApiConfig.baseUrl}/api/personal-config/life-areas',
+          options: Options(
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          ),
+        );
+        
+        if (lifeAreasResponse.statusCode == 200) {
+          final customAreas = lifeAreasResponse.data as List;
+          result['custom_life_areas'] = customAreas;
+        }
+      } catch (e) {
+        if (e is DioException && e.response?.statusCode == 429) {
+          print('🔄 GET_PERSONAL_CONFIG: Life areas request rate limited (429), using empty list');
+          result['custom_life_areas'] = [];
+        } else {
+          print('🔄 GET_PERSONAL_CONFIG: Life areas request failed: $e');
+          result['custom_life_areas'] = [];
+        }
+      }
+      
+
+
+      print('🔄 GET_PERSONAL_CONFIG: Combined result: $result');
+      return result.isNotEmpty ? result : null;
+    } catch (e) {
+      print('Failed to get personal config data: $e');
+      return null;
+    }
+  }
+
 
   /// Reset onboarding status (for development/testing)
   void reset() {
     state = const AsyncValue.data(OnboardingStatus.unknown);
     _onboardingState = null;
-    _lastStepUpdate = null;
-    _stepUpdateTimer?.cancel();
-    _stepUpdateTimer = null;
+    _saveQueue.clear();
+    _bucketTokens = _bucketCapacity;
   }
   
   @override
   void dispose() {
-    _stepUpdateTimer?.cancel();
+    _refillTimer?.cancel();
+    _processQueueTimer?.cancel();
     super.dispose();
   }
 }
@@ -366,6 +530,15 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
 final onboardingProvider = StateNotifierProvider<OnboardingNotifier, AsyncValue<OnboardingStatus>>((ref) {
   return OnboardingNotifier();
 });
+
+/// Helper class for queued save operations
+class _PendingSave {
+  final String step;
+  final Map<String, dynamic> data;
+  final DateTime timestamp;
+
+  _PendingSave(this.step, this.data, this.timestamp);
+}
 
 /// Provider to get onboarding completion status as a boolean
 final isOnboardingCompletedProvider = Provider<bool>((ref) {

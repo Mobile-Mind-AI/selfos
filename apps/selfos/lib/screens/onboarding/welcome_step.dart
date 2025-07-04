@@ -7,11 +7,11 @@ import '../../widgets/welcome/welcome_actions.dart';
 
 /// Welcome step that introduces users to SelfOS and the onboarding concept.
 ///
-/// This is the first step in the "Start Your Story" narrative onboarding.
-/// Composed of reusable, animated components for better maintainability.
+/// Enhanced version with 2-step messaging and better progress expectation.
+/// Removed skip option to ensure proper user onboarding.
 class WelcomeStep extends StatefulWidget {
   final VoidCallback onNext;
-  final VoidCallback onSkip;
+  final VoidCallback onSkip; // Keep for API compatibility but won't be used
 
   const WelcomeStep({
     super.key,
@@ -121,7 +121,14 @@ class _WelcomeStepState extends State<WelcomeStep> {
 
   Widget _buildWelcomeText() {
     return WelcomeText(
-      rotationInterval: const Duration(seconds: 3),
+      customTitle: "Welcome to SelfOS",
+      customSubtitle: "Just 2 simple steps to personalize your experience",
+      customMessages: [
+        "You'll configure your AI assistant and tell us about yourself",
+        "Get ready for a personalized journey towards your goals",
+        "Your AI companion will learn and grow with you",
+      ],
+      rotationInterval: const Duration(seconds: 4),
       entranceDelay: const Duration(milliseconds: 200),
       enableRotation: true,
       onMessageChange: _handleMessageChange,
@@ -138,16 +145,24 @@ class _WelcomeStepState extends State<WelcomeStep> {
 
   Widget _buildStoryIntroduction() {
     return StoryIntroduction(
+      title: "Ready to Begin?",
+      description: "In just 2 steps, you'll have a personalized AI assistant that understands your goals and helps you achieve them.",
+      icon: Icons.rocket_launch,
       entranceDelay: const Duration(milliseconds: 600),
       onTap: _handleStoryTap,
     );
   }
 
   Widget _buildBottomActions() {
-    return WelcomeActions.onboarding(
-      onNext: widget.onNext,
-      onSkip: widget.onSkip,
+    return WelcomeActions(
+      primaryText: 'Start Journey',
+      secondaryText: '', // No secondary button
+      primaryIcon: Icons.rocket_launch,
+      onPrimaryPressed: widget.onNext,
+      onSecondaryPressed: null, // Disable skip
+      secondaryEnabled: false,
       enableHoverEffects: true,
+      enableIconAnimation: true,
     );
   }
 
@@ -166,7 +181,7 @@ class _WelcomeStepState extends State<WelcomeStep> {
 
   void _handleMessageChange() {
     // Could add analytics tracking here
-    debugPrint('Welcome message changed');
+    // debugPrint('Welcome message changed');
   }
 
   void _handleStoryTap() {

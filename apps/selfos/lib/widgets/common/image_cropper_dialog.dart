@@ -68,9 +68,7 @@ class _ImageCropperDialogState extends State<ImageCropperDialog> {
             
             // Description
             Text(
-              defaultTargetPlatform == TargetPlatform.macOS
-                  ? 'Choose an image source for your avatar. Square images work best.'
-                  : 'Choose an image source and crop it to a square format for your avatar.',
+              'Choose a photo from your device for your avatar. Square images work best.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.7),
               ),
@@ -117,26 +115,14 @@ class _ImageCropperDialogState extends State<ImageCropperDialog> {
                 child: CircularProgressIndicator(),
               )
             else
-              Row(
-                children: [
-                  Expanded(
-                    child: _SourceButton(
-                      icon: Icons.photo_library,
-                      label: 'Gallery',
-                      onTap: () => _pickImage(ImageSource.gallery),
-                      theme: theme,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _SourceButton(
-                      icon: Icons.camera_alt,
-                      label: 'Camera',
-                      onTap: () => _pickImage(ImageSource.camera),
-                      theme: theme,
-                    ),
-                  ),
-                ],
+              SizedBox(
+                width: double.infinity,
+                child: _SourceButton(
+                  icon: Icons.photo_library,
+                  label: 'Choose Photo',
+                  onTap: () => _pickImage(ImageSource.gallery),
+                  theme: theme,
+                ),
               ),
             
             const SizedBox(height: 16),
@@ -342,42 +328,53 @@ class _ImageCropperDialogState extends State<ImageCropperDialog> {
 class _SourceButton extends StatelessWidget {
   final IconData icon;
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final ThemeData theme;
+  final bool isDisabled;
 
   const _SourceButton({
     required this.icon,
     required this.label,
     required this.onTap,
     required this.theme,
+    this.isDisabled = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: isDisabled ? null : onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         decoration: BoxDecoration(
           border: Border.all(
-            color: theme.colorScheme.outline.withOpacity(0.5),
+            color: isDisabled 
+              ? theme.colorScheme.outline.withOpacity(0.2)
+              : theme.colorScheme.outline.withOpacity(0.5),
           ),
           borderRadius: BorderRadius.circular(12),
+          color: isDisabled 
+            ? theme.colorScheme.surface.withOpacity(0.5)
+            : null,
         ),
         child: Column(
           children: [
             Icon(
               icon,
               size: 32,
-              color: theme.colorScheme.primary,
+              color: isDisabled 
+                ? theme.colorScheme.onSurface.withOpacity(0.3)
+                : theme.colorScheme.primary,
             ),
             const SizedBox(height: 8),
             Text(
-              label,
+              isDisabled ? 'Not Available' : label,
               style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.w500,
-                color: theme.colorScheme.onSurface,
+                color: isDisabled 
+                  ? theme.colorScheme.onSurface.withOpacity(0.3)
+                  : theme.colorScheme.onSurface,
               ),
             ),
           ],

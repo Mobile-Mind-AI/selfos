@@ -1,7 +1,7 @@
 """Add AvatarImage model for custom avatar storage
 
-Revision ID: 005
-Revises: 78b46d09ae15
+Revision ID: 006
+Revises: 005
 Create Date: 2025-07-02 17:35:00.000000
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '005'
-down_revision = '78b46d09ae15'
+revision = '006'
+down_revision = '005'
 branch_labels = None
 depends_on = None
 

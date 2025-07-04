@@ -29,6 +29,7 @@ from routers.assistant_profiles import router as assistant_profiles_router
 from routers.onboarding import router as onboarding_router
 from routers.avatars import router as avatars_router
 from routers.assistant import router as assistant_router
+from routers.personal_config import router as personal_config_router
 
 # Import event system
 import event_consumers
@@ -89,3 +90,4 @@ app.include_router(assistant_profiles_router, prefix="/api", tags=["assistant_pr
 app.include_router(onboarding_router, prefix="/api", tags=["onboarding"])
 app.include_router(avatars_router, tags=["avatars"])
 app.include_router(assistant_router, tags=["assistant"])
+app.include_router(personal_config_router, prefix="/api/personal-config", tags=["personal-config"])

@@ -124,6 +124,7 @@ class OnboardingStep(str, Enum):
     LANGUAGE_PREFERENCES = "language_preferences"
     LIFE_AREAS = "life_areas"
     FIRST_GOAL = "first_goal"
+    PERSONAL_CONFIG = "personal_config"  # New combined step for 3-step flow
     COMPLETION = "completion"
 
 

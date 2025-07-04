@@ -2,34 +2,35 @@
 
 ## Overview
 
-The SelfOS onboarding flow is a narrative-style, gamified user experience that guides new users through setting up their AI assistant and initial preferences. Following the "Start Your Story" concept, the onboarding creates an engaging introduction to the SelfOS platform while collecting essential user preferences.
+The SelfOS onboarding flow is a streamlined, engaging user experience that guides new users through setting up their AI assistant and initial preferences. The flow follows a "Start Your Story" narrative concept, creating an engaging introduction to the SelfOS platform while collecting essential user preferences.
 
 ## Architecture
 
 ### Core Components
 
 #### Backend Integration
-- **OnboardingState Model**: Tracks user progress through onboarding steps
-- **API Endpoints**: Complete state management and step processing
-- **Database Persistence**: User preferences and progress stored permanently
+- **OnboardingState Model**: Tracks user progress through onboarding steps with database persistence
+- **API Endpoints**: Complete state management and step processing with error handling
+- **Database Persistence**: User preferences and progress stored permanently with step validation
 - **MCP Integration**: Onboarding tools available for AI agents
 
 #### Frontend Implementation
-- **Flutter Screens**: 6 interactive onboarding steps with animations
-- **Provider Architecture**: Riverpod-based state management
-- **Route Protection**: Authentication-aware navigation
+- **Flutter Screens**: 5 interactive onboarding steps with animations and validation
+- **Provider Architecture**: Riverpod-based state management with rate limiting
+- **Route Protection**: Authentication-aware navigation with automatic redirects
 - **Progress Tracking**: Visual progress indicators and step validation
 
 ## User Flow
 
 ### The "Start Your Story" Journey
 
-The onboarding follows a narrative structure where the user is the hero creating their AI companion:
+The onboarding follows a narrative structure where the user creates their AI companion:
 
 ```
-1. Welcome → 2. Assistant Creation → 3. Personality Setup → 
-4. Language Preferences → 5. Life Areas → 6. First Goal → Dashboard
+1. Welcome → 2. Assistant Creation → 3. Life Areas → 4. First Goal → 5. Completion → Dashboard
 ```
+
+**Total Steps**: 5 (reduced from original 6-step design for better user experience)
 
 ## Implementation Details
 
@@ -37,75 +38,38 @@ The onboarding follows a narrative structure where the user is the hero creating
 **Purpose**: Introduction to SelfOS with engaging visuals and narrative setup
 
 **Features**:
-- Animated SelfOS branding and logo
-- Narrative introduction text
-- "Start Your Story" call-to-action
-- Skip option for returning users
-- Smooth transition animations
+- Animated SelfOS branding with hero section
+- Hero animation with orbiting particles and brain icon
+- Time-based greeting messages with text rotation
+- Interactive feature cards highlighting SelfOS capabilities
+- "Start Your Story" narrative introduction
+- Smooth transition animations and hover effects
 
-**UI Elements**:
+**UI Components**:
 ```dart
-// Key components
-- Hero animation for logo
-- Gradient background with brand colors
-- Typography hierarchy with engaging copy
-- Primary action button (Continue)
-- Secondary action button (Skip)
+// Key animated components
+- HeroSection (animated brain icon with orbiting dots)
+- WelcomeText (time-based greetings with rotation)
+- FeatureCards (interactive SelfOS feature highlights)
+- StoryIntroduction (narrative "Start Your Story" section)
+- WelcomeActions (dual-action buttons with animations)
 ```
+
+**No Data Collection**: This is purely an introductory screen
 
 ### 2. Assistant Creation (`assistant_creation_step.dart`)
-**Purpose**: Personal AI assistant setup with name and avatar selection
+**Purpose**: Comprehensive AI assistant setup with name, avatar, personality, and language preferences
 
 **Features**:
-- Text input for assistant naming
-- Avatar selection gallery with diverse options
-- Real-time preview of assistant card
-- Name validation and suggestions
-- Character limit enforcement (1-100 characters)
-
-**Data Collection**:
-```json
-{
-  "name": "String (1-100 chars)",
-  "avatar_url": "String (optional)"
-}
-```
-
-### 3. Personality Setup (`personality_setup_step.dart`)
-**Purpose**: AI assistant personality customization through interactive sliders
-
-**Features**:
-- 5-trait personality system with 0-100 scale sliders:
-  - **Formality**: Formal (0) ↔ Casual (100)
-  - **Directness**: Diplomatic (0) ↔ Direct (100)
-  - **Humor**: Serious (0) ↔ Playful (100)
-  - **Empathy**: Analytical (0) ↔ Warm (100)
-  - **Motivation**: Calm (0) ↔ Energetic (100)
-- Real-time personality preview with sample messages
-- Visual trait descriptions and examples
-- Preset personality templates (optional)
-
-**Data Collection**:
-```json
-{
-  "style": {
-    "formality": 60,
-    "directness": 70,
-    "humor": 40,
-    "empathy": 80,
-    "motivation": 75
-  }
-}
-```
-
-### 4. Language Preferences (`language_preferences_step.dart`)
-**Purpose**: Communication language and interaction preferences
-
-**Features**:
-- Multi-language selection (8 supported languages)
-- Confirmation preference toggle
-- Sample conversation preview in selected language
-- Accessibility considerations for language selection
+- **Assistant Naming**: Text input with validation (1-100 characters)
+- **Avatar Selection**: Gallery with predefined options plus custom avatar upload
+- **Language Preferences**: 8 supported languages with confirmation settings
+- **Personality Setup**: 5-trait personality system with real-time preview:
+  - **Formality**: Formal (0) ↔ Casual (100) - Default: 50
+  - **Humor**: Serious (0) ↔ Playful (100) - Default: 30  
+  - **Motivation**: Calm (0) ↔ Energetic (100) - Default: 60
+- **Real-time Preview**: Live assistant preview with personality-based sample messages
+- **Auto-save**: Debounced saves every 2 seconds to prevent data loss
 
 **Supported Languages**:
 - English (en), Spanish (es), French (fr), German (de)
@@ -114,25 +78,34 @@ The onboarding follows a narrative structure where the user is the hero creating
 **Data Collection**:
 ```json
 {
+  "name": "String (1-100 chars)",
+  "avatar_url": "String (optional)",
   "language": "en",
-  "requires_confirmation": true
+  "requires_confirmation": true,
+  "style": {
+    "formality": 50,
+    "humor": 30,
+    "motivation": 60
+  }
 }
 ```
 
-### 5. Life Areas Selection (`life_areas_step.dart`)
+**Backend Integration**: Maps to `assistant_creation` step, which automatically marks personality and language steps as complete
+
+### 3. Life Areas Selection (`life_areas_step.dart`)
 **Purpose**: Personal life area categorization for goal organization
 
 **Features**:
 - Grid-based selection interface with visual icons
 - Pre-defined life areas with descriptions:
-  - Health & Fitness
-  - Career & Professional
-  - Relationships & Social
-  - Finance & Money
-  - Personal Development
-  - Education & Learning
-  - Recreation & Hobbies
-  - Spiritual & Mindfulness
+  - Health & Fitness 🏃‍♂️
+  - Career & Professional 💼
+  - Relationships & Social 👥
+  - Finance & Money 💰
+  - Personal Development 🌱
+  - Education & Learning 📚
+  - Recreation & Hobbies 🎨
+  - Spiritual & Mindfulness 🧘
 - Custom life area creation with text input
 - Multi-selection with visual feedback
 - Minimum selection requirement (at least 1 area)
@@ -145,20 +118,23 @@ The onboarding follows a narrative structure where the user is the hero creating
 }
 ```
 
-### 6. First Goal Creation (`first_goal_step.dart`)
+**Backend Integration**: Maps to `life_areas` step
+
+### 4. First Goal Creation (`first_goal_step.dart`)
 **Purpose**: Initial goal setup to demonstrate SelfOS functionality
 
 **Features**:
-- Goal title and description input
-- Life area association dropdown
+- Goal title and description input with validation
+- Life area association dropdown (from selected areas)
 - Optional AI task generation toggle
-- Goal validation and formatting
-- Preview of goal structure
-- SMART goal guidance prompts
+- Skip option for users who want to explore first
+- Goal preview with SMART goal guidance
+- Form validation and error handling
 
 **Data Collection**:
 ```json
 {
+  "skip_goal_creation": false,
   "title": "Learn Spanish",
   "description": "Become conversational in Spanish within 6 months",
   "life_area_id": 6,
@@ -166,15 +142,18 @@ The onboarding follows a narrative structure where the user is the hero creating
 }
 ```
 
-### 7. Completion Step (`completion_step.dart`)
+**Backend Integration**: Maps to `first_goal` step
+
+### 5. Completion Step (`completion_step.dart`)
 **Purpose**: Celebration and summary of onboarding setup
 
 **Features**:
 - Celebration animations and visual feedback
 - Summary of created assistant and preferences
 - Welcome message from personalized AI assistant
-- Dashboard preparation and navigation
+- Dashboard access button
 - Success metrics and encouragement
+- Automatic onboarding completion in backend
 
 ## Technical Implementation
 
@@ -189,7 +168,7 @@ final onboardingProvider = StateNotifierProvider<OnboardingNotifier, AsyncValue<
 enum OnboardingStatus {
   unknown,      // Initial state
   notStarted,   // User hasn't begun onboarding
-  inProgress,   // Onboarding in progress
+  inProgress,   // Onboarding in progress  
   completed,    // Onboarding finished
 }
 ```
@@ -199,14 +178,24 @@ enum OnboardingStatus {
 // Check current onboarding status
 Future<bool> checkOnboardingStatus()
 
-// Update specific onboarding step
+// Update specific onboarding step with rate limiting
 Future<bool> updateOnboardingStep(String step, Map<String, dynamic> data)
 
 // Complete full onboarding flow
 Future<bool> completeOnboarding()
 
-// Skip onboarding with defaults
-Future<bool> skipOnboarding()
+// Reset onboarding (for settings)
+Future<bool> resetOnboarding()
+```
+
+#### Rate Limiting & Error Handling
+```dart
+// Built-in rate limiting to prevent API abuse
+final Map<String, DateTime> _lastSaveTime = {};
+static const Duration _saveThrottle = Duration(seconds: 2);
+
+// Auto-retry logic for failed API calls
+Future<bool> _retryApiCall(Function apiCall, {int maxRetries = 3})
 ```
 
 ### API Integration
@@ -216,8 +205,7 @@ Future<bool> skipOnboarding()
 GET    /api/onboarding/state              # Current user onboarding status
 POST   /api/onboarding/step               # Update specific step
 POST   /api/onboarding/complete           # Mark onboarding complete
-POST   /api/onboarding/skip               # Skip with default setup
-GET    /api/onboarding/preview-personality # Preview personality settings
+POST   /api/onboarding/reset              # Reset onboarding (settings)
 ```
 
 #### Request/Response Schemas
@@ -244,11 +232,9 @@ class OnboardingStateOut {
 
 ### Navigation Integration
 
-#### Route Protection
-The onboarding flow is integrated into the app's navigation system with automatic redirects:
-
+#### Route Protection (`routes.dart`)
 ```dart
-// Route redirect logic in routes.dart
+// Automatic redirect logic
 redirect: (context, state) {
   final isAuthenticated = authState is AuthStateAuthenticated;
   final onboardingCompleted = onboardingStatus.when(
@@ -292,150 +278,169 @@ CREATE TABLE onboarding_states (
 );
 ```
 
+### Step Mapping
+The frontend uses a 5-step flow that maps to backend steps:
+- **Frontend Step 1** (Welcome): No backend step (intro only)
+- **Frontend Step 2** (Assistant Creation): Backend steps 2, 3, 4 (assistant, personality, language)
+- **Frontend Step 3** (Life Areas): Backend step 5
+- **Frontend Step 4** (First Goal): Backend step 6
+- **Frontend Step 5** (Completion): Triggers onboarding completion
+
 ## Error Handling
 
 ### Frontend Error States
 ```dart
-// Error handling in onboarding screens
+// Comprehensive error handling in onboarding screens
 try {
   final success = await ref.read(onboardingProvider.notifier).updateOnboardingStep(step, data);
   if (!success) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to save progress. Please try again.')),
-    );
+    _showErrorSnackBar('Failed to save progress. Please try again.');
+    return;
   }
 } catch (e) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('Error: $e')),
-  );
+  print('Onboarding step error: $e');
+  _showErrorSnackBar('Something went wrong. Please check your connection.');
 }
 ```
 
-### Backend Error Responses
-```python
-# API error handling
-try:
-    state = create_onboarding_step(user_id, step_data)
-    return OnboardingStepResponse(success=True, current_step=state.current_step)
-except ValidationError as e:
-    raise HTTPException(status_code=400, detail=f"Invalid data: {str(e)}")
-except Exception as e:
-    logger.error(f"Onboarding error: {e}")
-    raise HTTPException(status_code=500, detail="Internal server error")
-```
-
-## Testing Strategy
-
-### Unit Tests
-- Individual step component rendering
-- Form validation logic
-- State management operations
-- API integration functions
-
-### Integration Tests
-- Complete onboarding flow end-to-end
-- Navigation redirect logic
-- Backend API communication
-- Database state persistence
-
-### User Acceptance Tests
-- Onboarding completion rates
-- User experience metrics
-- Accessibility compliance
-- Cross-platform compatibility
-
-## Performance Considerations
-
-### Optimization Strategies
-1. **Lazy Loading**: Screens loaded on-demand during navigation
-2. **State Persistence**: Onboarding progress saved after each step
-3. **Error Recovery**: Automatic retry and manual refresh options
-4. **Network Efficiency**: Minimal API calls with batched updates
-5. **Memory Management**: Proper disposal of controllers and animations
-
-### Metrics Tracking
+### Network Error Recovery
 ```dart
-// Performance metrics collection
-class OnboardingMetrics {
-  final Duration totalTime;        // Total onboarding completion time
-  final Duration stepTimes;        // Individual step completion times
-  final int retryAttempts;         // Number of error retries
-  final bool skipped;              // Whether user skipped onboarding
-  final String completionPath;    // Path through onboarding steps
+// Auto-retry for network issues
+Future<bool> _saveWithRetry(String step, Map<String, dynamic> data) async {
+  for (int attempt = 1; attempt <= 3; attempt++) {
+    try {
+      final success = await updateOnboardingStep(step, data);
+      if (success) return true;
+    } catch (e) {
+      if (attempt == 3) {
+        print('Failed to save after 3 attempts: $e');
+        return false;
+      }
+      await Future.delayed(Duration(seconds: attempt));
+    }
+  }
+  return false;
 }
 ```
 
-## Accessibility Features
+## Performance Optimizations
 
-### Screen Reader Support
-- Semantic labels for all interactive elements
-- Screen reader announcements for step transitions
-- Alternative text for images and icons
-- Keyboard navigation support
+### Rate Limiting
+- **API Throttling**: Maximum 1 save per 2 seconds per step
+- **Debounced Saves**: Input changes debounced to prevent excessive API calls
+- **Local State Caching**: Form data cached locally until successful save
 
-### Visual Accessibility
-- High contrast color options
-- Scalable text with proper typography hierarchy
-- Color-blind friendly color schemes
-- Reduced motion options for animations
+### Memory Management
+- **Custom Avatar Storage**: Global storage cleared after onboarding completion
+- **Animation Controllers**: Properly disposed to prevent memory leaks
+- **Timer Management**: All timers properly cancelled on widget disposal
 
-### Internationalization
-- Multi-language text support
-- Right-to-left language compatibility
-- Cultural sensitivity in content and imagery
-- Localized number and date formats
+## User Experience Features
 
-## Customization Options
+### Progressive Enhancement
+- **Graceful Degradation**: App works with limited API connectivity
+- **Offline State Handling**: Clear messaging when API is unavailable
+- **Loading States**: Visual feedback during save operations
+- **Error Recovery**: User-friendly error messages with retry options
 
-### Developer Configuration
+### Accessibility
+- **Focus Management**: Proper tab order and focus handling
+- **Screen Reader Support**: Semantic labels and descriptions
+- **High Contrast**: Color choices meet accessibility standards
+- **Touch Targets**: Minimum 48dp touch targets for all interactive elements
+
+### Animation & Transitions
+- **Smooth Transitions**: Page transitions with proper curve animations
+- **Loading Indicators**: Visual feedback during API operations
+- **Celebration Effects**: Positive reinforcement on completion
+- **Hover Effects**: Interactive feedback on hover (desktop)
+
+## Development Guidelines
+
+### Testing Strategy
 ```dart
-// Onboarding configuration options
-class OnboardingConfig {
-  static const bool enableSkipOption = true;
-  static const int maxSteps = 6;
-  static const Duration stepTimeout = Duration(minutes: 10);
-  static const bool enableProgressBar = true;
-  static const bool enableAnimations = true;
+// Widget testing for onboarding steps
+testWidgets('Assistant creation step validates name input', (tester) async {
+  await tester.pumpWidget(makeTestableWidget(AssistantCreationStep()));
+  
+  // Test name validation
+  await tester.enterText(find.byType(TextField), '');
+  expect(find.text('Please enter a name'), findsOneWidget);
+});
+```
+
+### State Debugging
+```dart
+// Debug logging for onboarding state changes
+void _logStateChange(String step, Map<String, dynamic> data) {
+  if (kDebugMode) {
+    print('Onboarding: $step updated with data: $data');
+  }
 }
 ```
 
-### Content Customization
-- Welcome message personalization
-- Brand color and logo customization
-- Step order and optional steps
-- Language and locale variants
-- Default personality presets
+### Code Organization
+- **Single Responsibility**: Each step handles only its specific data
+- **Reusable Components**: Shared widgets in `widgets/` directory
+- **Error Boundaries**: Comprehensive error handling at component level
+- **Type Safety**: Strong typing for all data models and API responses
 
 ## Future Enhancements
 
 ### Planned Features
-1. **Dynamic Onboarding**: Adaptive flow based on user type
-2. **Progress Resume**: Continue onboarding from any device
-3. **Social Integration**: Import preferences from social profiles
-4. **Advanced Personalization**: ML-driven recommendation engine
-5. **Onboarding Analytics**: Detailed user journey analytics
+1. **Enhanced Personalization**: More personality traits and customization options
+2. **Skip Patterns**: Smart skip logic based on user behavior
+3. **Progress Analytics**: Track completion rates and drop-off points
+4. **A/B Testing**: Framework for testing different onboarding flows
+5. **Multi-language Support**: Full internationalization support
 
 ### Technical Improvements
-1. **Micro-animations**: Enhanced visual feedback
-2. **Voice Introduction**: Audio-guided onboarding option
-3. **AR/VR Support**: Immersive onboarding experience
-4. **Progressive Web App**: Enhanced web experience
-5. **Offline Capability**: Complete onboarding without internet
+1. **Offline Support**: Local storage with sync when online
+2. **Enhanced Animations**: More sophisticated animation system
+3. **Performance Monitoring**: Real-time performance metrics
+4. **Advanced Error Recovery**: More sophisticated retry logic
+5. **State Persistence**: Better handling of app state restoration
 
-## Best Practices
+## Troubleshooting
 
-### Development Guidelines
-1. **State Immutability**: All state changes through providers
-2. **Error Boundaries**: Comprehensive error handling at each step
-3. **Progress Persistence**: Save state after each successful step
-4. **User Feedback**: Clear success/error messages
-5. **Performance Monitoring**: Track completion rates and errors
+### Common Issues
 
-### UX Guidelines
-1. **Clear Progress**: Always show current step and total progress
-2. **Easy Navigation**: Allow backward navigation when appropriate
-3. **Skip Options**: Provide escape routes for experienced users
-4. **Help Context**: Contextual help and tooltips
-5. **Celebration**: Acknowledge user completion and achievements
+#### API Connection Problems
+```bash
+# Check backend connectivity
+curl http://localhost:8000/api/onboarding/state
 
-This onboarding implementation provides a comprehensive, engaging user experience that effectively introduces new users to SelfOS while collecting essential personalization data for their AI assistant.
+# Verify authentication token
+flutter logs | grep "auth"
+```
+
+#### State Synchronization Issues
+```dart
+// Force refresh onboarding state
+await ref.read(onboardingProvider.notifier).checkOnboardingStatus();
+
+// Reset onboarding if corrupted
+await ref.read(onboardingProvider.notifier).resetOnboarding();
+```
+
+#### Build Issues
+```bash
+# Clean and rebuild
+flutter clean
+flutter pub get
+flutter packages pub run build_runner build --delete-conflicting-outputs
+```
+
+### Debug Commands
+```bash
+# Run with debug logging
+flutter run -d macos --debug
+
+# Test specific onboarding screens
+flutter test test/screens/onboarding/
+
+# Check network calls
+flutter logs | grep "API"
+```
+
+This onboarding implementation provides a comprehensive, engaging user experience that effectively introduces new users to SelfOS while collecting essential personalization data for their AI assistant. The system is production-ready with robust error handling, rate limiting, and accessibility features.
