@@ -18,16 +18,23 @@ fi
 echo "✅ All imports successful!"
 
 echo "🗄️ Setting up database..."
+
+# Check if alembic_version table exists and initialize properly
 python -c "
 import db
-import models
-print('Creating database tables...')
-db.Base.metadata.create_all(bind=db.engine)
-print('Database tables created successfully!')
+from sqlalchemy import inspect
+inspector = inspect(db.engine)
+if 'alembic_version' not in inspector.get_table_names():
+    print('🔄 Initializing Alembic for fresh database...')
+    import subprocess
+    # For fresh database, don't stamp anything - let upgrade run all migrations
+    print('✅ Alembic will run all migrations from scratch')
+else:
+    print('✅ Alembic already initialized')
 "
 
 echo "🔄 Running database migrations..."
-alembic upgrade head || echo "⚠️  Alembic migration failed, continuing with table creation"
+alembic upgrade head
 
 echo "🌐 Starting uvicorn server..."
 exec uvicorn main:app --host 0.0.0.0 --port 8000 --log-level info

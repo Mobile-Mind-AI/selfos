@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:typed_data';
 import '../onboarding/assistant_creation_step.dart' show getGlobalCustomAvatars, getGlobalCustomAvatarOptions;
-import '../../widgets/common/assistant_avatar.dart';
+import '../../widgets/common/avatar.dart';
 import '../../providers/assistant_provider.dart';
-import '../../services/avatar_upload_service.dart';
+import '../../widgets/dialogs/custom_avatar_upload_dialog.dart';
 
 /// Screen for configuring the AI assistant (similar to onboarding but for existing users)
 class AssistantConfigurationScreen extends ConsumerStatefulWidget {
@@ -592,7 +591,7 @@ class _AssistantConfigurationScreenState extends ConsumerState<AssistantConfigur
                 
                 return Stack(
                   children: [
-                    AssistantAvatar(
+                    Avatar(
                       avatarId: avatar['id'],
                       imagePath: isCustom ? null : avatar['imagePath'],
                       imageData: isCustom ? avatar['imageData'] : null,

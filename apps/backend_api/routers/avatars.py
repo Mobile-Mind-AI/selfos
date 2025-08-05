@@ -18,6 +18,33 @@ from schemas.assistant_schemas import AssistantProfile
 
 router = APIRouter(prefix="/api/avatars", tags=["avatars"])
 
+from fastapi import Request
+
+@router.get("/debug/auth")
+async def debug_auth(request: Request):
+    """Debug endpoint to check authentication headers"""
+    auth_header = request.headers.get("authorization", "Not found")
+    print(f"🔍 DEBUG AUTH: Authorization header: {auth_header}")
+    return {
+        "authorization_header": auth_header,
+        "all_headers": dict(request.headers)
+    }
+
+@router.get("/debug/auth-test")
+async def debug_auth_test(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Debug endpoint to test authentication"""
+    auth_header = request.headers.get("authorization", "Not found")
+    print(f"🔍 DEBUG AUTH TEST: Authorization header: {auth_header}")
+    print(f"🔍 DEBUG AUTH TEST: Current user: {current_user}")
+    return {
+        "authorization_header": auth_header,
+        "current_user": current_user,
+        "success": True
+    }
+
 # Maximum file size: 5MB
 MAX_FILE_SIZE = 5 * 1024 * 1024
 
@@ -185,6 +212,7 @@ def get_avatar_image(
     Returns:
         Image response
     """
+    print(f"🎨 Avatar GET request - avatar_id: {avatar_id}, user: {current_user}")
     avatar = db.query(models.AvatarImage).filter(
         models.AvatarImage.id == avatar_id,
         models.AvatarImage.user_id == current_user["uid"],

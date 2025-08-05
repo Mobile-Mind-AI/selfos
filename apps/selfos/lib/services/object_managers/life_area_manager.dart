@@ -8,10 +8,12 @@
 
 import 'dart:convert';
 import 'package:uuid/uuid.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../local_database/database_service.dart';
 import '../local_database/schemas.dart';
 import '../sync/sync_queue.dart';
-import '../sync/sync_manager.dart';
+import '../sync/sync_manager.dart' as sync;
 
 /// Life Area Manager for all life area operations
 class LifeAreaManager {
@@ -25,7 +27,7 @@ class LifeAreaManager {
 
   final LocalDatabaseService _db = LocalDatabaseService.instance;
   final SyncQueueService _syncQueue = SyncQueueService.instance;
-  final SyncManager _syncManager = SyncManager.instance;
+  final sync.SyncManager _syncManager = sync.SyncManager.instance;
   static const String _tableName = LifeAreaSchema.tableName;
 
   /// Create new life area with optimistic update
@@ -194,9 +196,14 @@ class LifeAreaManager {
     return decoded;
   }
 
-  /// Get all life areas for user
+  /// Get all life areas for user (excluding soft-deleted)
   Future<List<Map<String, dynamic>>> getByUserId(String userId) async {
-    final records = await _db.getByUserId(_tableName, userId);
+    final records = await _db.query(
+      _tableName,
+      where: 'user_id = ? AND deleted_at IS NULL',
+      whereArgs: [userId],
+      orderBy: 'created_at DESC',
+    );
     return records.map((record) {
       final decoded = Map<String, dynamic>.from(record);
       if (record['keywords'] != null && record['keywords'].toString().isNotEmpty) {
@@ -217,18 +224,47 @@ class LifeAreaManager {
   Future<List<Map<String, dynamic>>> getOrderedByPriority(String userId) async {
     final records = await _db.query(
       _tableName,
-      where: 'user_id = ?',
+      where: 'user_id = ? AND deleted_at IS NULL',
       whereArgs: [userId],
       orderBy: 'priority_order ASC, name ASC',
     );
     return _parseLifeAreaRecords(records);
   }
 
+  /// Get all life areas (system defaults + user custom)
+  Future<List<Map<String, dynamic>>> getAllLifeAreas(String userId) async {
+    // First check if we have any life areas locally
+    final records = await _db.query(
+      _tableName,
+      where: '(user_id = ? OR user_id = ?) AND deleted_at IS NULL',
+      whereArgs: [userId, 'system'],
+      orderBy: 'is_custom ASC, priority_order ASC, name ASC',
+    );
+    
+    // If no system life areas found locally, fetch from backend
+    final systemAreas = records.where((r) => r['user_id'] == 'system').toList();
+    if (systemAreas.isEmpty) {
+      print('📥 No system life areas found locally, fetching from backend...');
+      await _fetchAndCacheSystemLifeAreas();
+      
+      // Re-query after fetching
+      final updatedRecords = await _db.query(
+        _tableName,
+        where: '(user_id = ? OR user_id = ?) AND deleted_at IS NULL',
+        whereArgs: [userId, 'system'],
+        orderBy: 'is_custom ASC, priority_order ASC, name ASC',
+      );
+      return _parseLifeAreaRecords(updatedRecords);
+    }
+    
+    return _parseLifeAreaRecords(records);
+  }
+  
   /// Get custom life areas only
   Future<List<Map<String, dynamic>>> getCustomLifeAreas(String userId) async {
     final records = await _db.query(
       _tableName,
-      where: 'user_id = ? AND is_custom = ?',
+      where: 'user_id = ? AND is_custom = ? AND deleted_at IS NULL',
       whereArgs: [userId, 1],
       orderBy: 'priority_order ASC, name ASC',
     );
@@ -239,7 +275,7 @@ class LifeAreaManager {
   Future<List<Map<String, dynamic>>> getDefaultLifeAreas(String userId) async {
     final records = await _db.query(
       _tableName,
-      where: 'user_id = ? AND is_custom = ?',
+      where: 'user_id = ? AND is_custom = ? AND deleted_at IS NULL',
       whereArgs: [userId, 0],
       orderBy: 'priority_order ASC, name ASC',
     );
@@ -250,7 +286,7 @@ class LifeAreaManager {
   Future<List<Map<String, dynamic>>> searchByName(String query, String userId) async {
     final records = await _db.query(
       _tableName,
-      where: 'user_id = ? AND name LIKE ?',
+      where: 'user_id = ? AND name LIKE ? AND deleted_at IS NULL',
       whereArgs: [userId, '%$query%'],
       orderBy: 'name ASC',
     );
@@ -297,6 +333,140 @@ class LifeAreaManager {
   Future<void> markConflicted(String lifeAreaId) async {
     await _db.markConflict(_tableName, lifeAreaId);
     print('⚠️ Marked life area as conflicted: $lifeAreaId');
+  }
+  
+  /// Fetch and cache system life areas from backend
+  Future<void> _fetchAndCacheSystemLifeAreas() async {
+    print('🔄 LIFE_AREAS: Starting fetch and cache of system life areas');
+    try {
+      // Get auth token
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token_access');
+      if (token == null) {
+        print('⚠️ LIFE_AREAS: No auth token available, using hardcoded defaults');
+        await _createHardcodedDefaults();
+        return;
+      }
+      
+      print('🔄 LIFE_AREAS: Auth token found, attempting backend fetch');
+      
+      // Fetch from backend
+      final response = await http.get(
+        Uri.parse('http://localhost:8000/api/life_areas'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      print('🔄 LIFE_AREAS: Backend response status: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as List<dynamic>;
+        print('🔄 LIFE_AREAS: Received ${data.length} life areas from backend');
+        
+        // Save system life areas locally
+        int systemAreaCount = 0;
+        for (final area in data) {
+          if (area['user_id'] == 'system') {
+            systemAreaCount++;
+            print('🔄 LIFE_AREAS: Creating system life area: ${area['name']}');
+            await _createLifeAreaFromBackend(area);
+          }
+        }
+        print('✅ LIFE_AREAS: Cached $systemAreaCount system life areas');
+        
+        if (systemAreaCount == 0) {
+          print('⚠️ LIFE_AREAS: No system life areas found in backend response, using hardcoded defaults');
+          await _createHardcodedDefaults();
+        }
+      } else {
+        print('⚠️ LIFE_AREAS: Failed to fetch life areas: ${response.statusCode} - ${response.body}');
+        await _createHardcodedDefaults();
+      }
+    } catch (e) {
+      print('❌ Error fetching system life areas: $e');
+      await _createHardcodedDefaults();
+    }
+  }
+  
+  /// Create life area from backend data
+  Future<void> _createLifeAreaFromBackend(Map<String, dynamic> backendData) async {
+    final now = DateTime.now();
+    
+    final lifeArea = {
+      'id': backendData['id'].toString(),
+      'user_id': backendData['user_id'],
+      'name': backendData['name'],
+      'icon': backendData['icon'] ?? 'category',
+      'color': backendData['color'] ?? '#6366f1',
+      'description': backendData['description'],
+      'keywords': backendData['keywords'] != null ? json.encode(backendData['keywords']) : null,
+      'weight': backendData['weight'] ?? 1.0,
+      'priority_order': backendData['priority_order'] ?? 0,
+      'is_custom': backendData['is_custom'] == true ? 1 : 0,
+      'version': backendData['version'] ?? 1,
+      'local_version': backendData['version'] ?? 1,
+      'last_modified': now.toIso8601String(),
+      'sync_status': 'clean', // Already synced from backend
+      'created_at': backendData['created_at'] ?? now.toIso8601String(),
+      'updated_at': backendData['updated_at'] ?? now.toIso8601String(),
+    };
+    
+    try {
+      await _db.insert(_tableName, lifeArea);
+    } catch (e) {
+      // Ignore duplicate key errors
+      if (!e.toString().contains('UNIQUE constraint failed')) {
+        rethrow;
+      }
+    }
+  }
+  
+  /// Create hardcoded default life areas
+  Future<void> _createHardcodedDefaults() async {
+    final defaults = [
+      {'name': 'Health & Fitness', 'icon': 'favorite', 'color': '#FF6B6B', 'priority_order': 1},
+      {'name': 'Career & Work', 'icon': 'work', 'color': '#4ECDC4', 'priority_order': 2},
+      {'name': 'Relationships', 'icon': 'family_restroom', 'color': '#FFE66D', 'priority_order': 3},
+      {'name': 'Personal Growth', 'icon': 'school', 'color': '#A8E6CF', 'priority_order': 4},
+      {'name': 'Finance', 'icon': 'attach_money', 'color': '#C7CEEA', 'priority_order': 5},
+      {'name': 'Spirituality', 'icon': 'self_improvement', 'color': '#FFDAB9', 'priority_order': 6},
+      {'name': 'Fun & Recreation', 'icon': 'music_note', 'color': '#B4A7D6', 'priority_order': 7},
+      {'name': 'Environment', 'icon': 'home', 'color': '#D4A5A5', 'priority_order': 8},
+    ];
+    
+    final now = DateTime.now();
+    for (int i = 0; i < defaults.length; i++) {
+      final area = defaults[i];
+      final lifeArea = {
+        'id': 'default_${i + 1}',
+        'user_id': 'system',
+        'name': area['name'],
+        'icon': area['icon'],
+        'color': area['color'],
+        'description': null,
+        'keywords': null,
+        'weight': 1.0,
+        'priority_order': area['priority_order'],
+        'is_custom': 0,
+        'version': 1,
+        'local_version': 1,
+        'last_modified': now.toIso8601String(),
+        'sync_status': 'clean',
+        'created_at': now.toIso8601String(),
+        'updated_at': now.toIso8601String(),
+      };
+      
+      try {
+        await _db.insert(_tableName, lifeArea);
+      } catch (e) {
+        // Ignore duplicate key errors
+        if (!e.toString().contains('UNIQUE constraint failed')) {
+          rethrow;
+        }
+      }
+    }
+    print('✅ Created ${defaults.length} hardcoded default life areas');
   }
 
   /// Get life areas by sync status

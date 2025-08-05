@@ -8,7 +8,7 @@ import 'dart:convert';
 /// Database configuration and metadata
 class DatabaseInfo {
   static const String databaseName = 'selfos_local.db';
-  static const int currentVersion = 1;
+  static const int currentVersion = 3; // Bumped to include story_analysis field
   
   /// Get all object types that support sync
   static List<String> getAllObjectTypes() {
@@ -113,6 +113,7 @@ class PersonalProfileSchema extends BaseSyncSchema {
       preferences TEXT, -- JSON object
       custom_answers TEXT, -- JSON object
       selected_life_areas TEXT, -- JSON array of life area IDs (authoritative)
+      story_analysis TEXT, -- JSON object with AI analysis results
       ${BaseSyncSchema.syncMetadataFields}
     )
   ''';

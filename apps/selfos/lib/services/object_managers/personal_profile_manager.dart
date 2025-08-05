@@ -8,6 +8,9 @@
 
 import 'dart:convert';
 import 'package:uuid/uuid.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../config/api_config.dart';
 import '../local_database/database_service.dart';
 import '../local_database/schemas.dart';
 import '../sync/sync_queue.dart';
@@ -26,8 +29,9 @@ class PersonalProfileManager {
   final SyncQueueService _syncQueue = SyncQueueService.instance;
   static const String _tableName = PersonalProfileSchema.tableName;
 
-  /// Create new personal profile with optimistic update
-  Future<Map<String, dynamic>> create({
+  /// Create personal profile with specific ID (for syncing from backend)
+  Future<Map<String, dynamic>> createWithId({
+    required String profileId,
     required String userId,
     String? preferredName,
     String? avatarId,
@@ -43,6 +47,86 @@ class PersonalProfileManager {
     Map<String, dynamic> preferences = const {},
     Map<String, dynamic> customAnswers = const {},
     List<String> selectedLifeAreas = const [],
+  }) async {
+    final now = DateTime.now();
+    
+    final profile = {
+      'id': profileId,
+      'user_id': userId,
+      'preferred_name': preferredName,
+      'avatar_id': avatarId,
+      'current_situation': currentSituation,
+      'interests': json.encode(interests),
+      'challenges': json.encode(challenges),
+      'aspirations': json.encode(aspirations),
+      'motivation': motivation,
+      'work_style': workStyle,
+      'communication_frequency': communicationFrequency,
+      'goal_approach': goalApproach,
+      'motivation_style': motivationStyle,
+      'preferences': json.encode(preferences),
+      'custom_answers': json.encode(customAnswers),
+      'selected_life_areas': json.encode(selectedLifeAreas),
+      'version': 1,
+      'local_version': 1,
+      'last_modified': now.toIso8601String(),
+      'sync_status': 'dirty',
+      'created_at': now.toIso8601String(),
+      'updated_at': now.toIso8601String(),
+    };
+
+    // Save locally first
+    await _db.insert(_tableName, profile);
+
+    // Queue for sync
+    await _syncQueue.enqueue(
+      SyncOperationHelper.createPersonalProfileOperation(
+        objectId: profileId,
+        operation: SyncOperationType.update, // Use update since it exists on backend
+        data: {
+          'preferred_name': preferredName,
+          'avatar_id': avatarId,
+          'current_situation': currentSituation,
+          'interests': interests,
+          'challenges': challenges,
+          'aspirations': aspirations,
+          'motivation': motivation,
+          'work_style': workStyle,
+          'communication_frequency': communicationFrequency,
+          'goal_approach': goalApproach,
+          'motivation_style': motivationStyle,
+          'preferences': preferences,
+          'custom_answers': customAnswers,
+          'selected_life_areas': selectedLifeAreas,
+        },
+        version: 1,
+        priority: SyncPriority.high,
+      ),
+    );
+
+    print('✅ Created personal profile with specific ID: $profileId for user: $userId');
+    return profile;
+  }
+
+  /// Create new personal profile with optimistic update
+  Future<Map<String, dynamic>> create({
+    required String userId,
+    String? preferredName,
+    String? avatarId,
+    String? currentSituation,
+    String? lifeStory,
+    List<String> interests = const [],
+    List<String> challenges = const [],
+    List<String> aspirations = const [],
+    String? motivation,
+    String? workStyle,
+    String? communicationFrequency,
+    String? goalApproach,
+    String? motivationStyle,
+    Map<String, dynamic> preferences = const {},
+    Map<String, dynamic> customAnswers = const {},
+    List<String> selectedLifeAreas = const [],
+    Map<String, double> lifeAreaImportance = const {},
   }) async {
     final id = const Uuid().v4();
     final now = DateTime.now();
@@ -61,8 +145,14 @@ class PersonalProfileManager {
       'communication_frequency': communicationFrequency,
       'goal_approach': goalApproach,
       'motivation_style': motivationStyle,
-      'preferences': json.encode(preferences),
-      'custom_answers': json.encode(customAnswers),
+      'preferences': json.encode({
+        ...preferences,
+        'life_area_importance': lifeAreaImportance, // Store importance within preferences
+      }),
+      'custom_answers': json.encode({
+        ...customAnswers,
+        'life_story': lifeStory, // Store life story within custom answers
+      }),
       'selected_life_areas': json.encode(selectedLifeAreas),
       'version': 0,
       'local_version': 1,
@@ -110,6 +200,7 @@ class PersonalProfileManager {
     String profileId,
     Map<String, dynamic> updates,
   ) async {
+    print('🔍 PROFILE MANAGER: Updating profile $profileId with data: $updates');
     final existing = await getById(profileId);
     if (existing == null) {
       throw Exception('Personal profile not found: $profileId');
@@ -132,9 +223,18 @@ class PersonalProfileManager {
     if (updateData['aspirations'] is List) {
       updateData['aspirations'] = json.encode(updateData['aspirations']);
     }
+    
+    // Handle preferences specially - ensure we don't include the dedicated column fields
     if (updateData['preferences'] is Map) {
-      updateData['preferences'] = json.encode(updateData['preferences']);
+      // Remove any preference fields that have dedicated columns
+      final prefsToEncode = Map<String, dynamic>.from(updateData['preferences']);
+      prefsToEncode.remove('work_style');
+      prefsToEncode.remove('communication_frequency');
+      prefsToEncode.remove('goal_approach');
+      prefsToEncode.remove('motivation_style');
+      updateData['preferences'] = json.encode(prefsToEncode);
     }
+    
     if (updateData['custom_answers'] is Map) {
       updateData['custom_answers'] = json.encode(updateData['custom_answers']);
     }
@@ -145,12 +245,42 @@ class PersonalProfileManager {
     // Save locally first
     await _db.update(_tableName, updateData, profileId);
 
-    // Queue for sync
+    // Queue for sync - ensure we send the correct data structure
+    final syncData = Map<String, dynamic>.from(updates);
+    print('🔍 PROFILE MANAGER: Preparing sync data: $syncData');
+    
+    // If preferences exist and contain dedicated column fields, extract them
+    if (syncData['preferences'] is Map) {
+      final prefs = Map<String, dynamic>.from(syncData['preferences']);
+      
+      // Extract fields that have dedicated columns
+      if (prefs.containsKey('work_style')) {
+        syncData['work_style'] = prefs['work_style'];
+        prefs.remove('work_style');
+      }
+      if (prefs.containsKey('communication_frequency')) {
+        syncData['communication_frequency'] = prefs['communication_frequency'];
+        prefs.remove('communication_frequency');
+      }
+      if (prefs.containsKey('goal_approach')) {
+        syncData['goal_approach'] = prefs['goal_approach'];
+        prefs.remove('goal_approach');
+      }
+      if (prefs.containsKey('motivation_style')) {
+        syncData['motivation_style'] = prefs['motivation_style'];
+        prefs.remove('motivation_style');
+      }
+      
+      // Update preferences with remaining fields only
+      syncData['preferences'] = prefs;
+    }
+    
+    print('🔍 PROFILE MANAGER: Final sync data being enqueued: $syncData');
     await _syncQueue.enqueue(
       SyncOperationHelper.createPersonalProfileOperation(
         objectId: profileId,
         operation: SyncOperationType.update,
-        data: updates, // Send original updates (not encoded) to API
+        data: syncData,
         version: updateData['local_version'],
         priority: SyncPriority.normal,
       ),
@@ -254,5 +384,74 @@ class PersonalProfileManager {
   Future<void> markConflicted(String profileId) async {
     await _db.markConflict(_tableName, profileId);
     print('⚠️ Marked personal profile as conflicted: $profileId');
+  }
+  
+  /// Fetch personal profile from backend
+  Future<Map<String, dynamic>?> fetchFromBackend(String userId) async {
+    try {
+      print('📥 Fetching personal profile from backend...');
+      
+      // Get auth token
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token_access');
+      if (token == null) {
+        print('⚠️ No auth token available');
+        return null;
+      }
+      
+      // Fetch from backend
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/api/personal-config/profile'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        // Create profile locally with backend ID
+        await _createProfileFromBackend(data);
+        
+        print('✅ Fetched personal profile from backend');
+        
+        // Return the local profile
+        return await getByUserId(userId);
+      } else if (response.statusCode == 404) {
+        print('📝 No personal profile found on backend');
+        return null;
+      } else {
+        print('⚠️ Failed to fetch personal profile: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Error fetching personal profile: $e');
+      return null;
+    }
+  }
+  
+  /// Create profile from backend data
+  Future<void> _createProfileFromBackend(Map<String, dynamic> backendData) async {
+    final now = DateTime.now();
+    
+    await createWithId(
+      profileId: backendData['id'].toString(),
+      userId: backendData['user_id'],
+      preferredName: backendData['preferred_name'],
+      avatarId: backendData['avatar_id'],
+      currentSituation: backendData['current_situation'],
+      interests: List<String>.from(backendData['interests'] ?? []),
+      challenges: List<String>.from(backendData['challenges'] ?? []),
+      aspirations: List<String>.from(backendData['aspirations'] ?? []),
+      motivation: backendData['motivation'],
+      workStyle: backendData['work_style'],
+      communicationFrequency: backendData['communication_frequency'],
+      goalApproach: backendData['goal_approach'],
+      motivationStyle: backendData['motivation_style'],
+      preferences: backendData['preferences'] ?? {},
+      customAnswers: backendData['custom_answers'] ?? {},
+      selectedLifeAreas: List<String>.from(backendData['selected_life_areas'] ?? []),
+    );
   }
 }

@@ -16,38 +16,7 @@ from datetime import datetime
 from enum import Enum
 
 
-# Enums for validation
-class WorkStyle(str, Enum):
-    """Work style preferences."""
-    DEEP_WORK = "deep_work"
-    COLLABORATIVE = "collaborative"
-    FLEXIBLE = "flexible"
-    STRUCTURED = "structured"
-
-
-class CommunicationFrequency(str, Enum):
-    """Communication frequency preferences."""
-    DAILY = "daily"
-    WEEKLY = "weekly"
-    BI_WEEKLY = "bi_weekly"
-    MONTHLY = "monthly"
-    ON_DEMAND = "on_demand"
-
-
-class GoalApproach(str, Enum):
-    """Goal approach preferences."""
-    STRUCTURED = "structured"
-    FLEXIBLE = "flexible"
-    EXPERIMENTAL = "experimental"
-    MILESTONE_BASED = "milestone_based"
-
-
-class MotivationStyle(str, Enum):
-    """Motivation style preferences."""
-    ACHIEVEMENT = "achievement"
-    GROWTH = "growth"
-    BALANCE = "balance"
-    RECOGNITION = "recognition"
+# Enums for validation (keeping only the ones that make sense as enums)
 
 
 class EventType(str, Enum):
@@ -72,11 +41,11 @@ class PersonalProfileBase(BaseModel):
     aspirations: Optional[List[str]] = Field(default_factory=list, description="What they hope to achieve")
     motivation: Optional[str] = Field(None, max_length=1000, description="What motivates them")
 
-    # Preference learning fields
-    work_style: Optional[WorkStyle] = Field(None, description="Preferred work style")
-    communication_frequency: Optional[CommunicationFrequency] = Field(None, description="How often they want updates")
-    goal_approach: Optional[GoalApproach] = Field(None, description="How they like to approach goals")
-    motivation_style: Optional[MotivationStyle] = Field(None, description="What motivates them most")
+    # Preference learning fields - all strings to allow custom answers
+    work_style: Optional[str] = Field(None, max_length=50, description="Preferred work style")
+    communication_frequency: Optional[str] = Field(None, max_length=50, description="How often they want updates")
+    goal_approach: Optional[str] = Field(None, max_length=50, description="How they like to approach goals")
+    motivation_style: Optional[str] = Field(None, max_length=50, description="What motivates them most")
 
     # Quick preferences and custom answers
     preferences: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Quick preferences from UI")
@@ -102,9 +71,10 @@ class PersonalProfileBase(BaseModel):
         """Validate text fields."""
         if v is not None:
             v = v.strip()
-            # Allow empty strings for incomplete onboarding
-            if v and len(v) < 10:
-                raise ValueError("Must be at least 10 characters")
+            # Allow empty strings and short values for incomplete onboarding
+            # Only validate length for non-empty strings that are too short to be meaningful
+            if v and len(v) > 0 and len(v) < 3:
+                raise ValueError("Must be at least 3 characters if provided")
         return v
     
     @validator('preferred_name')
@@ -130,10 +100,10 @@ class PersonalProfileUpdate(BaseModel):
     challenges: Optional[List[str]] = None
     aspirations: Optional[List[str]] = None
     motivation: Optional[str] = Field(None, max_length=1000)
-    work_style: Optional[WorkStyle] = None
-    communication_frequency: Optional[CommunicationFrequency] = None
-    goal_approach: Optional[GoalApproach] = None
-    motivation_style: Optional[MotivationStyle] = None
+    work_style: Optional[str] = Field(None, max_length=50)
+    communication_frequency: Optional[str] = Field(None, max_length=50)
+    goal_approach: Optional[str] = Field(None, max_length=50)
+    motivation_style: Optional[str] = Field(None, max_length=50)
     preferences: Optional[Dict[str, Any]] = None
     custom_answers: Optional[Dict[str, Any]] = None
     selected_life_areas: Optional[List[int]] = None

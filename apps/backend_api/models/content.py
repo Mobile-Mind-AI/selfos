@@ -7,6 +7,38 @@ from uuid import uuid4
 from db import Base
 
 
+class AvatarImage(Base):
+    __tablename__ = "avatar_images"
+    id = Column(String, primary_key=True, default=lambda: str(uuid4()), index=True)
+    user_id = Column(String, ForeignKey("users.uid"), nullable=False)
+    
+    # File details
+    filename = Column(String, nullable=False)
+    content_type = Column(String, nullable=False)
+    size_bytes = Column(Integer, nullable=False)
+    storage_type = Column(String, nullable=False)
+    
+    # Image data storage (either blob or URL)
+    image_data = Column(LargeBinary, nullable=True)  # For embedded storage
+    storage_url = Column(String, nullable=True)      # For external storage
+    
+    # Image dimensions
+    width = Column(Integer, nullable=True)
+    height = Column(Integer, nullable=True)
+    thumbnail_data = Column(LargeBinary, nullable=True)
+    
+    # Usage tracking
+    is_active = Column(Boolean, nullable=False, default=True)
+    usage_count = Column(Integer, nullable=False, default=0)
+    
+    # Timestamps
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    last_used_at = Column(DateTime, nullable=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="avatar_images")
+
+
 class MediaAttachment(Base):
     __tablename__ = "media_attachments"
     id = Column(Integer, primary_key=True, index=True)
@@ -29,6 +61,9 @@ class MediaAttachment(Base):
     width = Column(Integer, nullable=True)         # For images/videos
     height = Column(Integer, nullable=True)        # For images/videos
     duration = Column(Float, nullable=True)        # For videos/audio (seconds)
+    
+    # Versioning for sync
+    version = Column(Integer, nullable=False, default=1)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)

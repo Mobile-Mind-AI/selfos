@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
 import 'dart:math' as math;
-import '../common/assistant_avatar.dart';
+import '../common/avatar.dart';
 
 class AssistantHeroSection extends StatefulWidget {
   final Map<String, dynamic> selectedAvatarData;
@@ -90,7 +90,7 @@ class _AssistantHeroSectionState extends State<AssistantHeroSection>
                     // Main selected avatar with pulse animation (no background square)
                     Transform.scale(
                       scale: _pulseAnimation.value,
-                      child: AssistantAvatar(
+                      child: Avatar(
                         avatarId: widget.selectedAvatarData['id'],
                         imagePath: widget.selectedAvatarData['isCustom'] == true
                             ? null

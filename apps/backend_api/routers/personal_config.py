@@ -16,7 +16,8 @@ import uuid
 from datetime import datetime
 
 from dependencies import get_db
-from models import User, PersonalProfile, CustomLifeArea, OnboardingAnalytics
+from models import User, PersonalProfile, OnboardingAnalytics
+from models.goals import LifeArea
 from dependencies import get_current_user
 from schemas.personal_config_schemas import (
     PersonalProfileCreate,
@@ -162,9 +163,15 @@ async def get_custom_life_areas(
 ):
     """Get user's custom life areas ordered by priority."""
 
-    life_areas = db.query(CustomLifeArea).filter(
-        CustomLifeArea.user_id == current_user["uid"]
-    ).order_by(CustomLifeArea.priority_order).all()
+    # Only return custom life areas (is_custom=True)
+    life_areas = db.query(LifeArea).filter(
+        LifeArea.user_id == current_user["uid"],
+        LifeArea.is_custom == True
+    ).order_by(LifeArea.priority_order).all()
+
+    print(f"📥 GET_CUSTOM_LIFE_AREAS: Found {len(life_areas)} custom life areas for user {current_user['uid']}")
+    for area in life_areas:
+        print(f"📥 - {area.name} (ID: {area.id}, icon: {area.icon}, color: {area.color})")
 
     return life_areas
 
@@ -178,13 +185,14 @@ async def create_custom_life_area(
     """Create a new custom life area."""
 
     # Get next priority order
-    max_priority = db.query(CustomLifeArea).filter(
-        CustomLifeArea.user_id == current_user["uid"]
+    max_priority = db.query(LifeArea).filter(
+        LifeArea.user_id == current_user["uid"]
     ).count()
 
-    new_life_area = CustomLifeArea(
+    new_life_area = LifeArea(
         user_id=current_user["uid"],
         priority_order=max_priority + 1,
+        is_custom=True,  # Always mark as custom when created via this endpoint
         **life_area_data.dict()
     )
 
@@ -204,9 +212,10 @@ async def update_custom_life_area(
 ):
     """Update a custom life area."""
 
-    life_area = db.query(CustomLifeArea).filter(
-        CustomLifeArea.id == life_area_id,
-        CustomLifeArea.user_id == current_user["uid"]
+    life_area = db.query(LifeArea).filter(
+        LifeArea.id == life_area_id,
+        LifeArea.user_id == current_user["uid"],
+        LifeArea.is_custom == True  # Only allow updating custom areas
     ).first()
 
     if not life_area:
@@ -234,9 +243,10 @@ async def delete_custom_life_area(
 ):
     """Delete a custom life area."""
 
-    life_area = db.query(CustomLifeArea).filter(
-        CustomLifeArea.id == life_area_id,
-        CustomLifeArea.user_id == current_user["uid"]
+    life_area = db.query(LifeArea).filter(
+        LifeArea.id == life_area_id,
+        LifeArea.user_id == current_user["uid"],
+        LifeArea.is_custom == True  # Only allow deleting custom areas
     ).first()
 
     if not life_area:
@@ -260,9 +270,10 @@ async def reorder_life_areas(
     """Reorder life areas by priority."""
 
     # Validate all areas belong to user
-    user_areas = db.query(CustomLifeArea).filter(
-        CustomLifeArea.user_id == current_user["uid"],
-        CustomLifeArea.id.in_(area_ids)
+    user_areas = db.query(LifeArea).filter(
+        LifeArea.user_id == current_user["uid"],
+        LifeArea.id.in_(area_ids),
+        LifeArea.is_custom == True
     ).all()
 
     if len(user_areas) != len(area_ids):
@@ -273,9 +284,9 @@ async def reorder_life_areas(
 
     # Update priority order
     for index, area_id in enumerate(area_ids):
-        db.query(CustomLifeArea).filter(
-            CustomLifeArea.id == area_id,
-            CustomLifeArea.user_id == current_user["uid"]
+        db.query(LifeArea).filter(
+            LifeArea.id == area_id,
+            LifeArea.user_id == current_user["uid"]
         ).update({"priority_order": index + 1})
 
     db.commit()
@@ -334,8 +345,8 @@ async def get_life_area_suggestions(
     ]
 
     # Filter out areas user already has
-    existing_areas = db.query(CustomLifeArea.name).filter(
-        CustomLifeArea.user_id == current_user["uid"]
+    existing_areas = db.query(LifeArea.name).filter(
+        LifeArea.user_id == current_user["uid"]
     ).all()
     existing_names = {area.name for area in existing_areas}
 

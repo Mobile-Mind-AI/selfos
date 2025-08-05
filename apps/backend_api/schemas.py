@@ -420,6 +420,10 @@ class LifeArea(LifeAreaBase):
     class Config:
         from_attributes = True
 
+class LifeAreaOut(LifeArea):
+    """Output schema for LifeArea (same as LifeArea)"""
+    pass
+
 class MediaAttachmentBase(BaseModel):
     filename: constr(min_length=1, max_length=255, strip_whitespace=True) = Field(
         ..., 

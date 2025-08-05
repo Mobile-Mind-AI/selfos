@@ -13,9 +13,18 @@ import time
 from typing import Dict, List, Optional, Any, Union
 from datetime import datetime, timedelta
 
-from config import AIConfig, AIProvider
 import sys
 import os
+
+# Import config from current directory (ai_engine)
+current_dir = os.path.dirname(__file__)
+config_path = os.path.join(current_dir, 'config.py')
+import importlib.util
+config_spec = importlib.util.spec_from_file_location("ai_config", config_path)
+ai_config_module = importlib.util.module_from_spec(config_spec)
+config_spec.loader.exec_module(ai_config_module)
+AIConfig = ai_config_module.AIConfig
+AIProvider = ai_config_module.AIProvider
 
 # Add libs directory to path and import prompts with error handling
 libs_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'libs')

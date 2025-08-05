@@ -1,7 +1,9 @@
+import 'environment.dart';
+
 /// API configuration for SelfOS Flutter app
 class ApiConfig {
   /// Base URL for the SelfOS backend API
-  static const String baseUrl = 'http://localhost:8000';
+  static String get baseUrl => Environment.apiBaseUrl;
   
   /// API endpoints
   static const String authEndpoint = '/api/auth';

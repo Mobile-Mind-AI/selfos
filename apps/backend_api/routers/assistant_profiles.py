@@ -9,7 +9,7 @@ import logging
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, desc
+from sqlalchemy import and_, desc, or_ as db_or
 
 from dependencies import get_db, get_current_user
 from models import AssistantProfile, User
@@ -86,27 +86,6 @@ async def get_assistant_config():
     )
 
 
-@router.get("/default", response_model=AssistantProfileOut)
-async def get_default_assistant_profile(
-    current_user: Dict = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Get the user's default assistant profile.
-    """
-    user_id = current_user["uid"]
-    
-    profile = db.query(AssistantProfile).filter(
-        and_(
-            AssistantProfile.user_id == user_id,
-            AssistantProfile.is_default == True
-        )
-    ).first()
-    
-    if not profile:
-        raise HTTPException(status_code=404, detail="No default assistant profile found")
-    
-    return AssistantProfileOut.model_validate(profile)
 
 
 @router.post("/onboarding", response_model=OnboardingResponse)

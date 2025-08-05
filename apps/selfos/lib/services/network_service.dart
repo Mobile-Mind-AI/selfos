@@ -10,6 +10,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
+import '../config/environment.dart';
 
 /// Network connection status
 enum NetworkStatus {
@@ -80,7 +81,7 @@ class NetworkService {
   
   // Configuration
   static const Duration _healthCheckInterval = Duration(seconds: 30);
-  static const String _backendHealthEndpoint = 'http://127.0.0.1:8000/'; // From app_config.dart
+  static String get _backendHealthEndpoint => Environment.healthEndpoint;
   static const Duration _requestTimeout = Duration(seconds: 10);
 
   /// Stream of network state changes
@@ -148,6 +149,8 @@ class NetworkService {
       // Measure latency and backend reachability
       final stopwatch = Stopwatch()..start();
       
+      print('🔍 Checking backend at: $_backendHealthEndpoint');
+      
       final response = await http.get(
         Uri.parse(_backendHealthEndpoint),
         headers: {'Connection': 'close'},
@@ -170,7 +173,7 @@ class NetworkService {
       ));
 
       if (canReach) {
-        print('✅ Backend reachable - latency: ${latency.inMilliseconds}ms');
+        print('✅ Backend reachable at $_backendHealthEndpoint - latency: ${latency.inMilliseconds}ms');
       } else {
         print('⚠️ Backend unreachable - status: ${response.statusCode}');
       }
@@ -187,7 +190,7 @@ class NetworkService {
         canReachBackend: false,
       ));
 
-      print('❌ Network health check failed: $e');
+      print('❌ Network health check failed for $_backendHealthEndpoint: $e');
     }
   }
 

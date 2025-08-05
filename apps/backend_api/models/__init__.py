@@ -16,7 +16,7 @@ from db import Base
 # Import all models to ensure they are registered with SQLAlchemy
 from .user import User, UserPreferences
 from .goals import Goal, Project, Task, LifeArea
-from .content import MediaAttachment, MemoryItem, StorySession, FeedbackLog
+from .content import AvatarImage, MediaAttachment, MemoryItem, StorySession, FeedbackLog
 from .onboarding import PersonalProfile, CustomLifeArea, OnboardingAnalytics, AssistantProfile, OnboardingState
 from .conversation import ConversationLog, ConversationSession, IntentFeedback
 
@@ -25,7 +25,7 @@ __all__ = [
     'Base',
     'User', 'UserPreferences',
     'Goal', 'Project', 'Task', 'LifeArea', 
-    'MediaAttachment', 'MemoryItem', 'StorySession', 'FeedbackLog',
+    'AvatarImage', 'MediaAttachment', 'MemoryItem', 'StorySession', 'FeedbackLog',
     'PersonalProfile', 'CustomLifeArea', 'OnboardingAnalytics', 'AssistantProfile', 'OnboardingState',
     'ConversationLog', 'ConversationSession', 'IntentFeedback'
 ]

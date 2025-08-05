@@ -242,3 +242,42 @@ class PersonalityPreviewResponse(BaseModel):
     sample_response: str = Field(..., description="Sample response with applied personality")
     style_description: str = Field(..., description="Description of the personality style")
     personality_summary: Dict[str, str] = Field(..., description="Summary of each personality trait")
+
+
+# Permission System Schemas
+
+class PermissionLevel(str, Enum):
+    """Available permission levels for assistant sharing."""
+    READ = "read"
+    EDIT = "edit"
+    ADMIN = "admin"
+    OWNER = "owner"
+
+
+class ShareAssistantRequest(BaseModel):
+    """Request schema for sharing an assistant."""
+    target_user_id: str = Field(..., description="User ID to share with")
+    permission_level: PermissionLevel = Field(..., description="Permission level to grant")
+    expires_at: Optional[datetime] = Field(None, description="Optional expiration date")
+
+
+class ShareAssistantResponse(BaseModel):
+    """Response schema for sharing assistant."""
+    success: bool = Field(..., description="Whether sharing was successful")
+    message: str = Field(..., description="Status message")
+
+
+class AssistantPermissionOut(BaseModel):
+    """Output schema for assistant permission."""
+    user_id: str = Field(..., description="User ID with permission")
+    permission_level: PermissionLevel = Field(..., description="Permission level")
+    granted_by: str = Field(..., description="User who granted permission")
+    granted_at: datetime = Field(..., description="When permission was granted")
+    expires_at: Optional[datetime] = Field(None, description="When permission expires")
+
+
+class AssistantVersionOut(BaseModel):
+    """Output schema for assistant version info (sync purposes)."""
+    assistant_id: str = Field(..., description="Assistant ID")
+    version: int = Field(..., description="Version number")
+    updated_at: datetime = Field(..., description="Last update timestamp")

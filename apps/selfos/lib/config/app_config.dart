@@ -1,7 +1,9 @@
+import 'environment.dart';
+
 /// Application configuration and constants
 class AppConfig {
   // API Configuration
-  static const String baseUrl = 'http://127.0.0.1:8000';
+  static String get baseUrl => Environment.apiBaseUrl;
   static const String apiVersion = 'v1';
   
   // API Endpoints
@@ -10,6 +12,7 @@ class AppConfig {
   static const String tasksEndpoint = '/api/tasks';
   static const String lifeAreasEndpoint = '/api/life-areas';
   static const String aiEndpoint = '/api/ai';
+  static const String syncEndpoint = '/api/sync';
   
   // Storage Keys
   static const String tokenKey = 'auth_token';

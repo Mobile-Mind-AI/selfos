@@ -11,7 +11,7 @@ import 'package:uuid/uuid.dart';
 import '../local_database/database_service.dart';
 import '../local_database/schemas.dart';
 import '../sync/sync_queue.dart';
-import '../sync/sync_manager.dart';
+import '../sync/sync_manager.dart' as sync;
 
 /// Task Manager for all task operations
 class TaskManager {
@@ -25,7 +25,7 @@ class TaskManager {
 
   final LocalDatabaseService _db = LocalDatabaseService.instance;
   final SyncQueueService _syncQueue = SyncQueueService.instance;
-  final SyncManager _syncManager = SyncManager.instance;
+  final sync.SyncManager _syncManager = sync.SyncManager.instance;
   static const String _tableName = TaskSchema.tableName;
 
   /// Create new task with optimistic update

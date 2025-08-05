@@ -11,6 +11,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:uuid/uuid.dart';
+import 'package:synchronized/synchronized.dart';
 import '../local_database/database_service.dart';
 import '../local_database/schemas.dart';
 
@@ -37,7 +38,7 @@ class SyncOperation {
     required this.data,
     required this.version,
     this.retryCount = 0,
-    this.maxRetries = 3,
+    this.maxRetries = 5, // Increased from 3 to handle transient DB locks
     required this.scheduledAt,
     required this.createdAt,
   });
@@ -160,6 +161,9 @@ class SyncQueueService {
   final LocalDatabaseService _db = LocalDatabaseService.instance;
   final Connectivity _connectivity = Connectivity();
   
+  // Mutex lock for database operations to prevent transaction conflicts
+  final Lock _dbLock = Lock();
+  
   // Processing state
   bool _isProcessing = false;
   Timer? _processingTimer;
@@ -232,33 +236,53 @@ class SyncQueueService {
   
   /// Get existing operation by merge key
   Future<SyncOperation?> _getExistingOperation(String mergeKey) async {
-    final parts = mergeKey.split(':');
-    final objectType = parts[0];
-    final objectId = parts[1];
-    
-    final results = await _db.query(
-      SyncQueueSchema.tableName,
-      where: 'object_type = ? AND object_id = ?',
-      whereArgs: [objectType, objectId],
-      limit: 1,
-    );
-    
-    return results.isNotEmpty ? SyncOperation.fromMap(results.first) : null;
+    return await _dbLock.synchronized(() async {
+      final parts = mergeKey.split(':');
+      final objectType = parts[0];
+      final objectId = parts[1];
+      
+      final results = await _db.query(
+        SyncQueueSchema.tableName,
+        where: 'object_type = ? AND object_id = ?',
+        whereArgs: [objectType, objectId],
+        limit: 1,
+      );
+      
+      return results.isNotEmpty ? SyncOperation.fromMap(results.first) : null;
+    });
   }
   
   /// Add new operation to queue
   Future<void> _addOperation(SyncOperation operation) async {
-    await _db.insert(SyncQueueSchema.tableName, operation.toMap());
+    await _dbLock.synchronized(() async {
+      await _db.insert(SyncQueueSchema.tableName, operation.toMap());
+    });
   }
   
   /// Update existing operation
   Future<void> _updateOperation(SyncOperation operation) async {
-    await _db.update(SyncQueueSchema.tableName, operation.toMap(), operation.id);
+    await _dbLock.synchronized(() async {
+      await _db.update(SyncQueueSchema.tableName, operation.toMap(), operation.id);
+      print('📝 Updated sync_queue: ${operation.id}');
+    });
   }
   
   /// Remove operation from queue
   Future<void> _removeOperation(String operationId) async {
-    await _db.delete(SyncQueueSchema.tableName, operationId);
+    await _dbLock.synchronized(() async {
+      await _db.delete(SyncQueueSchema.tableName, operationId);
+      print('🗑️  Deleted from sync_queue: $operationId');
+    });
+  }
+
+  /// Public method to update operation (for sync manager)
+  Future<void> updateOperation(SyncOperation operation) async {
+    await _updateOperation(operation);
+  }
+
+  /// Public method to remove operation (for sync manager)
+  Future<void> removeOperation(String operationId) async {
+    await _removeOperation(operationId);
   }
   
   /// Merge two operations for the same object
@@ -309,10 +333,13 @@ class SyncQueueService {
   
   /// Start periodic processing
   void _startPeriodicProcessing() {
-    _processingTimer = Timer.periodic(
-      const Duration(seconds: 3), // Process every 3 seconds
-      (_) => _processQueueIfReady(),
-    );
+    // Temporarily disable periodic processing to prevent loops
+    // The sync manager will explicitly call processSyncQueue when needed
+    // TODO: Re-enable with proper coordination between sync queue and manager
+    // _processingTimer = Timer.periodic(
+    //   const Duration(seconds: 3), // Process every 3 seconds
+    //   (_) => _processQueueIfReady(),
+    // );
   }
   
   /// Schedule immediate processing for critical operations
@@ -371,28 +398,30 @@ class SyncQueueService {
   
   /// Get next batch of operations to process
   Future<List<SyncOperation>> _getNextBatch() async {
-    final availableTokens = _currentTokens.clamp(0, _bucketCapacity);
-    
-    if (availableTokens <= 0) return [];
-    
-    // Get operations ordered by priority and scheduled time
-    final results = await _db.query(
-      SyncQueueSchema.tableName,
-      where: 'scheduled_at <= ?',
-      whereArgs: [DateTime.now().toIso8601String()],
-      orderBy: '''
-        CASE priority 
-          WHEN 'critical' THEN 1
-          WHEN 'high' THEN 2
-          WHEN 'normal' THEN 3
-          WHEN 'low' THEN 4
-        END,
-        scheduled_at ASC
-      ''',
-      limit: availableTokens,
-    );
-    
-    return results.map((r) => SyncOperation.fromMap(r)).toList();
+    return await _dbLock.synchronized(() async {
+      final availableTokens = _currentTokens.clamp(0, _bucketCapacity);
+      
+      if (availableTokens <= 0) return [];
+      
+      // Get operations ordered by priority and scheduled time
+      final results = await _db.query(
+        SyncQueueSchema.tableName,
+        where: 'scheduled_at <= ?',
+        whereArgs: [DateTime.now().toIso8601String()],
+        orderBy: '''
+          CASE priority 
+            WHEN 'critical' THEN 1
+            WHEN 'high' THEN 2
+            WHEN 'normal' THEN 3
+            WHEN 'low' THEN 4
+          END,
+          scheduled_at ASC
+        ''',
+        limit: availableTokens,
+      );
+      
+      return results.map((r) => SyncOperation.fromMap(r)).toList();
+    });
   }
   
   /// Group operations by object type for batching
@@ -414,10 +443,13 @@ class SyncQueueService {
       // Consume tokens
       _currentTokens -= operations.length;
       
-      // Delegate to SyncManager for actual processing
-      // The SyncManager will handle the API calls and update operations
-      // This method is now just for token management and logging
-      print('📤 Batch prepared for SyncManager: $objectType (${operations.length} ops)');
+      // The sync queue service manages the queue and rate limiting.
+      // It DOES NOT call the sync manager directly to avoid circular dependencies.
+      // The sync manager will pick up operations from the queue when it runs.
+      print('📤 Batch prepared for processing: $objectType (${operations.length} ops)');
+      
+      // Don't remove operations here - let the sync manager handle that
+      // after successful sync
       
     } catch (e) {
       print('❌ Batch processing failed for $objectType: $e');
@@ -432,10 +464,34 @@ class SyncQueueService {
   /// Handle failed operation with retry logic
   Future<void> _handleFailedOperation(SyncOperation operation, String error) async {
     if (operation.canRetry) {
-      // Retry with exponential backoff
-      final retryOp = operation.withRetry();
+      // Check if this is a database transaction error
+      final isTransactionError = error.toLowerCase().contains('transaction') || 
+                                error.toLowerCase().contains('database is locked');
+      
+      // For transaction errors, use a longer initial delay
+      SyncOperation retryOp;
+      if (isTransactionError && operation.retryCount == 0) {
+        // First retry for transaction error - wait 5 seconds instead of 2
+        retryOp = SyncOperation(
+          id: operation.id,
+          objectId: operation.objectId,
+          objectType: operation.objectType,
+          operation: operation.operation,
+          priority: operation.priority,
+          data: operation.data,
+          version: operation.version,
+          retryCount: operation.retryCount + 1,
+          maxRetries: operation.maxRetries,
+          scheduledAt: DateTime.now().add(const Duration(seconds: 5)),
+          createdAt: operation.createdAt,
+        );
+      } else {
+        // Normal exponential backoff
+        retryOp = operation.withRetry();
+      }
+      
       await _updateOperation(retryOp);
-      print('🔄 Scheduled retry for ${operation.objectType}:${operation.objectId} (attempt ${retryOp.retryCount})');
+      print('🔄 Scheduled retry for ${operation.objectType}:${operation.objectId} (attempt ${retryOp.retryCount})${isTransactionError ? ' - transaction error' : ''}');
     } else {
       // Max retries reached - remove from queue and log error
       await _removeOperation(operation.id);

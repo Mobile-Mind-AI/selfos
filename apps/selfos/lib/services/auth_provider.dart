@@ -5,6 +5,7 @@ import '../models/auth_request.dart';
 import '../models/auth_response.dart';
 import 'auth_service.dart';
 import 'social_login_service.dart';
+import 'sync/sync_manager.dart';
 
 /// Authentication state representing the current user's auth status
 /// 
@@ -109,12 +110,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
         final user = await _authService.getStoredUser();
         if (kDebugMode) {
           print('🔐 AUTH: Retrieved user: ${user?.email}');
+          if (user != null) {
+            print('🔐 AUTH: User UID from storage: ${user.uid}');
+          }
         }
         if (user != null) {
           state = AuthStateAuthenticated(user);
           if (kDebugMode) {
             print('🔐 AUTH: Set state to authenticated');
           }
+
+          // Trigger initial sync for authenticated user
+          SyncManager.instance.performInitialSync(user.uid);
 
           // Optionally refresh user data from server
           _refreshUserData();
@@ -176,10 +183,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       } else {
         if (kDebugMode) {
           print('🔐 AUTH: Using user from auth response: ${user.email}');
+          print('🔐 AUTH: User UID from backend: ${user.uid}');
         }
       }
 
       state = AuthStateAuthenticated(user);
+      
+      // Trigger initial sync after successful login
+      SyncManager.instance.performInitialSync(user.uid);
+      
       return true;
     } on AuthException catch (e) {
       state = AuthStateError(e.message, e);
@@ -280,10 +292,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       } else {
         if (kDebugMode) {
           print('🔐 AUTH: Using user from auth response: ${user.email}');
+          print('🔐 AUTH: User UID from backend: ${user.uid}');
         }
       }
 
       state = AuthStateAuthenticated(user);
+      
+      // Trigger initial sync after successful login
+      SyncManager.instance.performInitialSync(user.uid);
+      
       return true;
     } on AuthException catch (e) {
       state = AuthStateError(e.message, e);

@@ -169,20 +169,27 @@ class _ImageCropperDialogState extends State<ImageCropperDialog> {
       _errorMessage = null;
     });
 
+    print('🖼️ IMAGE_PICKER: Starting image picker with source: $source');
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 85,
+        requestFullMetadata: false,
       );
 
       if (pickedFile == null) {
+        print('🖼️ IMAGE_PICKER: User cancelled image selection');
         setState(() {
           _isProcessing = false;
         });
         return;
       }
+      
+      print('🖼️ IMAGE_PICKER: Successfully picked file: ${pickedFile.path}');
+      print('🖼️ IMAGE_PICKER: File name: ${pickedFile.name}');
+      print('🖼️ IMAGE_PICKER: File size: ${await pickedFile.length()} bytes');
 
       // Validate file size (5MB limit)
       final fileSize = await pickedFile.length();
@@ -196,6 +203,8 @@ class _ImageCropperDialogState extends State<ImageCropperDialog> {
 
       await _cropImage(pickedFile.path, pickedFile);
     } catch (e) {
+      print('🖼️ IMAGE_PICKER: Error picking image: $e');
+      print('🖼️ IMAGE_PICKER: Error type: ${e.runtimeType}');
       setState(() {
         _isProcessing = false;
         _errorMessage = 'Failed to pick image: ${e.toString()}';
@@ -204,6 +213,7 @@ class _ImageCropperDialogState extends State<ImageCropperDialog> {
   }
 
   Future<void> _cropImage(String imagePath, XFile pickedFile) async {
+    print('🖼️ IMAGE_CROPPER: Starting crop for: $imagePath');
     try {
       // Check if we're on macOS and handle differently
       if (defaultTargetPlatform == TargetPlatform.macOS) {

@@ -1,8 +1,8 @@
 // widgets/avatar_selection_grid.dart
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
-import '../common/assistant_avatar.dart';
-import '../../services/avatar_upload_service.dart';
+import '../common/avatar.dart';
+import '../dialogs/custom_avatar_upload_dialog.dart';
 
 class AvatarSelectionGrid extends StatelessWidget {
   final List<Map<String, dynamic>> avatarOptions;
@@ -129,7 +129,7 @@ class AvatarSelectionGrid extends StatelessWidget {
                                         height: avatarSize,
                                         child: ClipRRect(
                                           borderRadius: BorderRadius.circular(4),
-                                          child: AssistantAvatar(
+                                          child: Avatar(
                                             avatarId: avatar['id'],
                                             imagePath: isCustom ? null : avatar['imagePath'],
                                             imageData: isCustom ? avatar['imageData'] : null,

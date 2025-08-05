@@ -1,6 +1,6 @@
 """Goal, Project, Task, and LifeArea models."""
 
-from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Float, Boolean, Index
+from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Float, Boolean, Index, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from db import Base
@@ -18,6 +18,8 @@ class Goal(Base):
     status = Column(String, nullable=False, default='todo')
     # Progress percentage 0.0 - 100.0
     progress = Column(Float, nullable=False, default=0.0)
+    # Versioning for sync
+    version = Column(Integer, nullable=False, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
     
@@ -42,6 +44,8 @@ class Project(Base):
     priority = Column(String, nullable=False, default='medium')
     # Progress percentage 0.0 - 100.0
     progress = Column(Float, nullable=False, default=0.0)
+    # Versioning for sync
+    version = Column(Integer, nullable=False, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
     
@@ -81,6 +85,8 @@ class Task(Base):
     due_date = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
     
+    # Versioning for sync
+    version = Column(Integer, nullable=False, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
     
@@ -104,7 +110,14 @@ class LifeArea(Base):
     description = Column(Text)
     color = Column(String)  # Hex color code for UI
     icon = Column(String)   # Icon identifier for UI
+    keywords = Column(JSON)  # JSON array of keywords
+    weight = Column(Float, nullable=False, default=1.0)
+    priority_order = Column(Integer, nullable=False, default=0)
+    is_custom = Column(Boolean, nullable=False, default=True)
+    # Versioning for sync
+    version = Column(Integer, nullable=False, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
     user = relationship("User", back_populates="life_areas")

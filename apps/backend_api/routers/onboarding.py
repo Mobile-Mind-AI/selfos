@@ -5,6 +5,7 @@ Handles the multi-step onboarding process for new users.
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import or_ as db
 from typing import Dict, Any, List
 from datetime import datetime
 
@@ -12,6 +13,7 @@ from dependencies import get_db, get_current_user
 from models import (
     OnboardingState, AssistantProfile, LifeArea, Goal, Task, User
 )
+from services.permission_service import PermissionService, PermissionLevel
 from schemas.assistant_schemas import (
     OnboardingStep,
     OnboardingStepRequest,
@@ -140,7 +142,7 @@ def update_onboarding_step(
 
 
 @router.post("/complete")
-def complete_onboarding(
+async def complete_onboarding(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -150,43 +152,119 @@ def complete_onboarding(
     ).first()
     
     if not state:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Onboarding state not found"
-        )
+        # If no state exists but user is trying to complete, check if they have 
+        # the required data (assistant profile and life areas)
+        print(f"🎯 ONBOARDING: No state found for user {current_user['uid']}, checking for assistant profile...")
+        
+        # Check if user has access to any assistant profiles
+        user_assistants = await PermissionService.get_user_assistants(current_user["uid"], db)
+        
+        # For onboarding, we only want assistants the user owns
+        assistant = None
+        for prof in user_assistants:
+            # Check if user is the owner
+            permission_level = await PermissionService.get_user_permission_level(
+                current_user["uid"], prof.id, db
+            )
+            if permission_level == PermissionLevel.OWNER and prof.is_default:
+                assistant = prof
+                break
+        
+        # If no default owned assistant, use the first owned assistant
+        if not assistant:
+            for prof in user_assistants:
+                permission_level = await PermissionService.get_user_permission_level(
+                    current_user["uid"], prof.id, db
+                )
+                if permission_level == PermissionLevel.OWNER:
+                    assistant = prof
+                    break
+        
+        if assistant:
+            print(f"🎯 ONBOARDING: Found assistant profile, creating onboarding state...")
+            # Create onboarding state since user has completed setup
+            state = OnboardingState(
+                user_id=current_user["uid"],
+                current_step=6,
+                completed_steps=[1, 2, 3, 4, 5, 6],
+                assistant_profile_id=assistant.id,
+                selected_life_areas=[],  # Will check for life areas below
+                onboarding_completed=False  # Will set to True below
+            )
+            db.add(state)
+            db.flush()  # Get the ID but don't commit yet
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Onboarding state not found and no assistant profile exists"
+            )
     
     print(f"🎯 ONBOARDING: Complete requested for user {current_user['uid']}")
     print(f"🎯 ONBOARDING: Current state - completed_steps: {state.completed_steps}, onboarding_completed: {state.onboarding_completed}")
     print(f"🎯 ONBOARDING: Assistant profile ID: {state.assistant_profile_id}")
     print(f"🎯 ONBOARDING: Selected life areas: {state.selected_life_areas}")
     
+    # If no life areas are set in state, check if user has any life areas
+    if not state.selected_life_areas or len(state.selected_life_areas) == 0:
+        user_life_areas = db.query(LifeArea).filter(
+            LifeArea.user_id == current_user["uid"]
+        ).all()
+        if user_life_areas:
+            state.selected_life_areas = [area.id for area in user_life_areas]
+            print(f"🎯 ONBOARDING: Found {len(user_life_areas)} life areas for user")
+    
     # Verify required steps are completed (more flexible approach)
     has_assistant = state.assistant_profile_id is not None
     has_life_areas = state.selected_life_areas and len(state.selected_life_areas) > 0
-    has_basic_steps = len(state.completed_steps) >= 2  # At least assistant and life areas
     
-    print(f"🎯 ONBOARDING: Validation - has_assistant: {has_assistant}, has_life_areas: {has_life_areas}, has_basic_steps: {has_basic_steps}")
+    print(f"🎯 ONBOARDING: Validation - has_assistant: {has_assistant}, has_life_areas: {has_life_areas}")
     
+    # For offline-first app, we're more lenient - only require assistant
     if not has_assistant:
-        print(f"🎯 ONBOARDING: Missing assistant profile")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot complete onboarding. Assistant profile not created."
-        )
-    
-    if not has_life_areas:
-        print(f"🎯 ONBOARDING: Missing life areas")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot complete onboarding. Life areas not selected."
-        )
-    
-    if not has_basic_steps:
-        print(f"🎯 ONBOARDING: Insufficient completed steps")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot complete onboarding. Not enough steps completed."
-        )
+        print(f"🎯 ONBOARDING: Missing assistant profile in state, checking for existing assistants...")
+        
+        # Use PermissionService to get all assistants user has access to
+        user_assistants = await PermissionService.get_user_assistants(current_user["uid"], db)
+        
+        # For onboarding, we only want assistants the user owns
+        assistant = None
+        for prof in user_assistants:
+            # Check if user is the owner
+            permission_level = await PermissionService.get_user_permission_level(
+                current_user["uid"], prof.id, db
+            )
+            if permission_level == PermissionLevel.OWNER and prof.is_default:
+                assistant = prof
+                break
+        
+        # If no default owned assistant, use the first owned assistant
+        if not assistant:
+            for prof in user_assistants:
+                permission_level = await PermissionService.get_user_permission_level(
+                    current_user["uid"], prof.id, db
+                )
+                if permission_level == PermissionLevel.OWNER:
+                    assistant = prof
+                    break
+        
+        if assistant:
+            print(f"🎯 ONBOARDING: Found assistant profile {assistant.id}, linking to state")
+            state.assistant_profile_id = assistant.id
+            db.commit()
+            has_assistant = True
+        else:
+            print(f"🎯 ONBOARDING: No owned assistant profile found for user")
+            # Debug: list all assistant profiles for this user with permission levels
+            assistant_info = []
+            for a in user_assistants:
+                perm = await PermissionService.get_user_permission_level(current_user["uid"], a.id, db)
+                assistant_info.append((a.id, a.name, a.is_default, perm))
+            print(f"🎯 ONBOARDING: User has access to {len(user_assistants)} assistants: {assistant_info}")
+            
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot complete onboarding. Assistant profile not created."
+            )
     
     state.onboarding_completed = True
     state.completed_at = datetime.utcnow()
@@ -548,14 +626,22 @@ def _handle_personal_config(
         life_area_ids = data.get('life_area_ids', [])
         state.selected_life_areas = life_area_ids
         
-        # Create personal profile
+        # Create personal profile with all dedicated fields
         profile_data = {
+            'preferred_name': data.get('preferred_name'),
+            'avatar_id': data.get('avatar_id'),
             'current_situation': data.get('current_situation', ''),
             'interests': data.get('interests', []),
             'challenges': data.get('challenges', []),
-            'aspirations': data.get('aspirations', ''),
-            'preferences': data.get('preferences', {}),
-            'custom_answers': data.get('custom_answers', {})
+            'aspirations': data.get('aspirations', []),  # This should be a list, not a string
+            'motivation': data.get('motivation', ''),
+            'work_style': data.get('work_style'),
+            'communication_frequency': data.get('communication_frequency'),
+            'goal_approach': data.get('goal_approach'),
+            'motivation_style': data.get('motivation_style'),
+            'preferences': data.get('preferences', {}),  # Only for extra/custom preferences
+            'custom_answers': data.get('custom_answers', {}),
+            'selected_life_areas': data.get('selected_life_areas', [])  # Store selected life area IDs
         }
         
         # Check if profile already exists

@@ -32,16 +32,62 @@ class LocalDatabaseService {
   
   /// Initialize database with all tables
   Future<Database> _initDatabase() async {
-    final databasesPath = await getDatabasesPath();
-    final path = join(databasesPath, DatabaseInfo.databaseName);
-    
-    return await openDatabase(
-      path,
-      version: DatabaseInfo.currentVersion,
-      onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
-      onOpen: _onOpen,
-    );
+    try {
+      final databasesPath = await getDatabasesPath();
+      final path = join(databasesPath, DatabaseInfo.databaseName);
+      
+      print('📂 Database path: $path');
+      
+      // Check if database file exists
+      final file = File(path);
+      final exists = await file.exists();
+      print('📁 Database exists: $exists');
+      if (exists) {
+        print('📁 Database size: ${await file.length()} bytes');
+      }
+      
+      return await openDatabase(
+        path,
+        version: DatabaseInfo.currentVersion,
+        onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
+        onOpen: _onOpen,
+        onConfigure: (db) async {
+          // Basic configuration before opening
+          await db.execute('PRAGMA foreign_keys = ON');
+        },
+      );
+    } catch (e) {
+      print('🚨 Database initialization failed: $e');
+      rethrow;
+    }
+  }
+  
+  /// Delete the entire database (for development/testing)
+  Future<void> deleteDatabase() async {
+    try {
+      // Close the database if it's open
+      if (_database != null && _database!.isOpen) {
+        await _database!.close();
+      }
+      _database = null;
+      
+      // Get the database path
+      final databasesPath = await getDatabasesPath();
+      final path = join(databasesPath, DatabaseInfo.databaseName);
+      
+      // Delete the database file
+      final file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+        print('🗑️ Database deleted successfully at: $path');
+      } else {
+        print('ℹ️ Database file does not exist at: $path');
+      }
+    } catch (e) {
+      print('❌ Error deleting database: $e');
+      rethrow;
+    }
   }
   
   /// Create all tables on first run
@@ -75,7 +121,25 @@ class LocalDatabaseService {
     
     // Add migration logic here as needed
     if (oldVersion < 2) {
-      // Example: Add new columns, tables, etc.
+      // Version 2: Add assistant_profiles table if it doesn't exist
+      print('🔄 Migrating to v2: Adding assistant_profiles table');
+      try {
+        await db.execute(AssistantProfileSchema.createTableSql);
+        print('✅ Assistant profiles table created');
+      } catch (e) {
+        print('⚠️ Assistant profiles table might already exist: $e');
+      }
+    }
+    
+    if (oldVersion < 3) {
+      // Version 3: Add story_analysis field to personal_profiles
+      print('🔄 Migrating to v3: Adding story_analysis field to personal_profiles');
+      try {
+        await db.execute('ALTER TABLE personal_profiles ADD COLUMN story_analysis TEXT');
+        print('✅ Added story_analysis field to personal_profiles');
+      } catch (e) {
+        print('⚠️ story_analysis field might already exist: $e');
+      }
     }
   }
   
@@ -83,24 +147,69 @@ class LocalDatabaseService {
   Future<void> _onOpen(Database db) async {
     print('🔓 Database opened: ${DatabaseInfo.databaseName}');
     
-    // Enable foreign key constraints
-    await db.execute('PRAGMA foreign_keys = ON');
+    // Skip WAL mode on macOS completely to avoid issues
+    if (Platform.isMacOS) {
+      print('⚠️ Skipping WAL mode on macOS to avoid compatibility issues');
+      try {
+        await db.execute('PRAGMA journal_mode = DELETE');
+        print('✅ DELETE mode enabled for macOS');
+      } catch (e) {
+        print('⚠️ DELETE mode failed on macOS, using default: $e');
+      }
+    } else {
+      // Try WAL mode on other platforms
+      try {
+        await db.execute('PRAGMA journal_mode = WAL');
+        print('✅ WAL mode enabled successfully');
+      } catch (e) {
+        print('⚠️ WAL mode failed, falling back to DELETE mode: $e');
+        try {
+          await db.execute('PRAGMA journal_mode = DELETE');
+          print('✅ DELETE mode enabled successfully');
+        } catch (fallbackError) {
+          print('⚠️ DELETE mode also failed, using default: $fallbackError');
+        }
+      }
+    }
     
-    // Optimize SQLite performance
-    await db.execute('PRAGMA journal_mode = WAL');
-    await db.execute('PRAGMA synchronous = NORMAL');
-    await db.execute('PRAGMA temp_store = MEMORY');
-    await db.execute('PRAGMA mmap_size = 67108864'); // 64MB
+    try {
+      await db.execute('PRAGMA synchronous = NORMAL');
+      await db.execute('PRAGMA temp_store = MEMORY');
+      print('✅ SQLite performance optimizations applied');
+    } catch (e) {
+      print('⚠️ Some performance optimizations failed: $e');
+    }
+    
+    // Skip mmap_size on macOS as it can cause issues
+    if (!Platform.isMacOS) {
+      try {
+        await db.execute('PRAGMA mmap_size = 67108864'); // 64MB
+        print('✅ Memory mapping enabled');
+      } catch (e) {
+        print('⚠️ Memory mapping failed, skipping: $e');
+      }
+    } else {
+      print('⚠️ Skipping memory mapping on macOS');
+    }
   }
   
   /// Generic insert operation
   Future<int> insert(String table, Map<String, dynamic> data) async {
     final db = await database;
     
-    // Add common fields
-    data['created_at'] ??= DateTime.now().toIso8601String();
-    data['updated_at'] = DateTime.now().toIso8601String();
-    data['last_modified'] = DateTime.now().toIso8601String();
+    // Add common fields only for tables that have them
+    final skipCommonFields = [
+      SyncQueueSchema.tableName,
+      SyncMetadataSchema.tableName,
+      ChangeLogSchema.tableName,
+      ConflictSchema.tableName,
+    ];
+    
+    if (!skipCommonFields.contains(table)) {
+      data['created_at'] ??= DateTime.now().toIso8601String();
+      data['updated_at'] = DateTime.now().toIso8601String();
+      data['last_modified'] = DateTime.now().toIso8601String();
+    }
     
     try {
       final result = await db.insert(table, data);
@@ -116,9 +225,18 @@ class LocalDatabaseService {
   Future<int> update(String table, Map<String, dynamic> data, String id) async {
     final db = await database;
     
-    // Update common fields
-    data['updated_at'] = DateTime.now().toIso8601String();
-    data['last_modified'] = DateTime.now().toIso8601String();
+    // Add common fields only for tables that have them
+    final skipCommonFields = [
+      SyncQueueSchema.tableName,
+      SyncMetadataSchema.tableName,
+      ChangeLogSchema.tableName,
+      ConflictSchema.tableName,
+    ];
+    
+    if (!skipCommonFields.contains(table)) {
+      data['updated_at'] = DateTime.now().toIso8601String();
+      data['last_modified'] = DateTime.now().toIso8601String();
+    }
     
     try {
       final result = await db.update(
@@ -151,6 +269,15 @@ class LocalDatabaseService {
       print('❌ Failed to delete from $table: $e');
       rethrow;
     }
+  }
+  
+  /// Execute multiple operations in a transaction
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    final db = await database;
+    return await db.transaction((txn) async {
+      // Store the transaction in a way that nested operations can use it
+      return await action();
+    });
   }
   
   /// Insert or update operation (upsert)
@@ -282,11 +409,6 @@ class LocalDatabaseService {
     return (record['local_version'] as int? ?? 0) + 1;
   }
   
-  /// Execute multiple operations in a transaction
-  Future<T> transaction<T>(Future<T> Function(Transaction txn) action) async {
-    final db = await database;
-    return await db.transaction(action);
-  }
   
   /// Batch operations for better performance
   Future<List<dynamic>> batch(List<Map<String, dynamic>> operations) async {

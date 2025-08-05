@@ -41,6 +41,9 @@ class PersonalProfile(Base):
     # AI analysis results
     story_analysis = Column(JSON, nullable=True)
 
+    # Version for sync conflict detection
+    version = Column(Integer, nullable=False, default=1)
+
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
@@ -107,12 +110,13 @@ class OnboardingAnalytics(Base):
 class AssistantProfile(Base):
     """
     AI Assistant Personality Profiles for personalized conversations.
-    Each user can have multiple assistant profiles with different personalities.
+    Supports sharing and permissions system.
     """
     __tablename__ = "assistant_profiles"
     
     id = Column(String, primary_key=True, index=True, default=lambda: str(uuid4()))
-    user_id = Column(String, ForeignKey("users.uid"), nullable=False)
+    user_id = Column(String, ForeignKey("users.uid"), nullable=False)  # For backward compatibility
+    owner_id = Column(String, ForeignKey("users.uid"), nullable=False)  # Actual owner
     
     # Basic profile information
     name = Column(String, nullable=False)
@@ -126,6 +130,7 @@ class AssistantProfile(Base):
     # Behavior settings
     requires_confirmation = Column(Boolean, nullable=False, default=True)
     is_default = Column(Boolean, nullable=False, default=False)
+    is_public = Column(Boolean, nullable=False, default=False)
     
     # Personality style (0-100 scale for each trait)
     style = Column(JSON, nullable=False, default=lambda: {
@@ -143,12 +148,48 @@ class AssistantProfile(Base):
     # Additional configuration
     custom_instructions = Column(Text, nullable=True)
     
+    # Versioning for sync
+    version = Column(Integer, nullable=False, default=0)
+    
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
     # Relationships
-    user = relationship("User", back_populates="assistant_profiles")
+    user = relationship("User", back_populates="assistant_profiles", foreign_keys=[user_id])
+    owner = relationship("User", foreign_keys=[owner_id])
+    permissions = relationship("AssistantPermission", back_populates="assistant", cascade="all, delete-orphan")
+    
+    def update_version(self):
+        """Update version to current timestamp in milliseconds."""
+        self.version = int(datetime.utcnow().timestamp() * 1000)
+
+
+class AssistantPermission(Base):
+    """
+    Permission system for sharing assistants between users.
+    """
+    __tablename__ = "assistant_permissions"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    assistant_id = Column(String, ForeignKey("assistant_profiles.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(String, ForeignKey("users.uid"), nullable=False)
+    permission_level = Column(String, nullable=False)  # 'read', 'edit', 'admin', 'owner'
+    granted_by = Column(String, ForeignKey("users.uid"), nullable=False)
+    granted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=True)
+    
+    # Relationships
+    assistant = relationship("AssistantProfile", back_populates="permissions")
+    user = relationship("User", foreign_keys=[user_id])
+    granter = relationship("User", foreign_keys=[granted_by])
+    
+    # Constraints
+    __table_args__ = (
+        Index('ix_assistant_permissions_user', 'user_id'),
+        Index('ix_assistant_permissions_assistant', 'assistant_id'),
+        Index('uq_assistant_user_permission', 'assistant_id', 'user_id', unique=True),
+    )
 
 
 class OnboardingState(Base):
@@ -178,6 +219,9 @@ class OnboardingState(Base):
     # Onboarding preferences
     skip_intro = Column(Boolean, nullable=False, default=False)
     theme_preference = Column(String, nullable=True)  # light, dark, auto
+    
+    # Version for sync conflict detection
+    version = Column(Integer, nullable=False, default=1)
     
     # Timestamps
     started_at = Column(DateTime, default=datetime.utcnow, nullable=False)

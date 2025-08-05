@@ -13,13 +13,15 @@ from datetime import datetime, timezone
 from collections import defaultdict
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+import sqlalchemy as sa
 from pydantic import BaseModel, Field
 
 from dependencies import get_db, get_current_user
 from models.user import User
 from models.goals import Goal, Project, Task, LifeArea
-from models.onboarding import OnboardingState, PersonalProfile
+from models.onboarding import OnboardingState, PersonalProfile, AssistantProfile
 from models.content import MediaAttachment
+from sqlalchemy import or_
 
 router = APIRouter(prefix="/api/sync", tags=["sync"])
 
@@ -66,6 +68,7 @@ MODEL_REGISTRY = {
     'life_area': LifeArea,
     'onboarding_state': OnboardingState,
     'personal_profile': PersonalProfile,
+    'assistant_profile': AssistantProfile,
     'media_attachment': MediaAttachment,
     # All CRUD-supported models are now included
 }
@@ -101,11 +104,12 @@ async def sync_batch(
     for op in request.operations:
         operations_by_type[op.object_type].append(op)
     
-    # Process each type in a transaction
-    for object_type, operations in operations_by_type.items():
-        try:
-            # Use a single transaction per object type for better performance
-            db.begin()
+    # Process all operations in a single transaction for atomicity
+    try:
+        print(f"🔄 SYNC: Processing batch with {len(request.operations)} operations")
+        
+        for object_type, operations in operations_by_type.items():
+            print(f"🔄 SYNC: Processing {len(operations)} {object_type} operations")
             
             for op in operations:
                 try:
@@ -113,6 +117,7 @@ async def sync_batch(
                         op, current_user, db, object_type
                     )
                     results.append(result)
+                    print(f"✅ SYNC: {op.operation} {object_type}:{op.object_id} - success")
                     
                 except ConflictError as e:
                     results.append(SyncResult(
@@ -121,26 +126,31 @@ async def sync_batch(
                         server_data=e.server_data,
                         new_version=e.server_version
                     ))
+                    print(f"⚠️ SYNC: {op.operation} {object_type}:{op.object_id} - conflict")
                     
                 except Exception as e:
+                    print(f"❌ SYNC: {op.operation} {object_type}:{op.object_id} - error: {e}")
                     results.append(SyncResult(
                         object_id=op.object_id,
                         status='error',
                         error_message=str(e)
                     ))
-            
-            db.commit()
-            
-        except Exception as e:
-            db.rollback()
-            # If transaction fails, mark all operations in this type as failed
-            for op in operations:
-                if not any(r.object_id == op.object_id for r in results):
-                    results.append(SyncResult(
-                        object_id=op.object_id,
-                        status='error',
-                        error_message=f"Transaction failed: {str(e)}"
-                    ))
+        
+        # Commit the entire batch
+        db.commit()
+        print(f"✅ SYNC: Batch committed successfully")
+        
+    except Exception as e:
+        print(f"❌ SYNC: Batch transaction failed: {e}")
+        db.rollback()
+        # If transaction fails, mark all operations as failed
+        for op in request.operations:
+            if not any(r.object_id == op.object_id for r in results):
+                results.append(SyncResult(
+                    object_id=op.object_id,
+                    status='error',
+                    error_message=f"Transaction failed: {str(e)}"
+                ))
     
     return results
 
@@ -159,19 +169,31 @@ async def process_sync_operation(
         # Create new object
         obj_data = {
             'user_id': current_user["uid"],
-            **operation.data,
             'version': 1,
             'created_at': datetime.utcnow(),
             'updated_at': datetime.utcnow()
         }
         
-        # Only set id for models that use string IDs (not auto-incrementing)
-        if hasattr(model_class, 'id') and hasattr(model_class.id.property.columns[0], 'default'):
-            # Model has auto-incrementing ID, don't set it
-            pass
-        else:
+        # Filter and add only valid fields from operation data
+        for field, value in operation.data.items():
+            if hasattr(model_class, field) and field not in ['id', 'user_id', 'created_at', 'updated_at', 'version']:
+                obj_data[field] = value
+            elif field not in ['id', 'user_id', 'created_at', 'updated_at', 'version']:
+                print(f"⚠️ SYNC: Skipping unknown field '{field}' for {object_type}")
+        
+        # Special handling for AssistantProfile - set owner_id
+        if object_type == 'assistant_profile':
+            obj_data['owner_id'] = current_user["uid"]
+        
+        # Determine if model uses string or auto-incrementing IDs
+        # Check the column type rather than default value
+        id_column = model_class.id.property.columns[0]
+        uses_string_id = str(id_column.type).startswith('VARCHAR') or str(id_column.type).startswith('TEXT') or isinstance(id_column.type, sa.String)
+        
+        if uses_string_id:
             # Model uses string ID, set it
             obj_data['id'] = operation.object_id
+        # else: Model has auto-incrementing ID, don't set it
         
         obj = model_class(**obj_data)
         db.add(obj)
@@ -186,12 +208,16 @@ async def process_sync_operation(
     elif operation.operation == 'update':
         # Find existing object - convert object_id to proper type
         try:
-            if hasattr(model_class, 'id') and hasattr(model_class.id.property.columns[0], 'default'):
-                # Auto-incrementing integer ID
-                obj_id = int(operation.object_id)
-            else:
+            # Check the column type to determine ID type
+            id_column = model_class.id.property.columns[0]
+            uses_string_id = str(id_column.type).startswith('VARCHAR') or str(id_column.type).startswith('TEXT') or isinstance(id_column.type, sa.String)
+            
+            if uses_string_id:
                 # String ID
                 obj_id = operation.object_id
+            else:
+                # Auto-incrementing integer ID
+                obj_id = int(operation.object_id)
                 
             obj = db.query(model_class).filter(
                 model_class.id == obj_id,
@@ -204,9 +230,35 @@ async def process_sync_operation(
             )
         
         if not obj:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Object not found"
+            # Object not found - create it instead (upsert behavior)
+            print(f"⚠️ SYNC: Object not found for update {object_type}:{operation.object_id}, creating instead")
+            
+            # Create new object with the provided ID
+            obj_data = {
+                'id': operation.object_id,
+                'user_id': current_user["uid"],
+                'version': 1,
+                'created_at': datetime.utcnow(),
+                'updated_at': datetime.utcnow()
+            }
+            
+            # Add fields from operation data
+            for field, value in operation.data.items():
+                if hasattr(model_class, field) and field not in ['id', 'user_id', 'created_at', 'updated_at', 'version']:
+                    obj_data[field] = value
+            
+            # Special handling for models that need additional fields
+            if object_type == 'assistant_profile':
+                obj_data['owner_id'] = current_user["uid"]
+            
+            obj = model_class(**obj_data)
+            db.add(obj)
+            db.flush()
+            
+            return SyncResult(
+                object_id=str(obj.id),
+                status='success',
+                new_version=1
             )
         
         # Check for conflicts
@@ -219,7 +271,13 @@ async def process_sync_operation(
         # Apply updates
         for field, value in operation.data.items():
             if hasattr(obj, field) and field not in ['id', 'user_id', 'created_at']:
+                # Special handling for AssistantProfile - don't update owner_id
+                if object_type == 'assistant_profile' and field == 'owner_id':
+                    continue
                 setattr(obj, field, value)
+            elif field not in ['id', 'user_id', 'created_at'] and not hasattr(obj, field):
+                # Log skipped fields for debugging
+                print(f"⚠️ SYNC: Skipping unknown field '{field}' for {object_type}")
         
         obj.version += 1
         obj.updated_at = datetime.utcnow()
@@ -233,12 +291,16 @@ async def process_sync_operation(
     elif operation.operation == 'delete':
         # Soft delete or hard delete based on object type
         try:
-            if hasattr(model_class, 'id') and hasattr(model_class.id.property.columns[0], 'default'):
-                # Auto-incrementing integer ID
-                obj_id = int(operation.object_id)
-            else:
+            # Check the column type to determine ID type
+            id_column = model_class.id.property.columns[0]
+            uses_string_id = str(id_column.type).startswith('VARCHAR') or str(id_column.type).startswith('TEXT') or isinstance(id_column.type, sa.String)
+            
+            if uses_string_id:
                 # String ID
                 obj_id = operation.object_id
+            else:
+                # Auto-incrementing integer ID
+                obj_id = int(operation.object_id)
                 
             obj = db.query(model_class).filter(
                 model_class.id == obj_id,
@@ -303,6 +365,10 @@ async def get_delta_sync(
             model_class.user_id == current_user["uid"],
             model_class.updated_at > since_date
         )
+        
+        # Exclude soft-deleted items if the model supports it
+        if hasattr(model_class, 'deleted_at'):
+            query = query.filter(model_class.deleted_at == None)
         
         # Apply limit across all types
         remaining_limit = limit - len(changes)

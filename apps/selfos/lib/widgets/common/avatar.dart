@@ -4,11 +4,11 @@ import '../../config/app_config.dart';
 import '../../services/storage_service.dart';
 import 'package:http/http.dart' as http;
 
-/// A reusable avatar widget for AI assistants
+/// A reusable avatar widget
 ///
 /// Displays portrait-style avatars with gradient backgrounds or images
 /// and hover effects. Can be used in selection grids or profiles.
-class AssistantAvatar extends StatelessWidget {
+class Avatar extends StatelessWidget {
   final String avatarId;
   final IconData? icon;
   final List<Color>? gradientColors;
@@ -21,7 +21,7 @@ class AssistantAvatar extends StatelessWidget {
   final String description;
   final bool isBackendStored;
 
-  const AssistantAvatar({
+  const Avatar({
     super.key,
     required this.avatarId,
     this.icon,
@@ -175,12 +175,15 @@ class _AuthenticatedImageState extends State<_AuthenticatedImage> {
     try {
       final authHeader = await StorageService.getAuthorizationHeader();
       if (authHeader == null) {
+        // No auth header available
         setState(() {
           _error = true;
           _loading = false;
         });
         return;
       }
+      
+      // Loading image with authentication
 
       final response = await http.get(
         Uri.parse('${AppConfig.baseUrl}/api/avatars/${widget.avatarId}/image'),
@@ -190,11 +193,13 @@ class _AuthenticatedImageState extends State<_AuthenticatedImage> {
       );
 
       if (response.statusCode == 200) {
+        // Successfully loaded image
         setState(() {
           _imageData = response.bodyBytes;
           _loading = false;
         });
       } else {
+        // Failed to load image - status: ${response.statusCode}
         setState(() {
           _error = true;
           _loading = false;
@@ -279,7 +284,7 @@ class AvatarSelectionGrid extends StatelessWidget {
               // Built-in avatars
               ...avatarOptions.map((avatar) {
                 final isSelected = selectedAvatarId == avatar['id'];
-                return AssistantAvatar(
+                return Avatar(
                   avatarId: avatar['id'],
                   icon: avatar['icon'],
                   gradientColors: avatar['colors'] != null
@@ -296,7 +301,7 @@ class AvatarSelectionGrid extends StatelessWidget {
               if (customAvatars != null)
                 ...customAvatars!.entries.map((entry) {
                   final isSelected = selectedAvatarId == entry.key;
-                  return AssistantAvatar(
+                  return Avatar(
                     avatarId: entry.key,
                     imageData: entry.value,
                     isSelected: isSelected,
@@ -461,13 +466,13 @@ class AssistantPreview extends StatelessWidget {
 
   Widget _buildPreviewAvatar(Map<String, dynamic> avatar) {
     if (avatar.containsKey('imageData')) {
-      return AssistantAvatar(
+      return Avatar(
         avatarId: avatar['id'],
         imageData: avatar['imageData'],
         size: 50,
       );
     } else {
-      return AssistantAvatar(
+      return Avatar(
         avatarId: avatar['id'],
         icon: avatar['icon'],
         gradientColors: avatar['colors'] != null

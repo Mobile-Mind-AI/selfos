@@ -10,11 +10,14 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:uuid/uuid.dart';
+import 'package:file_picker/file_picker.dart';
 import '../local_database/database_service.dart';
-import '../local_database/schemas.dart';
+import '../local_database/schemas.dart' hide SyncStatus;
 import '../sync/sync_queue.dart';
-import '../sync/sync_manager.dart';
+import '../../config/app_config.dart';
+import '../utils/rate_limiter.dart';
 
 /// Media Attachment Manager for all media operations
 class MediaAttachmentManager {
@@ -28,7 +31,6 @@ class MediaAttachmentManager {
 
   final LocalDatabaseService _db = LocalDatabaseService.instance;
   final SyncQueueService _syncQueue = SyncQueueService.instance;
-  final SyncManager _syncManager = SyncManager.instance;
   static const String _tableName = AvatarSchema.tableName;
 
   /// Create new media attachment (avatar) with optimistic update
@@ -183,10 +185,10 @@ class MediaAttachmentManager {
         final file = File(attachment!['local_path']);
         if (await file.exists()) {
           await file.delete();
-          print('=Ñ Deleted local file: ${attachment['local_path']}');
+          print('=ï¿½ Deleted local file: ${attachment['local_path']}');
         }
       } catch (e) {
-        print('  Failed to delete local file: $e');
+        print('ï¿½ Failed to delete local file: $e');
       }
     }
 
@@ -202,7 +204,7 @@ class MediaAttachmentManager {
       ),
     );
 
-    print('=Ñ Deleted media attachment: $attachmentId');
+    print('=ï¿½ Deleted media attachment: $attachmentId');
   }
 
   /// Get media attachment by ID
@@ -343,15 +345,15 @@ class MediaAttachmentManager {
   /// Mark media attachment as having conflicts
   Future<void> markConflicted(String attachmentId) async {
     await _db.markConflict(_tableName, attachmentId);
-    print('  Marked media attachment as conflicted: $attachmentId');
+    print('ï¿½ Marked media attachment as conflicted: $attachmentId');
   }
 
   /// Get media attachments by sync status
-  Future<List<Map<String, dynamic>>> getBySyncStatus(SyncStatus status) async {
+  Future<List<Map<String, dynamic>>> getBySyncStatus(String status) async {
     final records = await _db.query(
       _tableName,
       where: 'sync_status = ?',
-      whereArgs: [status.name],
+      whereArgs: [status],
     );
     return _parseAttachmentRecords(records);
   }
@@ -373,11 +375,11 @@ class MediaAttachmentManager {
       await for (final entity in dir.list()) {
         if (entity is File && !knownPaths.contains(entity.path)) {
           await entity.delete();
-          print('=Ñ Cleaned up orphaned file: ${entity.path}');
+          print('=ï¿½ Cleaned up orphaned file: ${entity.path}');
         }
       }
     } catch (e) {
-      print('  Failed to cleanup orphaned files: $e');
+      print('ï¿½ Failed to cleanup orphaned files: $e');
     }
   }
 
@@ -388,5 +390,126 @@ class MediaAttachmentManager {
       decoded['is_default'] = record['is_default'] == 1;
       return decoded;
     }).toList();
+  }
+
+  // === File Picker and Validation ===
+  
+  static const List<String> allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+  static const int maxFileSizeBytes = 5 * 1024 * 1024; // 5MB
+  
+  /// Pick an image file for avatar upload
+  Future<Map<String, dynamic>?> pickAvatarImage() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: allowedExtensions,
+        allowMultiple: false,
+        withData: true,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+
+        // Validate file size
+        if (file.size > maxFileSizeBytes) {
+          throw Exception('File size must be less than 5MB');
+        }
+
+        // Validate file extension
+        final extension = file.extension?.toLowerCase();
+        if (extension == null || !allowedExtensions.contains(extension)) {
+          throw Exception('Please select a valid image file (${allowedExtensions.join(', ')})');
+        }
+
+        return {
+          'name': file.name,
+          'bytes': file.bytes,
+          'extension': extension,
+          'size': file.size,
+        };
+      }
+      return null;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Create avatar from picked image data
+  Future<Map<String, dynamic>> createAvatarFromImageData({
+    required String userId,
+    required Uint8List imageData,
+    required String filename,
+    String? localPath,
+  }) async {
+    // Determine content type from filename
+    String contentType;
+    final lowerFilename = filename.toLowerCase();
+    
+    if (lowerFilename.endsWith('.png')) {
+      contentType = 'image/png';
+    } else if (lowerFilename.endsWith('.webp')) {
+      contentType = 'image/webp';
+    } else if (lowerFilename.endsWith('.jpg') || lowerFilename.endsWith('.jpeg')) {
+      contentType = 'image/jpeg';
+    } else {
+      contentType = 'image/jpeg'; // Default
+    }
+
+    // Save image to local file if path not provided
+    if (localPath == null) {
+      final tempDir = Directory.systemTemp;
+      final file = File('${tempDir.path}/avatar_${DateTime.now().millisecondsSinceEpoch}_$filename');
+      await file.writeAsBytes(imageData);
+      localPath = file.path;
+    }
+
+    // Create media attachment record
+    return await create(
+      userId: userId,
+      filename: filename,
+      contentType: contentType,
+      fileSize: imageData.length,
+      isDefault: false,
+      localPath: localPath,
+    );
+  }
+
+  /// Get avatar image URL for backend-stored avatars
+  String getAvatarImageUrl(String avatarId, {bool thumbnail = false}) {
+    final query = thumbnail ? '?thumbnail=true' : '';
+    return '${AppConfig.baseUrl}/api/avatars/$avatarId/image$query';
+  }
+
+  /// Load user's avatars with rate limiting
+  Future<List<Map<String, dynamic>>> loadUserAvatars(String userId) async {
+    return await RateLimiter.execute(
+      'avatar_api',
+      () async {
+        // First get from local database
+        final localAvatars = await getImageAttachments(userId);
+        
+        // In future, this could sync with backend to get any missing avatars
+        // For now, return local avatars
+        return localAvatars;
+      },
+      maxRequests: 5, // Only 5 avatar loads per 10 seconds
+    );
+  }
+
+  /// Delete avatar with rate limiting  
+  Future<bool> deleteAvatarWithRateLimit(String avatarId) async {
+    return await RateLimiter.execute(
+      'avatar_api',
+      () async {
+        await delete(avatarId);
+        return true;
+      },
+      maxRequests: 5,
+    );
+  }
+
+  /// Generate a unique avatar ID for custom uploads (fallback)
+  static String generateCustomAvatarId() {
+    return 'custom_${DateTime.now().millisecondsSinceEpoch}';
   }
 }

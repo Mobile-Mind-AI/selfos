@@ -1,7 +1,7 @@
 // widgets/assistant_preview.dart
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
-import '../common/assistant_avatar.dart';
+import '../common/avatar.dart';
 
 class AssistantPreview extends StatelessWidget {
   final String assistantName;
@@ -74,7 +74,7 @@ class AssistantPreview extends StatelessWidget {
                 Container(
                   width: 28,
                   height: 28,
-                  child: AssistantAvatar(
+                  child: Avatar(
                     avatarId: selectedAvatarData['id'],
                     imagePath: selectedAvatarData['isCustom'] == true
                         ? null

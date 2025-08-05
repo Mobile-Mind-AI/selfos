@@ -91,8 +91,7 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
   /// Check if user has completed onboarding
   Future<bool> checkOnboardingStatus() async {
     try {
-      state = const AsyncValue.loading();
-
+      // Don't show loading state - we have offline-first data
       final token = await StorageService.getAccessToken();
       if (token == null) {
         state = const AsyncValue.data(OnboardingStatus.notStarted);
@@ -244,6 +243,27 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
       final token = await StorageService.getAccessToken();
       if (token == null) return false;
 
+      // First, ensure backend onboarding state exists by calling /state endpoint
+      try {
+        print('🎯 ONBOARDING: Ensuring backend state exists before completion');
+        final stateResponse = await _dio.get(
+          '${ApiConfig.baseUrl}/api/onboarding/state',
+          options: Options(
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          ),
+        );
+        
+        if (stateResponse.statusCode == 200) {
+          print('🎯 ONBOARDING: Backend state exists, proceeding with completion');
+        }
+      } catch (stateError) {
+        print('⚠️ ONBOARDING: Could not verify backend state: $stateError');
+        // Continue anyway - the /complete endpoint might handle it
+      }
+
       final response = await _dio.post(
         '${ApiConfig.baseUrl}/api/onboarding/complete',
         options: Options(
@@ -264,6 +284,14 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
       if (e is DioException && e.response != null) {
         print('🔴 ONBOARDING: Error response: ${e.response?.data}');
         print('🔴 ONBOARDING: Status code: ${e.response?.statusCode}');
+        
+        // If it's a 404 because onboarding state hasn't synced yet, 
+        // we should NOT just mark as completed locally - this is a real error
+        if (e.response?.statusCode == 404) {
+          print('❌ ONBOARDING: Backend state not found - this indicates sync failure');
+          // Return false so the UI can show an error
+          return false;
+        }
       }
       // Don't set error state if we're completing onboarding
       // Just log the error and return false
@@ -370,10 +398,10 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
         return null;
       }
 
-      print('🔄 GET_ASSISTANT_DATA: Making request to ${ApiConfig.baseUrl}/api/assistant_profiles/default');
+      print('🔄 GET_ASSISTANT_DATA: Making request to ${ApiConfig.baseUrl}/api/assistant_profiles');
       
       final response = await _dio.get(
-        '${ApiConfig.baseUrl}/api/assistant_profiles/default',
+        '${ApiConfig.baseUrl}/api/assistant_profiles',
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
@@ -385,8 +413,35 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
       print('🔄 GET_ASSISTANT_DATA: Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        final assistantData = response.data as Map<String, dynamic>;
-        print('🔄 GET_ASSISTANT_DATA: Assistant data: $assistantData');
+        final assistantsList = response.data as List<dynamic>;
+        print('🔄 GET_ASSISTANT_DATA: Found ${assistantsList.length} assistants');
+        
+        if (assistantsList.isEmpty) {
+          print('🔄 GET_ASSISTANT_DATA: No assistants found - this is normal for new users');
+          return null;
+        }
+        
+        // Find the default assistant, or use the first one if no default
+        Map<String, dynamic>? assistantData;
+        
+        // First try to find one marked as default
+        for (final assistant in assistantsList) {
+          if (assistant['is_default'] == true) {
+            assistantData = assistant as Map<String, dynamic>;
+            print('🔄 GET_ASSISTANT_DATA: Found default assistant: ${assistantData['name']}');
+            break;
+          }
+        }
+        
+        // If no default found, use the first one
+        if (assistantData == null && assistantsList.isNotEmpty) {
+          assistantData = assistantsList.first as Map<String, dynamic>;
+          print('🔄 GET_ASSISTANT_DATA: No default assistant, using first: ${assistantData['name']}');
+        }
+        
+        if (assistantData == null) {
+          return null;
+        }
         
         // Convert to format expected by the frontend
         final result = {
@@ -402,10 +457,6 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
       }
       return null;
     } catch (e) {
-      if (e is DioException && e.response?.statusCode == 404) {
-        print('🔄 GET_ASSISTANT_DATA: No default assistant found (404) - this is normal for new users');
-        return null;
-      }
       print('Failed to get assistant data: $e');
       return null;
     }
@@ -438,6 +489,7 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
         
         if (profileResponse.statusCode == 200 && profileResponse.data != null) {
           final profileData = profileResponse.data as Map<String, dynamic>;
+          result['profile_id'] = profileData['id'] ?? ''; // IMPORTANT: Extract the profile ID!
           result['preferred_name'] = profileData['preferred_name'] ?? '';
           result['current_situation'] = profileData['current_situation'] ?? '';
           result['aspirations'] = profileData['aspirations'] ?? '';
@@ -461,6 +513,7 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
           print('🔄 GET_PERSONAL_CONFIG: Profile request failed: $e');
         }
         // If profile endpoint fails, just continue with empty profile data
+        result['profile_id'] = '';  // No profile ID if endpoint fails
         result['preferred_name'] = '';
         result['current_situation'] = '';
         result['aspirations'] = '';
@@ -472,11 +525,15 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
         result['life_area_ids'] = [];
       }
       
-      // Get custom life areas - skip if rate limited
+      // Get custom life areas from sync/delta endpoint instead of personal-config
       try {
         await Future.delayed(const Duration(milliseconds: 200)); // Small delay to avoid rate limiting
-        final lifeAreasResponse = await _dio.get(
-          '${ApiConfig.baseUrl}/api/personal-config/life-areas',
+        
+        // Use the sync/delta endpoint to get life areas
+        // Use current timestamp to only get non-deleted items
+        final currentTimestamp = DateTime.now().millisecondsSinceEpoch;
+        final deltaResponse = await _dio.get(
+          '${ApiConfig.baseUrl}/api/sync/delta/0?object_types=life_area',
           options: Options(
             headers: {
               'Authorization': 'Bearer $token',
@@ -485,9 +542,16 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<OnboardingStatus>> {
           ),
         );
         
-        if (lifeAreasResponse.statusCode == 200) {
-          final customAreas = lifeAreasResponse.data as List;
+        if (deltaResponse.statusCode == 200) {
+          final changes = deltaResponse.data['changes'] as List;
+          final customAreas = changes
+              .where((change) => 
+                  change['object_type'] == 'life_area' && 
+                  change['data']['is_custom'] == true)
+              .map((change) => change['data'])
+              .toList();
           result['custom_life_areas'] = customAreas;
+          print('🔄 GET_PERSONAL_CONFIG: Loaded ${customAreas.length} custom life areas from sync');
         }
       } catch (e) {
         if (e is DioException && e.response?.statusCode == 429) {

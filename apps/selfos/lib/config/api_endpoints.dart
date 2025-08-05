@@ -28,4 +28,10 @@ class ApiEndpoints {
   static String get aiDecomposeGoal => '${AppConfig.aiEndpoint}/decompose-goal';
   static String get aiMemorySearch => '${AppConfig.aiEndpoint}/memory/search';
   static String get aiHealth => '${AppConfig.aiEndpoint}/health';
+  
+  // Sync Services
+  static String get syncBatch => '${AppConfig.baseUrl}${AppConfig.syncEndpoint}/batch';
+  static String get syncStatus => '${AppConfig.baseUrl}${AppConfig.syncEndpoint}/status';
+  static String syncDelta(int sinceTimestamp) => '${AppConfig.baseUrl}${AppConfig.syncEndpoint}/delta/$sinceTimestamp';
+  static String syncResolveConflict(String objectId) => '${AppConfig.baseUrl}${AppConfig.syncEndpoint}/resolve-conflict/$objectId';
 }

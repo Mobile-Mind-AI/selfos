@@ -201,6 +201,8 @@ class _WelcomeActionsState extends State<WelcomeActions>
     Future.delayed(widget.entranceDelay, () {
       if (mounted) {
         _slideController.forward();
+        // Ensure the widget is ready after animations
+        setState(() {});
       }
     });
   }
@@ -264,7 +266,10 @@ class _WelcomeActionsState extends State<WelcomeActions>
         width: double.infinity,
         child: ElevatedButton(
           onPressed: widget.primaryEnabled && !widget.primaryLoading
-              ? widget.onPrimaryPressed
+              ? () {
+                  print('🔘 BUTTON: Primary button clicked');
+                  widget.onPrimaryPressed?.call();
+                }
               : null,
           style: widget.primaryButtonStyle ?? ElevatedButton.styleFrom(
             padding: widget.buttonPadding,

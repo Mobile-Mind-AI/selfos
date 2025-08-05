@@ -2,47 +2,88 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../config/routes.dart';
+import '../../providers/today_provider.dart';
+import '../../providers/auth_provider.dart';
 
 /// Today overview screen showing daily tasks and insights
-class TodayScreen extends ConsumerWidget {
+class TodayScreen extends ConsumerStatefulWidget {
   const TodayScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TodayScreen> createState() => _TodayScreenState();
+}
+
+class _TodayScreenState extends ConsumerState<TodayScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load data when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(todayProvider.notifier).loadTodayData();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final todayData = ref.watch(todayProvider);
+    final user = ref.watch(currentUserProvider);
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            floating: true,
-            title: const Text('Today'),
-            automaticallyImplyLeading: false,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.calendar_today),
-                onPressed: () {
-                  // TODO: Open calendar
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () {
-                  // TODO: Refresh data
-                },
-              ),
-            ],
-          ),
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(todayProvider.notifier).refresh(),
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              floating: true,
+              title: const Text('Today'),
+              automaticallyImplyLeading: false,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.calendar_today),
+                  onPressed: () {
+                    // TODO: Open calendar
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => ref.read(todayProvider.notifier).refresh(),
+                ),
+              ],
+            ),
 
-          SliverPadding(
+            if (todayData.isLoading)
+              const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (todayData.error != null)
+              SliverFillRemaining(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error, size: 64, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text('Error: ${todayData.error}'),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => ref.read(todayProvider.notifier).refresh(),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _buildWelcomeCard(theme),
+                _buildWelcomeCard(theme, user),
                 const SizedBox(height: 16),
-                _buildTodayStats(theme),
+                _buildTodayStats(theme, todayData),
                 const SizedBox(height: 16),
-                _buildTodayTasks(theme, context),
+                _buildTodayTasks(theme, context, todayData),
                 const SizedBox(height: 16),
                 _buildQuickActions(theme, context),
               ]),
@@ -50,15 +91,17 @@ class TodayScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 
-  Widget _buildWelcomeCard(ThemeData theme) {
+  Widget _buildWelcomeCard(ThemeData theme, user) {
     final now = DateTime.now();
     final hour = now.hour;
     String greeting = 'Good morning';
     if (hour >= 12 && hour < 17) greeting = 'Good afternoon';
     if (hour >= 17) greeting = 'Good evening';
+
+    final userName = user?.email?.split('@').first ?? 'there';
 
     return Card(
       child: Padding(
@@ -67,7 +110,7 @@ class TodayScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '$greeting!',
+              '$greeting, $userName!',
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -85,14 +128,14 @@ class TodayScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTodayStats(ThemeData theme) {
+  Widget _buildTodayStats(ThemeData theme, TodayData todayData) {
     return Row(
       children: [
         Expanded(
           child: _buildStatCard(
             theme,
             'Tasks Due',
-            '3',
+            '${todayData.todayTasks}',
             Icons.task_outlined,
             theme.colorScheme.primary,
           ),
@@ -102,7 +145,7 @@ class TodayScreen extends ConsumerWidget {
           child: _buildStatCard(
             theme,
             'Completed',
-            '7',
+            '${todayData.completedTasks}',
             Icons.check_circle_outline,
             Colors.green,
           ),
@@ -112,7 +155,7 @@ class TodayScreen extends ConsumerWidget {
           child: _buildStatCard(
             theme,
             'Goals Active',
-            '2',
+            '${todayData.activeGoals}',
             Icons.flag_outlined,
             Colors.orange,
           ),
@@ -153,7 +196,7 @@ class TodayScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTodayTasks(ThemeData theme, BuildContext context) {
+  Widget _buildTodayTasks(ThemeData theme, BuildContext context, TodayData todayData) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -178,9 +221,25 @@ class TodayScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            _buildTaskItem(theme, 'Review project proposal', false),
-            _buildTaskItem(theme, 'Morning workout', true),
-            _buildTaskItem(theme, 'Call client about meeting', false),
+            if (todayData.upcomingTasks.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  'No tasks scheduled for today',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+              )
+            else
+              ...todayData.upcomingTasks.take(3).map((task) => _buildTaskItem(
+                theme, 
+                task['title'] ?? 'Untitled Task',
+                task['status'] == 'completed',
+                () {
+                  // TODO: Handle task tap
+                },
+              )),
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => context.go(RoutePaths.tasks),
@@ -199,29 +258,36 @@ class TodayScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTaskItem(ThemeData theme, String title, bool completed) {
+  Widget _buildTaskItem(ThemeData theme, String title, bool completed, [VoidCallback? onTap]) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Checkbox(
-            value: completed,
-            onChanged: (value) {
-              // TODO: Toggle task completion
-            },
-          ),
-          Expanded(
-            child: Text(
-              title,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                decoration: completed ? TextDecoration.lineThrough : null,
-                color: completed
-                  ? theme.colorScheme.onSurface.withOpacity(0.6)
-                  : null,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Checkbox(
+                value: completed,
+                onChanged: (value) {
+                  // TODO: Toggle task completion
+                },
               ),
-            ),
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    decoration: completed ? TextDecoration.lineThrough : null,
+                    color: completed
+                      ? theme.colorScheme.onSurface.withOpacity(0.6)
+                      : null,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
