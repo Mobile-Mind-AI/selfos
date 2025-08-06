@@ -164,7 +164,15 @@ class GoalBase(BaseModel):
 class GoalCreate(GoalBase):
     """Schema for creating a new Goal"""
     project_id: Optional[int] = Field(None, gt=0, description="Associated project ID (positive integer)")
+    parent_id: Optional[int] = Field(None, gt=0, description="Parent goal ID for hierarchical organization")
     tag_ids: Optional[List[int]] = Field(default_factory=list, description="List of tag IDs to associate")
+    
+    @validator('parent_id')
+    def validate_parent_id(cls, v, values):
+        # Cannot be parent of itself (will be validated in service layer)
+        if v is not None and v <= 0:
+            raise ValueError('Parent ID must be a positive integer')
+        return v
 
 class Goal(GoalBase):
     id: int = Field(..., description="Unique goal ID")
@@ -221,7 +229,15 @@ class ProjectBase(BaseModel):
 
 class ProjectCreate(ProjectBase):
     """Schema for creating a new Project"""
+    parent_id: Optional[int] = Field(None, gt=0, description="Parent project ID for hierarchical organization")
     tag_ids: Optional[List[int]] = Field(default_factory=list, description="List of tag IDs to associate")
+    
+    @validator('parent_id')
+    def validate_parent_id(cls, v, values):
+        # Cannot be parent of itself (will be validated in service layer)
+        if v is not None and v <= 0:
+            raise ValueError('Parent ID must be a positive integer')
+        return v
 
 class Project(ProjectBase):
     id: int = Field(..., description="Unique project ID")
@@ -859,6 +875,13 @@ class ProjectOut(Project):
     tasks: List['Task'] = Field(default_factory=list, description="Associated tasks")
     media: List['MediaAttachmentOut'] = Field(default_factory=list, description="Associated media attachments")
     life_area: Optional['LifeAreaOut'] = Field(None, description="Associated life area details")
+    
+    # Hierarchy fields
+    parent_id: Optional[int] = Field(None, description="Parent project ID")
+    parent: Optional['ProjectOut'] = Field(None, description="Parent project details")
+    children: List['ProjectOut'] = Field(default_factory=list, description="Child projects")
+    hierarchy_level: Optional[int] = Field(None, ge=0, description="Hierarchy level (0 = root)")
+    children_count: Optional[int] = Field(None, ge=0, description="Number of direct children")
 
 class TaskOut(Task):
     """Enhanced task output schema with nested relationships"""
@@ -872,6 +895,13 @@ class GoalOut(Goal):
     media: List['MediaAttachmentOut'] = Field(default_factory=list, description="Associated media attachments")
     life_area: Optional['LifeAreaOut'] = Field(None, description="Associated life area details")
     project: Optional['ProjectOut'] = Field(None, description="Associated project details")
+    
+    # Hierarchy fields
+    parent_id: Optional[int] = Field(None, description="Parent goal ID")
+    parent: Optional['GoalOut'] = Field(None, description="Parent goal details")
+    children: List['GoalOut'] = Field(default_factory=list, description="Child goals")
+    hierarchy_level: Optional[int] = Field(None, ge=0, description="Hierarchy level (0 = root)")
+    children_count: Optional[int] = Field(None, ge=0, description="Number of direct children")
 
 class UserPreferencesOut(UserPreferences):
     """Enhanced user preferences output schema"""
@@ -1212,6 +1242,53 @@ class PublishRequest(BaseModel):
     platforms: List[str] = Field(..., min_items=1, description="Platforms to publish to")
     scheduled_time: Optional[datetime] = Field(None, description="When to schedule the post")
     custom_message: Optional[str] = Field(None, max_length=500, description="Custom message for the post")
+
+## Hierarchy Schemas
+class HierarchyTreeNode(BaseModel):
+    """Schema for hierarchical tree representation of goals/projects"""
+    id: int = Field(..., description="Entity ID")
+    title: str = Field(..., description="Entity title")
+    entity_type: Literal["goal", "project"] = Field(..., description="Type of entity")
+    level: int = Field(..., ge=0, description="Hierarchy level (0 = root)")
+    parent_id: Optional[int] = Field(None, description="Parent entity ID")
+    children: List['HierarchyTreeNode'] = Field(default_factory=list, description="Child entities")
+    status: Optional[str] = Field(None, description="Current status")
+    progress: Optional[float] = Field(None, ge=0.0, le=100.0, description="Progress percentage")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    
+    class Config:
+        from_attributes = True
+
+class HierarchyMoveRequest(BaseModel):
+    """Schema for moving entities in hierarchy"""
+    parent_id: Optional[int] = Field(None, description="New parent ID (null for root level)")
+    
+    @validator('parent_id')
+    def validate_parent_id(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError('Parent ID must be a positive integer')
+        return v
+
+class HierarchyPathItem(BaseModel):
+    """Schema for hierarchy path representation"""
+    id: int = Field(..., description="Entity ID")
+    title: str = Field(..., description="Entity title")
+    entity_type: Literal["goal", "project"] = Field(..., description="Type of entity")
+    level: int = Field(..., ge=0, description="Hierarchy level")
+
+class HierarchyStats(BaseModel):
+    """Schema for hierarchy statistics"""
+    total_items: int = Field(..., ge=0, description="Total items in hierarchy")
+    max_depth: int = Field(..., ge=0, description="Maximum depth level")
+    root_items: int = Field(..., ge=0, description="Number of root level items")
+    avg_children_per_parent: Optional[float] = Field(None, ge=0.0, description="Average children per parent")
+    completion_rate_by_level: Dict[int, float] = Field(default_factory=dict, description="Completion rate by hierarchy level")
+
+class HierarchyOverview(BaseModel):
+    """Schema for complete hierarchy overview"""
+    goals: HierarchyStats = Field(..., description="Goals hierarchy statistics")
+    projects: HierarchyStats = Field(..., description="Projects hierarchy statistics")
+    cross_references: int = Field(..., ge=0, description="Number of goals linked to projects")
 
 
 # Rebuild models to resolve forward references for Pydantic V2

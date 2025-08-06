@@ -79,7 +79,7 @@ class GoalService:
     def create_goal(self, db: Session, user_id: str, goal_data: schemas.GoalCreate) -> models.Goal:
         """
         Create a new goal for a user.
-        
+
         Args:
             db: Database session
             user_id: ID of the user creating the goal
@@ -87,8 +87,17 @@ class GoalService:
             
         Returns:
             Created goal model instance
+            
+        Raises:
+            ValueError: If parent_id creates a cycle or parent doesn't exist
         """
         try:
+            # Validate parent_id if provided
+            if goal_data.parent_id:
+                parent = self.get_goal(db, user_id, goal_data.parent_id)
+                if not parent:
+                    raise ValueError(f"Parent goal {goal_data.parent_id} not found")
+            
             db_goal = models.Goal(
                 user_id=user_id,
                 title=goal_data.title,
@@ -96,13 +105,16 @@ class GoalService:
                 status=goal_data.status,
                 progress=goal_data.progress,
                 life_area_id=goal_data.life_area_id,
+                project_id=goal_data.project_id,
+                parent_id=goal_data.parent_id,
             )
             
             db.add(db_goal)
             db.commit()
             db.refresh(db_goal)
             
-            logger.info(f"Created goal {db_goal.id} '{db_goal.title}' for user {user_id}")
+            parent_info = f" (parent: {goal_data.parent_id})" if goal_data.parent_id else ""
+            logger.info(f"Created goal {db_goal.id} '{db_goal.title}' for user {user_id}{parent_info}")
             return db_goal
         except SQLAlchemyError as e:
             logger.error(f"Database error creating goal for user {user_id}: {e}")
@@ -121,6 +133,9 @@ class GoalService:
             
         Returns:
             Updated goal model instance or None if not found
+            
+        Raises:
+            ValueError: If parent_id creates a cycle or parent doesn't exist
         """
         try:
             goal = db.query(models.Goal).options(
@@ -136,8 +151,23 @@ class GoalService:
                 logger.warning(f"Goal {goal_id} not found for update by user {user_id}")
                 return None
             
-            # Store old progress for comparison
+            # Validate parent_id if provided and different from current
+            if goal_data.parent_id and goal_data.parent_id != goal.parent_id:
+                if goal_data.parent_id == goal_id:
+                    raise ValueError("Goal cannot be parent of itself")
+                
+                # Check if parent exists
+                parent = self.get_goal(db, user_id, goal_data.parent_id)
+                if not parent:
+                    raise ValueError(f"Parent goal {goal_data.parent_id} not found")
+                
+                # Check for cycles by ensuring new parent is not a descendant
+                if self._would_create_cycle(db, user_id, goal_id, goal_data.parent_id):
+                    raise ValueError("Moving goal would create a cycle in hierarchy")
+            
+            # Store old values for logging
             old_progress = goal.progress
+            old_parent = goal.parent_id
             
             # Update goal fields
             goal.title = goal_data.title
@@ -145,12 +175,18 @@ class GoalService:
             goal.status = goal_data.status
             goal.progress = goal_data.progress
             goal.life_area_id = goal_data.life_area_id
+            goal.project_id = goal_data.project_id
+            goal.parent_id = goal_data.parent_id
             goal.updated_at = datetime.utcnow()
             
             db.commit()
             db.refresh(goal)
             
-            logger.info(f"Updated goal {goal_id} for user {user_id}. Progress: {old_progress}% -> {goal.progress}%")
+            parent_change = ""
+            if old_parent != goal_data.parent_id:
+                parent_change = f" Parent: {old_parent} -> {goal_data.parent_id}"
+            
+            logger.info(f"Updated goal {goal_id} for user {user_id}. Progress: {old_progress}% -> {goal.progress}%{parent_change}")
             return goal
         except SQLAlchemyError as e:
             logger.error(f"Database error updating goal {goal_id}: {e}")
@@ -247,6 +283,195 @@ class GoalService:
             return goals
         except SQLAlchemyError as e:
             logger.error(f"Database error retrieving goals with status '{status}': {e}")
+            raise
+    
+    # Hierarchy-specific methods
+    
+    def _would_create_cycle(self, db: Session, user_id: str, goal_id: int, new_parent_id: int) -> bool:
+        """
+        Check if setting new_parent_id as parent of goal_id would create a cycle.
+        
+        Args:
+            db: Database session
+            user_id: ID of the user
+            goal_id: ID of the goal being moved
+            new_parent_id: ID of the proposed new parent
+            
+        Returns:
+            True if cycle would be created, False otherwise
+        """
+        try:
+            # Check if new_parent_id is a descendant of goal_id
+            descendants = self.get_goal_descendants(db, user_id, goal_id)
+            descendant_ids = [desc.id for desc in descendants]
+            return new_parent_id in descendant_ids
+        except Exception as e:
+            logger.error(f"Error checking for cycles: {e}")
+            return True  # Assume cycle to be safe
+    
+    def get_goal_children(self, db: Session, user_id: str, parent_id: int) -> List[models.Goal]:
+        """
+        Get direct children of a goal.
+        
+        Args:
+            db: Database session
+            user_id: ID of the user
+            parent_id: ID of the parent goal
+            
+        Returns:
+            List of direct child goals
+        """
+        try:
+            children = db.query(models.Goal).options(
+                joinedload(models.Goal.tasks),
+                joinedload(models.Goal.media_attachments),
+                joinedload(models.Goal.life_area)
+            ).filter(
+                models.Goal.user_id == user_id,
+                models.Goal.parent_id == parent_id
+            ).all()
+            
+            logger.info(f"Retrieved {len(children)} children for goal {parent_id}, user {user_id}")
+            return children
+        except SQLAlchemyError as e:
+            logger.error(f"Database error retrieving goal children for {parent_id}: {e}")
+            raise
+    
+    def get_goal_descendants(self, db: Session, user_id: str, goal_id: int) -> List[models.Goal]:
+        """
+        Get all descendants (children, grandchildren, etc.) of a goal.
+        
+        Args:
+            db: Database session
+            user_id: ID of the user
+            goal_id: ID of the ancestor goal
+            
+        Returns:
+            List of all descendant goals
+        """
+        descendants = []
+        children = self.get_goal_children(db, user_id, goal_id)
+        
+        for child in children:
+            descendants.append(child)
+            # Recursively get descendants of each child
+            child_descendants = self.get_goal_descendants(db, user_id, child.id)
+            descendants.extend(child_descendants)
+        
+        return descendants
+    
+    def get_goal_path(self, db: Session, user_id: str, goal_id: int) -> List[schemas.HierarchyPathItem]:
+        """
+        Get the full path from root to the specified goal.
+        
+        Args:
+            db: Database session
+            user_id: ID of the user
+            goal_id: ID of the goal
+            
+        Returns:
+            List of HierarchyPathItem representing the path from root to goal
+        """
+        path = []
+        current_goal = self.get_goal(db, user_id, goal_id)
+        
+        if not current_goal:
+            return path
+        
+        # Build path by traversing up to root
+        while current_goal:
+            path.insert(0, schemas.HierarchyPathItem(
+                id=current_goal.id,
+                title=current_goal.title,
+                entity_type="goal",
+                level=len(path)
+            ))
+            
+            if current_goal.parent_id:
+                current_goal = self.get_goal(db, user_id, current_goal.parent_id)
+            else:
+                current_goal = None
+        
+        # Adjust levels to be correct (0-based from root)
+        for i, item in enumerate(path):
+            item.level = i
+        
+        return path
+    
+    def get_root_goals(self, db: Session, user_id: str) -> List[models.Goal]:
+        """
+        Get all root-level goals (goals without parents).
+        
+        Args:
+            db: Database session
+            user_id: ID of the user
+            
+        Returns:
+            List of root-level goals
+        """
+        try:
+            goals = db.query(models.Goal).options(
+                joinedload(models.Goal.tasks),
+                joinedload(models.Goal.media_attachments),
+                joinedload(models.Goal.life_area)
+            ).filter(
+                models.Goal.user_id == user_id,
+                models.Goal.parent_id.is_(None)
+            ).all()
+            
+            logger.info(f"Retrieved {len(goals)} root goals for user {user_id}")
+            return goals
+        except SQLAlchemyError as e:
+            logger.error(f"Database error retrieving root goals for user {user_id}: {e}")
+            raise
+    
+    def move_goal(self, db: Session, user_id: str, goal_id: int, new_parent_id: Optional[int]) -> Optional[models.Goal]:
+        """
+        Move a goal to a new parent in the hierarchy.
+        
+        Args:
+            db: Database session
+            user_id: ID of the user
+            goal_id: ID of the goal to move
+            new_parent_id: ID of the new parent (None for root level)
+            
+        Returns:
+            Updated goal model instance or None if not found
+            
+        Raises:
+            ValueError: If move would create a cycle or parent doesn't exist
+        """
+        try:
+            goal = self.get_goal(db, user_id, goal_id)
+            if not goal:
+                return None
+            
+            # Validate new parent if provided
+            if new_parent_id:
+                if new_parent_id == goal_id:
+                    raise ValueError("Goal cannot be parent of itself")
+                
+                new_parent = self.get_goal(db, user_id, new_parent_id)
+                if not new_parent:
+                    raise ValueError(f"Parent goal {new_parent_id} not found")
+                
+                # Check for cycles
+                if self._would_create_cycle(db, user_id, goal_id, new_parent_id):
+                    raise ValueError("Moving goal would create a cycle in hierarchy")
+            
+            old_parent = goal.parent_id
+            goal.parent_id = new_parent_id
+            goal.updated_at = datetime.utcnow()
+            
+            db.commit()
+            db.refresh(goal)
+            
+            logger.info(f"Moved goal {goal_id} from parent {old_parent} to {new_parent_id} for user {user_id}")
+            return goal
+            
+        except SQLAlchemyError as e:
+            logger.error(f"Database error moving goal {goal_id}: {e}")
+            db.rollback()
             raise
 
 

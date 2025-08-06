@@ -106,6 +106,13 @@ try:
     TagUpdate = parent_schemas.TagUpdate
     TagOut = parent_schemas.TagOut
     
+    # Hierarchy schemas
+    HierarchyTreeNode = parent_schemas.HierarchyTreeNode
+    HierarchyMoveRequest = parent_schemas.HierarchyMoveRequest
+    HierarchyPathItem = parent_schemas.HierarchyPathItem
+    HierarchyStats = parent_schemas.HierarchyStats
+    HierarchyOverview = parent_schemas.HierarchyOverview
+    
     # Export all imported schemas
     __all__ = [
         'RegisterRequest', 'LoginRequest', 'TokenResponse', 'AuthResponse', 'User', 'UserOut', 'UserCreate',
@@ -120,7 +127,8 @@ try:
         'RecurrenceRule', 'Habit', 'HabitCreate', 'HabitUpdate', 'HabitOut', 'HabitCompletion', 'HabitCompletionCreate', 'HabitCompletionUpdate', 'HabitProgress',
         'UserPreferencesHistoryItem', 'UserPreferencesChangeSummary',
         'JournalEntry', 'JournalEntryCreate', 'JournalEntryUpdate', 'JournalEntryOut',
-        'Tag', 'TagCreate', 'TagUpdate', 'TagOut'
+        'Tag', 'TagCreate', 'TagUpdate', 'TagOut',
+        'HierarchyTreeNode', 'HierarchyMoveRequest', 'HierarchyPathItem', 'HierarchyStats', 'HierarchyOverview'
     ]
     
 except (ImportError, AttributeError) as e:
