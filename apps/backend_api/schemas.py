@@ -396,6 +396,59 @@ class LifeAreaOut(LifeArea):
     """Output schema for LifeArea (same as LifeArea)"""
     pass
 
+## Journal Entry Schemas
+class JournalEntryBase(BaseModel):
+    content: constr(min_length=1, max_length=10000, strip_whitespace=True) = Field(
+        ..., 
+        description="Content of the journal entry (1-10000 characters)"
+    )
+    
+    @validator('content')
+    def validate_content(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Journal entry content cannot be empty')
+        return v.strip()
+
+class JournalEntryCreate(JournalEntryBase):
+    """Schema for creating a new Journal Entry"""
+    project_id: Optional[int] = Field(None, gt=0, description="Associated project ID (positive integer)")
+    goal_id: Optional[int] = Field(None, gt=0, description="Associated goal ID (positive integer)")
+    task_id: Optional[int] = Field(None, gt=0, description="Associated task ID (positive integer)")
+
+class JournalEntryUpdate(BaseModel):
+    """Schema for updating a Journal Entry"""
+    content: Optional[constr(min_length=1, max_length=10000, strip_whitespace=True)] = Field(
+        None, 
+        description="Updated content of the journal entry (1-10000 characters)"
+    )
+    
+    @validator('content')
+    def validate_content(cls, v):
+        if v is not None:
+            v = v.strip()
+            if len(v) == 0:
+                raise ValueError('Journal entry content cannot be empty')
+        return v
+
+class JournalEntry(JournalEntryBase):
+    id: int = Field(..., description="Unique journal entry ID")
+    user_id: str = Field(..., description="Owner user ID")
+    project_id: Optional[int] = Field(None, description="Associated project ID")
+    goal_id: Optional[int] = Field(None, description="Associated goal ID")  
+    task_id: Optional[int] = Field(None, description="Associated task ID")
+    version: int = Field(..., description="Version for sync")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+    class Config:
+        from_attributes = True
+
+class JournalEntryOut(JournalEntry):
+    """Enhanced journal entry output schema with nested relationships"""
+    project: Optional['ProjectOut'] = Field(None, description="Associated project details")
+    goal: Optional['GoalOut'] = Field(None, description="Associated goal details")
+    task: Optional['TaskOut'] = Field(None, description="Associated task details")
+
 ## Habit Schemas
 class RecurrenceRule(BaseModel):
     """Schema for habit recurrence configuration"""
@@ -1089,6 +1142,7 @@ class PublishRequest(BaseModel):
 ProjectOut.model_rebuild()
 TaskOut.model_rebuild()
 GoalOut.model_rebuild()
+JournalEntryOut.model_rebuild()
 HabitOut.model_rebuild()
 UserPreferencesOut.model_rebuild()
 UserOut.model_rebuild()

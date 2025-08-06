@@ -33,6 +33,7 @@ class User(Base):
     conversation_sessions = relationship("ConversationSession", back_populates="user", cascade="all, delete-orphan")
     intent_feedback = relationship("IntentFeedback", back_populates="user", cascade="all, delete-orphan")
     preferences_history = relationship("UserPreferencesHistory", back_populates="user", cascade="all, delete-orphan")
+    journal_entries = relationship("JournalEntry", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserPreferences(Base):

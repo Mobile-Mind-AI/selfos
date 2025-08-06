@@ -94,6 +94,12 @@ try:
     UserPreferencesHistoryItem = parent_schemas.UserPreferencesHistoryItem
     UserPreferencesChangeSummary = parent_schemas.UserPreferencesChangeSummary
     
+    # Journal Entry schemas
+    JournalEntry = parent_schemas.JournalEntry
+    JournalEntryCreate = parent_schemas.JournalEntryCreate
+    JournalEntryUpdate = parent_schemas.JournalEntryUpdate
+    JournalEntryOut = parent_schemas.JournalEntryOut
+    
     # Export all imported schemas
     __all__ = [
         'RegisterRequest', 'LoginRequest', 'TokenResponse', 'AuthResponse', 'User', 'UserOut', 'UserCreate',
@@ -106,7 +112,8 @@ try:
         'FeedbackLog', 'FeedbackLogCreate', 'FeedbackLogUpdate', 'FeedbackLogSummary',
         'StorySession', 'StorySessionCreate', 'StorySessionUpdate', 'StorySessionSummary', 'GenerationRequest', 'PublishRequest',
         'RecurrenceRule', 'Habit', 'HabitCreate', 'HabitUpdate', 'HabitOut', 'HabitCompletion', 'HabitCompletionCreate', 'HabitCompletionUpdate', 'HabitProgress',
-        'UserPreferencesHistoryItem', 'UserPreferencesChangeSummary'
+        'UserPreferencesHistoryItem', 'UserPreferencesChangeSummary',
+        'JournalEntry', 'JournalEntryCreate', 'JournalEntryUpdate', 'JournalEntryOut'
     ]
     
 except (ImportError, AttributeError) as e:

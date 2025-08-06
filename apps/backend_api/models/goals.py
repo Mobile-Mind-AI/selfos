@@ -30,6 +30,7 @@ class Goal(Base):
     tasks = relationship("Task", back_populates="goal", cascade="all, delete-orphan")
     habits = relationship("Habit", back_populates="goal")
     media_attachments = relationship("MediaAttachment", back_populates="goal")
+    journal_entries = relationship("JournalEntry", back_populates="goal", cascade="all, delete-orphan")
 
 
 class Project(Base):
@@ -55,6 +56,7 @@ class Project(Base):
     life_area = relationship("LifeArea", back_populates="projects")
     goals = relationship("Goal", back_populates="project", cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
+    journal_entries = relationship("JournalEntry", back_populates="project", cascade="all, delete-orphan")
 
 
 class Task(Base):
@@ -101,6 +103,7 @@ class Task(Base):
     dependent_task = relationship("Task", remote_side=[id], backref="blocking_tasks")
     
     media_attachments = relationship("MediaAttachment", back_populates="task")
+    journal_entries = relationship("JournalEntry", back_populates="task", cascade="all, delete-orphan")
 
 
 class LifeArea(Base):
@@ -192,6 +195,31 @@ class HabitCompletion(Base):
     habit = relationship("Habit", back_populates="completions")
 
 
+class JournalEntry(Base):
+    __tablename__ = "journal_entries"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.uid"), nullable=False)
+    
+    # Content
+    content = Column(Text, nullable=False)
+    
+    # Optional associations - can be attached to project, goal, or task
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
+    goal_id = Column(Integer, ForeignKey("goals.id"), nullable=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
+    
+    # Versioning for sync
+    version = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="journal_entries")
+    project = relationship("Project", back_populates="journal_entries")
+    goal = relationship("Goal", back_populates="journal_entries")
+    task = relationship("Task", back_populates="journal_entries")
+
+
 # Performance indexes for Goal model
 Index('ix_goals_user_created', Goal.user_id, Goal.created_at.desc())
 Index('ix_goals_user_status', Goal.user_id, Goal.status)
@@ -226,3 +254,9 @@ Index('ix_habits_life_area_created', Habit.life_area_id, Habit.created_at.desc()
 Index('ix_habit_completions_habit_id', HabitCompletion.habit_id)
 Index('ix_habit_completions_date', HabitCompletion.completion_date.desc())
 Index('ix_habit_completions_habit_date', HabitCompletion.habit_id, HabitCompletion.completion_date.desc())
+
+# Performance indexes for JournalEntry model
+Index('ix_journal_entries_user_created', JournalEntry.user_id, JournalEntry.created_at.desc())
+Index('ix_journal_entries_project_created', JournalEntry.project_id, JournalEntry.created_at.desc())
+Index('ix_journal_entries_goal_created', JournalEntry.goal_id, JournalEntry.created_at.desc())
+Index('ix_journal_entries_task_created', JournalEntry.task_id, JournalEntry.created_at.desc())
