@@ -418,3 +418,7 @@ class JournalService:
             "oldest_entry_date": oldest_entry[0] if oldest_entry else None,
             "newest_entry_date": newest_entry[0] if newest_entry else None
         }
+
+
+# Export service instance
+journal_service = JournalService

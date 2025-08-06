@@ -276,3 +276,9 @@ class TagService:
         ).limit(limit).all()
         
         return [TagOut(**tag.__dict__) for tag in tags]
+
+
+# Note: TagService requires db and current_user parameters,
+# so it cannot be created as a singleton like other services.
+# It should be instantiated in the routers when needed.
+tag_service = TagService

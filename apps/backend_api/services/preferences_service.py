@@ -181,3 +181,27 @@ def get_preference_change_summary(
             "changed_at": history_records[0].changed_at
         } if history_records else None
     }
+
+
+class PreferencesService:
+    """Service class for managing user preferences."""
+    
+    @staticmethod
+    def log_preference_changes(db: Session, user_id: str, old_prefs: UserPreferences, new_data: Dict[str, Any]) -> None:
+        return log_preference_changes(db, user_id, old_prefs, new_data)
+    
+    @staticmethod
+    def update_user_preferences_with_history(db: Session, user_id: str, update_data: Dict[str, Any]) -> UserPreferences:
+        return update_user_preferences_with_history(db, user_id, update_data)
+    
+    @staticmethod
+    def get_user_preferences_history(db: Session, user_id: str, limit: Optional[int] = None, preference_name: Optional[str] = None) -> list[UserPreferencesHistory]:
+        return get_user_preferences_history(db, user_id, limit, preference_name)
+    
+    @staticmethod
+    def get_preference_change_summary(db: Session, user_id: str, days_back: int = 30) -> Dict[str, Any]:
+        return get_preference_change_summary(db, user_id, days_back)
+
+
+# Export service instance
+preferences_service = PreferencesService
