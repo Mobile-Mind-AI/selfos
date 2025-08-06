@@ -90,6 +90,10 @@ try:
     HabitCompletionUpdate = parent_schemas.HabitCompletionUpdate
     HabitProgress = parent_schemas.HabitProgress
     
+    # User Preferences History schemas (Analytics)
+    UserPreferencesHistoryItem = parent_schemas.UserPreferencesHistoryItem
+    UserPreferencesChangeSummary = parent_schemas.UserPreferencesChangeSummary
+    
     # Export all imported schemas
     __all__ = [
         'RegisterRequest', 'LoginRequest', 'TokenResponse', 'AuthResponse', 'User', 'UserOut', 'UserCreate',
@@ -101,7 +105,8 @@ try:
         'UserPreferences', 'UserPreferencesCreate', 'UserPreferencesUpdate', 'UserPreferencesOut',
         'FeedbackLog', 'FeedbackLogCreate', 'FeedbackLogUpdate', 'FeedbackLogSummary',
         'StorySession', 'StorySessionCreate', 'StorySessionUpdate', 'StorySessionSummary', 'GenerationRequest', 'PublishRequest',
-        'RecurrenceRule', 'Habit', 'HabitCreate', 'HabitUpdate', 'HabitOut', 'HabitCompletion', 'HabitCompletionCreate', 'HabitCompletionUpdate', 'HabitProgress'
+        'RecurrenceRule', 'Habit', 'HabitCreate', 'HabitUpdate', 'HabitOut', 'HabitCompletion', 'HabitCompletionCreate', 'HabitCompletionUpdate', 'HabitProgress',
+        'UserPreferencesHistoryItem', 'UserPreferencesChangeSummary'
     ]
     
 except (ImportError, AttributeError) as e:

@@ -32,6 +32,7 @@ class User(Base):
     conversation_logs = relationship("ConversationLog", back_populates="user", cascade="all, delete-orphan")
     conversation_sessions = relationship("ConversationSession", back_populates="user", cascade="all, delete-orphan")
     intent_feedback = relationship("IntentFeedback", back_populates="user", cascade="all, delete-orphan")
+    preferences_history = relationship("UserPreferencesHistory", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserPreferences(Base):
@@ -74,5 +75,23 @@ class UserPreferences(Base):
     default_life_area = relationship("LifeArea", foreign_keys=[default_life_area_id])
 
 
+class UserPreferencesHistory(Base):
+    __tablename__ = "user_preferences_history"
+    
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid4()))
+    user_id = Column(String, ForeignKey("users.uid"), nullable=False, index=True)
+    preference_name = Column(String, nullable=False)
+    old_value = Column(String, nullable=True)
+    new_value = Column(String, nullable=True)
+    changed_at = Column(DateTime, default=datetime.utcnow, index=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="preferences_history")
+
+
 # Performance indexes for UserPreferences model  
 Index('ix_user_prefs_user_created', UserPreferences.user_id, UserPreferences.created_at.desc())
+
+# Performance indexes for UserPreferencesHistory model
+Index('ix_user_prefs_history_user_time', UserPreferencesHistory.user_id, UserPreferencesHistory.changed_at.desc())
+Index('ix_user_prefs_history_pref_name', UserPreferencesHistory.preference_name)

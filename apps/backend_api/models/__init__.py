@@ -14,7 +14,7 @@ This package contains all SQLAlchemy models organized by domain:
 from db import Base
 
 # Import all models to ensure they are registered with SQLAlchemy
-from .user import User, UserPreferences
+from .user import User, UserPreferences, UserPreferencesHistory
 from .goals import Goal, Project, Task, LifeArea, Habit, HabitCompletion
 from .content import AvatarImage, MediaAttachment, MemoryItem, StorySession, FeedbackLog
 from .onboarding import PersonalProfile, CustomLifeArea, OnboardingAnalytics, AssistantProfile, OnboardingState
@@ -23,7 +23,7 @@ from .conversation import ConversationLog, ConversationSession, IntentFeedback
 # Export all models for easy importing
 __all__ = [
     'Base',
-    'User', 'UserPreferences',
+    'User', 'UserPreferences', 'UserPreferencesHistory',
     'Goal', 'Project', 'Task', 'LifeArea', 'Habit', 'HabitCompletion',
     'AvatarImage', 'MediaAttachment', 'MemoryItem', 'StorySession', 'FeedbackLog',
     'PersonalProfile', 'CustomLifeArea', 'OnboardingAnalytics', 'AssistantProfile', 'OnboardingState',

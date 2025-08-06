@@ -822,6 +822,27 @@ class UserPreferencesOut(UserPreferences):
     """Enhanced user preferences output schema"""
     default_life_area: Optional['LifeAreaOut'] = Field(None, description="Default life area details")
 
+## UserPreferencesHistory Schemas
+class UserPreferencesHistoryItem(BaseModel):
+    """Schema for individual preference change history item"""
+    id: str = Field(..., description="Unique history entry ID")
+    preference_name: str = Field(..., description="Name of the preference that changed")
+    old_value: Optional[str] = Field(None, description="Previous value (as string)")
+    new_value: Optional[str] = Field(None, description="New value (as string)")
+    changed_at: datetime = Field(..., description="When the change occurred")
+
+    class Config:
+        from_attributes = True
+
+class UserPreferencesChangeSummary(BaseModel):
+    """Schema for user preferences change summary and analytics"""
+    total_changes: int = Field(..., description="Total number of preference changes")
+    days_analyzed: int = Field(..., description="Number of days analyzed")
+    preferences_changed: List[str] = Field(..., description="List of preference names that were changed")
+    change_counts: Dict[str, int] = Field(..., description="Count of changes per preference")
+    most_changed_preference: Optional[Dict[str, Any]] = Field(None, description="Most frequently changed preference")
+    latest_change: Optional[Dict[str, Any]] = Field(None, description="Details of the most recent change")
+
 class UserOut(User):
     """Enhanced user output schema with nested relationships"""
     preferences: Optional['UserPreferencesOut'] = Field(None, description="User preferences")
