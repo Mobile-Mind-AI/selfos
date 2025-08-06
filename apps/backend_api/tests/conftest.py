@@ -27,7 +27,7 @@ from models import Base, User
 from main import app
 from dependencies import get_db, get_current_user
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 def isolated_test_setup():
     """Create isolated database and override dependencies for each test"""
     # Create unique in-memory database for this test
@@ -58,11 +58,8 @@ def isolated_test_setup():
             "roles": ["user"]
         }
     
-    # Store original overrides
-    original_db_override = app.dependency_overrides.get(get_db)
-    original_user_override = app.dependency_overrides.get(get_current_user)
-    
-    # Set test overrides
+    # Clear all existing overrides and set test ones
+    app.dependency_overrides.clear()
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_user] = override_get_current_user
     
@@ -73,18 +70,8 @@ def isolated_test_setup():
         "user_override": override_get_current_user
     }
     
-    # Restore original overrides
-    if original_db_override:
-        app.dependency_overrides[get_db] = original_db_override
-    else:
-        app.dependency_overrides.pop(get_db, None)
-        
-    if original_user_override:
-        app.dependency_overrides[get_current_user] = original_user_override
-    else:
-        app.dependency_overrides.pop(get_current_user, None)
-    
-    # Clean up engine
+    # Clean up
+    app.dependency_overrides.clear()
     engine.dispose()
 
 # Test environment configuration

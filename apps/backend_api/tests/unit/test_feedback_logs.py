@@ -114,7 +114,7 @@ def test_create_feedback_log():
     
     assert response.status_code == 201
     data = response.json()
-    assert data["user_id"] == "test_user_feedback_123"
+    assert data["user_id"] == "test_user_123"
     assert data["context_type"] == "task"
     assert data["context_id"] == "task_123"
     assert data["feedback_type"] == "positive"
@@ -175,7 +175,7 @@ def test_get_feedback_logs():
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 3
-    assert all(log["user_id"] == "test_user_feedback_123" for log in data)
+    assert all(log["user_id"] == "test_user_123" for log in data)
 
 
 def test_get_feedback_logs_with_filtering():
@@ -397,7 +397,7 @@ def test_create_bulk_feedback_logs():
     assert response.status_code == 201
     data = response.json()
     assert len(data) == 3
-    assert all(log["user_id"] == "test_user_feedback_123" for log in data)
+    assert all(log["user_id"] == "test_user_123" for log in data)
     assert data[0]["context_type"] == "task"
     assert data[1]["context_type"] == "goal"
     assert data[2]["context_type"] == "plan"
@@ -512,7 +512,7 @@ def test_user_isolation():
     # Verify user can access their feedback
     user_logs = client.get("/api/feedback-logs").json()
     assert len(user_logs) == 1
-    assert user_logs[0]["user_id"] == "test_user_feedback_123"
+    assert user_logs[0]["user_id"] == "test_user_123"
     
     # Create a separate TestClient with different user override to avoid interference  
     from fastapi.testclient import TestClient

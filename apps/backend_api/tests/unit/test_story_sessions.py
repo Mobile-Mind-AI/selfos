@@ -114,7 +114,7 @@ def test_create_story_session():
     
     assert response.status_code in [200, 201]  # Accept both OK and Created
     data = response.json()
-    assert data["user_id"] == "test_user_story_123"
+    assert data["user_id"] == "test_user_123"
     assert data["title"] == "Weekly Progress Story"
     assert data["summary_period"] == "weekly"
     assert data["content_type"] == "story"
@@ -227,7 +227,7 @@ def test_get_story_sessions():
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 3
-    assert all(session["user_id"] == "test_user_story_123" for session in data)
+    assert all(session["user_id"] == "test_user_123" for session in data)
 
 
 def test_get_story_sessions_with_filtering():
@@ -635,7 +635,7 @@ def test_user_isolation():
     # Verify user can access their story session
     user_sessions = client.get("/api/story-sessions").json()
     assert len(user_sessions) == 1
-    assert user_sessions[0]["user_id"] == "test_user_story_123"
+    assert user_sessions[0]["user_id"] == "test_user_123"
     
     # Create a separate TestClient with different user override
     from fastapi.testclient import TestClient

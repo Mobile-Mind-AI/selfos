@@ -13,10 +13,10 @@ from schemas import (
     LifeAreaOut
 )
 
-router = APIRouter(prefix="/api/life_areas", tags=["life_areas"])
+router = APIRouter(tags=["life_areas"])
 
 
-@router.get("", response_model=List[LifeAreaOut])
+@router.get("/life-areas", response_model=List[LifeAreaOut])
 def get_life_areas(
     include_system: bool = True,
     current_user: dict = Depends(get_current_user),
@@ -32,7 +32,7 @@ def get_life_areas(
             )
         ).order_by(
             LifeArea.is_custom,  # System areas first
-            LifeArea.priority_order,
+            LifeArea.weight.desc(),  # Higher weight first
             LifeArea.name
         ).all()
     else:
@@ -40,14 +40,14 @@ def get_life_areas(
         life_areas = db.query(LifeArea).filter(
             LifeArea.user_id == current_user["uid"]
         ).order_by(
-            LifeArea.priority_order,
+            LifeArea.weight.desc(),  # Higher weight first
             LifeArea.name
         ).all()
     
     return life_areas
 
 
-@router.get("/{life_area_id}", response_model=LifeAreaOut)
+@router.get("/life-areas/{life_area_id}", response_model=LifeAreaOut)
 def get_life_area(
     life_area_id: int,
     current_user: dict = Depends(get_current_user),
@@ -71,7 +71,7 @@ def get_life_area(
     return life_area
 
 
-@router.post("", response_model=LifeAreaOut)
+@router.post("/life-areas", response_model=LifeAreaOut, status_code=201)
 def create_life_area(
     life_area: LifeAreaCreate,
     current_user: dict = Depends(get_current_user),
@@ -94,7 +94,7 @@ def create_life_area(
     db_life_area = LifeArea(
         user_id=current_user["uid"],
         is_custom=True,  # User-created areas are always custom
-        **life_area.model_dump()
+        **life_area.dict()
     )
     
     db.add(db_life_area)
@@ -104,7 +104,7 @@ def create_life_area(
     return db_life_area
 
 
-@router.put("/{life_area_id}", response_model=LifeAreaOut)
+@router.put("/life-areas/{life_area_id}", response_model=LifeAreaOut)
 def update_life_area(
     life_area_id: int,
     life_area_update: LifeAreaUpdate,
@@ -131,8 +131,22 @@ def update_life_area(
             detail="Cannot update system life areas"
         )
     
+    # Check for duplicate names if name is being updated
+    update_data = life_area_update.dict(exclude_unset=True)
+    if "name" in update_data:
+        existing = db.query(LifeArea).filter(
+            LifeArea.user_id == current_user["uid"],
+            LifeArea.name == update_data["name"],
+            LifeArea.id != life_area_id  # Exclude current life area
+        ).first()
+        
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Life area with this name already exists"
+            )
+    
     # Update fields
-    update_data = life_area_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(life_area, field, value)
     
@@ -145,7 +159,7 @@ def update_life_area(
     return life_area
 
 
-@router.delete("/{life_area_id}")
+@router.delete("/life-areas/{life_area_id}", status_code=204)
 def delete_life_area(
     life_area_id: int,
     current_user: dict = Depends(get_current_user),
@@ -198,4 +212,55 @@ def delete_life_area(
     db.delete(life_area)
     db.commit()
     
-    return {"message": "Life area deleted successfully"}
+    # Return None for 204 status
+    return None
+
+
+@router.get("/life-areas/stats/summary")
+def get_life_areas_summary(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get life areas summary statistics."""
+    life_areas = db.query(LifeArea).filter(
+        or_(
+            LifeArea.user_id == current_user["uid"],
+            LifeArea.user_id == "system"
+        )
+    ).all()
+    
+    if not life_areas:
+        return {
+            "total_areas": 0,
+            "total_weight": 0,
+            "average_weight": 0,
+            "custom_areas": 0,
+            "system_areas": 0,
+            "areas_by_weight": []
+        }
+    
+    total_count = len(life_areas)
+    total_weight = sum(area.weight or 0 for area in life_areas)
+    custom_count = sum(1 for area in life_areas if area.is_custom)
+    system_count = total_count - custom_count
+    average_weight = total_weight / total_count if total_count > 0 else 0
+    
+    # Sort areas by weight descending for areas_by_weight
+    areas_by_weight = sorted(life_areas, key=lambda x: x.weight or 0, reverse=True)
+    areas_by_weight_data = [
+        {
+            "name": area.name, 
+            "weight": area.weight or 0,
+            "percentage": round(((area.weight or 0) / total_weight * 100), 1) if total_weight > 0 else 0
+        } 
+        for area in areas_by_weight
+    ]
+    
+    return {
+        "total_areas": total_count,
+        "total_weight": total_weight,
+        "average_weight": average_weight,
+        "custom_areas": custom_count,
+        "system_areas": system_count,
+        "areas_by_weight": areas_by_weight_data
+    }

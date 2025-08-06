@@ -109,6 +109,7 @@ async def complete_onboarding(
     # Create new assistant profile
     profile = AssistantProfile(
         user_id=user_id,
+        owner_id=user_id,  # Set owner_id to the same as user_id
         name=request.name,
         avatar_url=request.avatar_url,
         ai_model=request.ai_model,
@@ -177,6 +178,7 @@ async def create_assistant_profile(
     
     profile = AssistantProfile(
         user_id=user_id,
+        owner_id=user_id,  # Set owner_id to the same as user_id
         name=profile_data.name,
         description=profile_data.description,
         avatar_url=profile_data.avatar_url,
@@ -195,6 +197,29 @@ async def create_assistant_profile(
     db.refresh(profile)
     
     logger.info(f"Created assistant profile '{profile.name}' for user {user_id}")
+    
+    return AssistantProfileOut.model_validate(profile)
+
+
+@router.get("/default", response_model=AssistantProfileOut)
+async def get_default_assistant_profile(
+    current_user: Dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get the default assistant profile for the current user.
+    """
+    user_id = current_user["uid"]
+    
+    profile = db.query(AssistantProfile).filter(
+        and_(
+            AssistantProfile.user_id == user_id,
+            AssistantProfile.is_default == True
+        )
+    ).first()
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="No default assistant profile found")
     
     return AssistantProfileOut.model_validate(profile)
 

@@ -103,9 +103,14 @@ async def create_project(
                 detail="Life area not found"
             )
     
-    # Create the project
+    # Create the project - only use fields that exist in the model
+    project_fields = project_data.dict()
+    # Remove any fields that don't exist in the Project model
+    allowed_fields = {'title', 'description', 'status', 'priority', 'progress', 'life_area_id'}
+    filtered_data = {k: v for k, v in project_fields.items() if k in allowed_fields}
+    
     project = Project(
-        **project_data.dict(),
+        **filtered_data,
         user_id=current_user["uid"],
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow()
@@ -195,9 +200,12 @@ async def update_project(
                 detail="Life area not found"
             )
     
-    # Update project fields
+    # Update project fields - only use fields that exist in the model
     update_data = project_data.dict(exclude_unset=True)
-    for field, value in update_data.items():
+    allowed_fields = {'title', 'description', 'status', 'priority', 'progress', 'life_area_id'}
+    filtered_updates = {k: v for k, v in update_data.items() if k in allowed_fields}
+    
+    for field, value in filtered_updates.items():
         setattr(project, field, value)
     
     project.updated_at = datetime.utcnow()

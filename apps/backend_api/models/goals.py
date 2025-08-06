@@ -1,8 +1,8 @@
-"""Goal, Project, Task, and LifeArea models."""
+"""Goal, Project, Task, LifeArea, and Habit models."""
 
-from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Float, Boolean, Index, JSON
+from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Float, Boolean, Index, JSON, Date
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, date
 from db import Base
 
 
@@ -28,6 +28,7 @@ class Goal(Base):
     life_area = relationship("LifeArea", back_populates="goals")
     project = relationship("Project", back_populates="goals")
     tasks = relationship("Task", back_populates="goal", cascade="all, delete-orphan")
+    habits = relationship("Habit", back_populates="goal")
     media_attachments = relationship("MediaAttachment", back_populates="goal")
 
 
@@ -124,6 +125,71 @@ class LifeArea(Base):
     goals = relationship("Goal", back_populates="life_area")
     projects = relationship("Project", back_populates="life_area")
     tasks = relationship("Task", back_populates="life_area")
+    habits = relationship("Habit", back_populates="life_area")
+
+
+class Habit(Base):
+    __tablename__ = "habits"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.uid"), nullable=False)
+    goal_id = Column(Integer, ForeignKey("goals.id"), nullable=True)
+    life_area_id = Column(Integer, ForeignKey("life_areas.id"), nullable=True)
+    
+    # Basic habit information
+    title = Column(String, nullable=False)
+    description = Column(Text)
+    
+    # Recurrence configuration (stored as JSON for flexibility)
+    recurrence_rule = Column(JSON, nullable=False, default={})
+    # Example: {"type": "weekly", "target_count": 3, "target_type": "count"}
+    # Example: {"type": "daily", "target_count": 1, "target_type": "count"}
+    # Example: {"type": "monthly", "target_count": 10, "target_type": "count"}
+    
+    # Habit configuration
+    is_active = Column(Boolean, nullable=False, default=True)
+    start_date = Column(Date, nullable=False, default=date.today)
+    end_date = Column(Date, nullable=True)  # Optional end date for temporary habits
+    
+    # UI configuration
+    icon = Column(String)
+    color = Column(String)
+    
+    # Progress tracking metadata
+    current_streak = Column(Integer, nullable=False, default=0)
+    best_streak = Column(Integer, nullable=False, default=0)
+    total_completions = Column(Integer, nullable=False, default=0)
+    
+    # Versioning for sync
+    version = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="habits")
+    goal = relationship("Goal", back_populates="habits")
+    life_area = relationship("LifeArea", back_populates="habits")
+    completions = relationship("HabitCompletion", back_populates="habit", cascade="all, delete-orphan")
+
+
+class HabitCompletion(Base):
+    __tablename__ = "habit_completions"
+    id = Column(Integer, primary_key=True, index=True)
+    habit_id = Column(Integer, ForeignKey("habits.id"), nullable=False)
+    
+    # When the habit was completed
+    completion_date = Column(Date, nullable=False, default=date.today)
+    completion_time = Column(DateTime, default=datetime.utcnow)
+    
+    # Optional metadata about the completion
+    notes = Column(Text)
+    duration_minutes = Column(Integer)  # For habits that track time (e.g., "meditate for 10 minutes")
+    intensity_rating = Column(Integer)  # Optional 1-10 rating
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    habit = relationship("Habit", back_populates="completions")
 
 
 # Performance indexes for Goal model
@@ -149,3 +215,14 @@ Index('ix_tasks_completed', Task.completed_at)
 # Performance indexes for LifeArea model
 Index('ix_life_areas_user_created', LifeArea.user_id, LifeArea.created_at.desc())
 Index('ix_life_areas_user_name', LifeArea.user_id, LifeArea.name)
+
+# Performance indexes for Habit model
+Index('ix_habits_user_created', Habit.user_id, Habit.created_at.desc())
+Index('ix_habits_user_active', Habit.user_id, Habit.is_active)
+Index('ix_habits_goal_created', Habit.goal_id, Habit.created_at.desc())
+Index('ix_habits_life_area_created', Habit.life_area_id, Habit.created_at.desc())
+
+# Performance indexes for HabitCompletion model
+Index('ix_habit_completions_habit_id', HabitCompletion.habit_id)
+Index('ix_habit_completions_date', HabitCompletion.completion_date.desc())
+Index('ix_habit_completions_habit_date', HabitCompletion.habit_id, HabitCompletion.completion_date.desc())

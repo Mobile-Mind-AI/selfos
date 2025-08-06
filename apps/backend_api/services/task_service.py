@@ -91,18 +91,11 @@ class TaskService:
             Created task model instance
         """
         try:
-            db_task = models.Task(
-                goal_id=task_data.goal_id,
-                user_id=user_id,
-                title=task_data.title,
-                description=task_data.description,
-                due_date=task_data.due_date,
-                duration=task_data.duration,
-                status=task_data.status,
-                progress=task_data.progress,
-                life_area_id=task_data.life_area_id,
-                dependencies=task_data.dependencies,
-            )
+            task_payload = task_data.dict(exclude={"dependencies"})
+            db_task = models.Task(**task_payload, user_id=user_id)
+
+            if task_data.dependencies:
+                db_task.depends_on_task_id = task_data.dependencies[0]
             
             db.add(db_task)
             db.commit()
@@ -148,11 +141,15 @@ class TaskService:
             task.title = task_data.title
             task.description = task_data.description
             task.due_date = task_data.due_date
-            task.duration = task_data.duration
+            task.estimated_hours = task_data.estimated_hours
+            task.actual_hours = task_data.actual_hours
             task.status = task_data.status
             task.progress = task_data.progress
             task.life_area_id = task_data.life_area_id
-            task.dependencies = task_data.dependencies
+            if task_data.dependencies:
+                task.depends_on_task_id = task_data.dependencies[0]
+            else:
+                task.depends_on_task_id = None
             task.updated_at = datetime.utcnow()
             
             db.commit()
@@ -322,7 +319,7 @@ class TaskService:
                 "description": task.description,
                 "goal_id": str(task.goal_id) if task.goal_id else None,
                 "life_area_id": str(task.life_area_id) if task.life_area_id else None,
-                "duration": task.duration,
+                "estimated_hours": task.estimated_hours,
                 "media_count": len(task.media_attachments) if task.media_attachments else 0,
                 "previous_status": old_status
             }

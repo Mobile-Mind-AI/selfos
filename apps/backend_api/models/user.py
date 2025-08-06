@@ -16,6 +16,7 @@ class User(Base):
     goals = relationship("Goal", back_populates="user", cascade="all, delete-orphan")
     projects = relationship("Project", back_populates="user", cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")
+    habits = relationship("Habit", back_populates="user", cascade="all, delete-orphan")
     life_areas = relationship("LifeArea", back_populates="user", cascade="all, delete-orphan")
     avatar_images = relationship("AvatarImage", back_populates="user", cascade="all, delete-orphan")
     media_attachments = relationship("MediaAttachment", back_populates="user", cascade="all, delete-orphan")

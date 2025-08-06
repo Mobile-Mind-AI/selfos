@@ -79,6 +79,17 @@ try:
     GenerationRequest = parent_schemas.GenerationRequest
     PublishRequest = parent_schemas.PublishRequest
     
+    # Habit schemas
+    RecurrenceRule = parent_schemas.RecurrenceRule
+    Habit = parent_schemas.Habit
+    HabitCreate = parent_schemas.HabitCreate
+    HabitUpdate = parent_schemas.HabitUpdate
+    HabitOut = parent_schemas.HabitOut
+    HabitCompletion = parent_schemas.HabitCompletion
+    HabitCompletionCreate = parent_schemas.HabitCompletionCreate
+    HabitCompletionUpdate = parent_schemas.HabitCompletionUpdate
+    HabitProgress = parent_schemas.HabitProgress
+    
     # Export all imported schemas
     __all__ = [
         'RegisterRequest', 'LoginRequest', 'TokenResponse', 'AuthResponse', 'User', 'UserOut', 'UserCreate',
@@ -89,7 +100,8 @@ try:
         'MediaAttachment', 'MediaAttachmentCreate', 'MediaAttachmentUpdate', 'MediaAttachmentOut',
         'UserPreferences', 'UserPreferencesCreate', 'UserPreferencesUpdate', 'UserPreferencesOut',
         'FeedbackLog', 'FeedbackLogCreate', 'FeedbackLogUpdate', 'FeedbackLogSummary',
-        'StorySession', 'StorySessionCreate', 'StorySessionUpdate', 'StorySessionSummary', 'GenerationRequest', 'PublishRequest'
+        'StorySession', 'StorySessionCreate', 'StorySessionUpdate', 'StorySessionSummary', 'GenerationRequest', 'PublishRequest',
+        'RecurrenceRule', 'Habit', 'HabitCreate', 'HabitUpdate', 'HabitOut', 'HabitCompletion', 'HabitCompletionCreate', 'HabitCompletionUpdate', 'HabitProgress'
     ]
     
 except (ImportError, AttributeError) as e:

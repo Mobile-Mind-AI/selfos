@@ -58,6 +58,8 @@ class MediaAttachment(Base):
     
     # Media metadata
     media_type = Column(String, nullable=False)    # image, video, audio, document
+    title = Column(String, nullable=True)          # Optional title for the media
+    description = Column(Text, nullable=True)      # Optional description
     width = Column(Integer, nullable=True)         # For images/videos
     height = Column(Integer, nullable=True)        # For images/videos
     duration = Column(Float, nullable=True)        # For videos/audio (seconds)
@@ -115,37 +117,53 @@ class StorySession(Base):
     thumbnail_url = Column(String, nullable=True)  # URL to video thumbnail
     
     # Content metadata
-    content_type = Column(String, nullable=False, default="weekly_summary")  # weekly_summary, achievement, reflection
+    content_type = Column(String, nullable=False, default="summary")  # summary, story, achievement, reflection
     word_count = Column(Integer, nullable=True)
     estimated_read_time = Column(Integer, nullable=True)  # In seconds
+    
+    # Summary period information
+    summary_period = Column(String, nullable=True)  # weekly, monthly, project-based, custom
+    period_start = Column(DateTime, nullable=True)
+    period_end = Column(DateTime, nullable=True)
     
     # Generation settings used
     story_style = Column(String, nullable=True)  # narrative, journal, social_post
     target_length = Column(String, nullable=True)  # short, medium, long
     include_media = Column(Boolean, nullable=False, default=False)
+    generation_prompt = Column(Text, nullable=True)  # User-provided or auto-generated prompt
+    generation_params = Column(JSON, nullable=True)  # Additional generation parameters
+    model_version = Column(String, nullable=True)  # Version of the model used for generation
     
     # Processing status
-    generation_status = Column(String, nullable=False, default="pending")  # pending, processing, completed, failed
+    processing_status = Column(String, nullable=False, default="pending")  # pending, generating, completed, failed
     processing_time = Column(Float, nullable=True)  # Time taken to generate (seconds)
     error_message = Column(Text, nullable=True)  # Error details if generation failed
+    regeneration_count = Column(Integer, nullable=False, default=0)  # Number of times regenerated
     
-    # Time period covered by this story
-    period_start = Column(DateTime, nullable=True)
-    period_end = Column(DateTime, nullable=True)
+    # Source data references
+    source_goals = Column(JSON, nullable=True)  # List of goal IDs used as sources
+    source_tasks = Column(JSON, nullable=True)  # List of task IDs used as sources
+    source_life_areas = Column(JSON, nullable=True)  # List of life area IDs used as sources
     
     # Engagement metrics
     view_count = Column(Integer, nullable=False, default=0)
     like_count = Column(Integer, nullable=False, default=0)
     share_count = Column(Integer, nullable=False, default=0)
+    engagement_data = Column(JSON, nullable=True)  # Additional engagement metrics
+    user_rating = Column(Float, nullable=True)  # User rating (1-5 stars)
+    user_notes = Column(Text, nullable=True)  # User's personal notes
     
     # Social media posting
-    posted_to_platforms = Column(JSON, nullable=True)  # List of platforms posted to
+    posted_to = Column(JSON, nullable=True)  # List of platforms posted to
+    posting_status = Column(String, nullable=False, default="draft")  # draft, scheduled, posted, failed
+    scheduled_post_time = Column(DateTime, nullable=True)  # When post is scheduled
     posted_at = Column(DateTime, nullable=True)
     social_post_ids = Column(JSON, nullable=True)  # Platform-specific post IDs
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    generated_at = Column(DateTime, nullable=True)  # When content was generated
     
     # Relationships
     user = relationship("User", back_populates="story_sessions")
@@ -197,7 +215,7 @@ Index('ix_memory_user_timestamp', MemoryItem.user_id, MemoryItem.timestamp.desc(
 
 # Performance indexes for StorySession model
 Index('ix_story_user_created', StorySession.user_id, StorySession.created_at.desc())
-Index('ix_story_user_status', StorySession.user_id, StorySession.generation_status)
+Index('ix_story_user_status', StorySession.user_id, StorySession.processing_status)
 Index('ix_story_user_period', StorySession.user_id, StorySession.period_start, StorySession.period_end)
 Index('ix_story_content_type', StorySession.content_type, StorySession.created_at.desc())
 Index('ix_story_posted_at', StorySession.posted_at)

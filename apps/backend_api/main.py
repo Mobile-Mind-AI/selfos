@@ -20,6 +20,7 @@ from routers.auth import router as auth_router
 from routers.goals import router as goals_router
 from routers.projects import router as projects_router
 from routers.tasks import router as tasks_router
+from routers.habits import router as habits_router
 from routers.life_areas import router as life_areas_router
 from routers.media_attachments import router as media_attachments_router
 from routers.user_preferences import router as user_preferences_router
@@ -95,7 +96,8 @@ app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 app.include_router(goals_router, prefix="/api", tags=["goals"])
 app.include_router(projects_router, prefix="/api", tags=["projects"])
 app.include_router(tasks_router, prefix="/api", tags=["tasks"])
-app.include_router(life_areas_router, tags=["life_areas"])
+app.include_router(habits_router, prefix="/api", tags=["habits"])
+app.include_router(life_areas_router, prefix="/api", tags=["life_areas"])
 app.include_router(media_attachments_router, prefix="/api", tags=["media"])
 app.include_router(user_preferences_router, prefix="/api", tags=["preferences"])
 app.include_router(feedback_logs_router, prefix="/api", tags=["feedback"])

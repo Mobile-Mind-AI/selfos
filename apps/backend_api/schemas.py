@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator, root_validator, EmailStr, constr
+from pydantic import BaseModel, Field, validator, root_validator, EmailStr, constr, computed_field
 from typing import Optional, List, Literal, Dict, Any, TYPE_CHECKING
 from datetime import datetime, time
 import re
@@ -184,8 +184,8 @@ class ProjectBase(BaseModel):
         None, 
         description="Detailed description of the project (max 2000 characters)"
     )
-    status: Optional[Literal['todo', 'in_progress', 'completed', 'paused']] = Field(
-        'todo', 
+    status: Optional[Literal['planning', 'active', 'on_hold', 'completed']] = Field(
+        'planning', 
         description="Status of the project"
     )
     progress: Optional[float] = Field(
@@ -199,16 +199,9 @@ class ProjectBase(BaseModel):
         gt=0, 
         description="Associated life area ID (positive integer)"
     )
-    start_date: Optional[datetime] = Field(None, description="Optional start date for the project")
-    target_date: Optional[datetime] = Field(None, description="Optional target completion date")
     priority: Optional[Literal['low', 'medium', 'high']] = Field(
         'medium', 
         description="Priority level of the project"
-    )
-    phases: Optional[List[Dict[str, Any]]] = Field(
-        default_factory=list, 
-        description="Project phases/milestones",
-        max_items=20
     )
     
     @validator('title')
@@ -223,31 +216,6 @@ class ProjectBase(BaseModel):
             v = v.strip()
             if len(v) == 0:
                 return None
-        return v
-    
-    @validator('start_date')
-    def validate_start_date(cls, v):
-        if v is not None:
-            # Don't allow start dates more than 10 years in the future
-            from datetime import datetime, timedelta
-            max_future = datetime.utcnow() + timedelta(days=3650)
-            if v > max_future:
-                raise ValueError('Start date cannot be more than 10 years in the future')
-        return v
-    
-    @validator('target_date')
-    def validate_target_date(cls, v, values):
-        if v is not None:
-            # Don't allow target dates more than 10 years in the future
-            from datetime import datetime, timedelta
-            max_future = datetime.utcnow() + timedelta(days=3650)
-            if v > max_future:
-                raise ValueError('Target date cannot be more than 10 years in the future')
-            
-            # Target date should be after start date if both are provided
-            if 'start_date' in values and values['start_date'] is not None:
-                if v < values['start_date']:
-                    raise ValueError('Target date must be after start date')
         return v
 
 class ProjectCreate(ProjectBase):
@@ -273,11 +241,15 @@ class TaskBase(BaseModel):
         description="Detailed description of the task (max 2000 characters)"
     )
     due_date: Optional[datetime] = Field(None, description="Optional due date for the task")
-    duration: Optional[int] = Field(
-        None, 
-        gt=0, 
-        le=1440, 
-        description="Expected duration in minutes (1-1440, max 24 hours)"
+    estimated_hours: Optional[float] = Field(
+        None,
+        gt=0,
+        description="Estimated hours to complete the task"
+    )
+    actual_hours: Optional[float] = Field(
+        None,
+        gt=0,
+        description="Actual hours spent on the task"
     )
     status: Optional[Literal['todo', 'in_progress', 'completed', 'cancelled']] = Field(
         'todo', 
@@ -424,6 +396,227 @@ class LifeAreaOut(LifeArea):
     """Output schema for LifeArea (same as LifeArea)"""
     pass
 
+## Habit Schemas
+class RecurrenceRule(BaseModel):
+    """Schema for habit recurrence configuration"""
+    type: Literal["daily", "weekly", "monthly"] = Field(..., description="Recurrence type")
+    target_count: int = Field(..., ge=1, le=100, description="Target count per period (1-100)")
+    target_type: Literal["count"] = Field("count", description="Type of target (count-based)")
+    
+    # Optional advanced settings
+    days_of_week: Optional[List[int]] = Field(None, description="Specific days of week (0=Monday, 6=Sunday)")
+    days_of_month: Optional[List[int]] = Field(None, description="Specific days of month (1-31)")
+    
+    @validator('days_of_week')
+    def validate_days_of_week(cls, v):
+        if v is not None:
+            if not all(0 <= day <= 6 for day in v):
+                raise ValueError('Days of week must be 0-6 (Monday-Sunday)')
+            return sorted(list(set(v)))  # Remove duplicates and sort
+        return v
+    
+    @validator('days_of_month')
+    def validate_days_of_month(cls, v):
+        if v is not None:
+            if not all(1 <= day <= 31 for day in v):
+                raise ValueError('Days of month must be 1-31')
+            return sorted(list(set(v)))  # Remove duplicates and sort
+        return v
+
+class HabitBase(BaseModel):
+    title: constr(min_length=1, max_length=200, strip_whitespace=True) = Field(
+        ..., 
+        description="Title of the habit (1-200 characters)"
+    )
+    description: Optional[constr(max_length=1000, strip_whitespace=True)] = Field(
+        None, 
+        description="Description of the habit (max 1000 characters)"
+    )
+    recurrence_rule: RecurrenceRule = Field(
+        ..., 
+        description="Recurrence configuration for the habit"
+    )
+    is_active: Optional[bool] = Field(
+        True, 
+        description="Whether the habit is currently active"
+    )
+    start_date: Optional[datetime] = Field(
+        None, 
+        description="When to start tracking this habit (defaults to today)"
+    )
+    end_date: Optional[datetime] = Field(
+        None, 
+        description="Optional end date for temporary habits"
+    )
+    icon: Optional[constr(max_length=50, strip_whitespace=True)] = Field(
+        None, 
+        description="UI icon identifier (max 50 characters)"
+    )
+    color: Optional[constr(max_length=50, strip_whitespace=True)] = Field(
+        None, 
+        description="UI color preference (hex or color name, max 50 characters)"
+    )
+    goal_id: Optional[int] = Field(
+        None, 
+        gt=0, 
+        description="Associated goal ID (positive integer)"
+    )
+    life_area_id: Optional[int] = Field(
+        None, 
+        gt=0, 
+        description="Associated life area ID (positive integer)"
+    )
+    
+    @validator('title')
+    def validate_title(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Habit title cannot be empty')
+        return v.strip()
+    
+    @validator('description')
+    def validate_description(cls, v):
+        if v is not None:
+            v = v.strip()
+            if len(v) == 0:
+                return None
+        return v
+    
+    @validator('start_date')
+    def validate_start_date(cls, v):
+        if v is not None:
+            from datetime import datetime, timedelta
+            # Don't allow start dates more than 1 year in the past or future
+            now = datetime.utcnow()
+            min_past = now - timedelta(days=365)
+            max_future = now + timedelta(days=365)
+            if v < min_past or v > max_future:
+                raise ValueError('Start date must be within 1 year of today')
+        return v
+    
+    @validator('end_date')
+    def validate_end_date(cls, v, values):
+        if v is not None:
+            from datetime import datetime, timedelta
+            # End date should be after start date
+            if 'start_date' in values and values['start_date'] is not None:
+                if v <= values['start_date']:
+                    raise ValueError('End date must be after start date')
+            
+            # Don't allow end dates more than 10 years in the future
+            max_future = datetime.utcnow() + timedelta(days=3650)
+            if v > max_future:
+                raise ValueError('End date cannot be more than 10 years in the future')
+        return v
+    
+    @validator('color')
+    def validate_color(cls, v):
+        if v is not None:
+            v = v.strip()
+            # Basic hex color validation
+            if v.startswith('#') and len(v) in [4, 7]:
+                if not all(c in '0123456789ABCDEFabcdef' for c in v[1:]):
+                    raise ValueError('Invalid hex color format')
+            return v
+        return v
+
+class HabitCreate(HabitBase):
+    """Schema for creating a new Habit"""
+    pass
+
+class HabitUpdate(BaseModel):
+    """Schema for updating a Habit (all fields optional)"""
+    title: Optional[str] = Field(None, description="Title of the habit", min_length=1, max_length=200)
+    description: Optional[str] = Field(None, description="Description of the habit", max_length=1000)
+    recurrence_rule: Optional[RecurrenceRule] = Field(None, description="Recurrence configuration for the habit")
+    is_active: Optional[bool] = Field(None, description="Whether the habit is currently active")
+    start_date: Optional[datetime] = Field(None, description="When to start tracking this habit")
+    end_date: Optional[datetime] = Field(None, description="Optional end date for temporary habits")
+    icon: Optional[str] = Field(None, description="UI icon identifier", max_length=50)
+    color: Optional[str] = Field(None, description="UI color preference", max_length=50)
+    goal_id: Optional[int] = Field(None, description="Associated goal ID")
+    life_area_id: Optional[int] = Field(None, description="Associated life area ID")
+
+class Habit(HabitBase):
+    id: int = Field(..., description="Unique habit ID")
+    user_id: str = Field(..., description="Owner user ID")
+    current_streak: int = Field(..., description="Current consecutive completion streak")
+    best_streak: int = Field(..., description="Highest streak ever achieved")
+    total_completions: int = Field(..., description="Lifetime total completions")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+    class Config:
+        from_attributes = True
+
+## HabitCompletion Schemas
+class HabitCompletionBase(BaseModel):
+    completion_date: Optional[datetime] = Field(
+        None, 
+        description="Date when habit was completed (defaults to today)"
+    )
+    notes: Optional[constr(max_length=500, strip_whitespace=True)] = Field(
+        None, 
+        description="Optional notes about the completion (max 500 characters)"
+    )
+    duration_minutes: Optional[int] = Field(
+        None, 
+        ge=1, 
+        le=1440, 
+        description="Duration in minutes (1-1440, max 24 hours)"
+    )
+    intensity_rating: Optional[int] = Field(
+        None, 
+        ge=1, 
+        le=10, 
+        description="Intensity rating 1-10"
+    )
+    
+    @validator('notes')
+    def validate_notes(cls, v):
+        if v is not None:
+            v = v.strip()
+            if len(v) == 0:
+                return None
+        return v
+
+class HabitCompletionCreate(HabitCompletionBase):
+    """Schema for creating a habit completion"""
+    pass
+
+class HabitCompletionUpdate(BaseModel):
+    """Schema for updating a habit completion"""
+    notes: Optional[str] = Field(None, description="Optional notes about the completion", max_length=500)
+    duration_minutes: Optional[int] = Field(None, ge=1, le=1440, description="Duration in minutes")
+    intensity_rating: Optional[int] = Field(None, ge=1, le=10, description="Intensity rating 1-10")
+
+class HabitCompletion(HabitCompletionBase):
+    id: int = Field(..., description="Unique completion ID")
+    habit_id: int = Field(..., description="Associated habit ID")
+    completion_time: datetime = Field(..., description="Exact timestamp of completion")
+    created_at: datetime = Field(..., description="Creation timestamp")
+
+    class Config:
+        from_attributes = True
+
+## Habit Progress Schemas
+class HabitProgress(BaseModel):
+    """Schema for habit progress within a period"""
+    habit_id: int = Field(..., description="Habit ID")
+    period_start: datetime = Field(..., description="Start of the period")
+    period_end: datetime = Field(..., description="End of the period")
+    target_count: int = Field(..., description="Target completions for this period")
+    actual_count: int = Field(..., description="Actual completions in this period")
+    completion_rate: float = Field(..., ge=0.0, le=1.0, description="Completion rate (0.0-1.0)")
+    is_completed: bool = Field(..., description="Whether target was met")
+    completions: List[HabitCompletion] = Field(default_factory=list, description="Individual completions")
+
+class HabitOut(Habit):
+    """Enhanced habit output schema with progress information"""
+    current_period_progress: Optional[HabitProgress] = Field(None, description="Progress for current period")
+    recent_completions: List[HabitCompletion] = Field(default_factory=list, description="Recent completions")
+    goal: Optional['Goal'] = Field(None, description="Associated goal details")
+    life_area: Optional['LifeAreaOut'] = Field(None, description="Associated life area details")
+
 class MediaAttachmentBase(BaseModel):
     filename: constr(min_length=1, max_length=255, strip_whitespace=True) = Field(
         ..., 
@@ -443,13 +636,15 @@ class MediaAttachmentBase(BaseModel):
         le=1073741824,  # 1GB max
         description="File size in bytes (max 1GB)"
     )
-    mime_type: constr(min_length=1, max_length=100, strip_whitespace=True) = Field(
+    content_type: constr(min_length=1, max_length=100, strip_whitespace=True) = Field(
         ..., 
-        description="MIME type (e.g., image/jpeg, video/mp4)"
+        description="MIME type (e.g., image/jpeg, video/mp4)",
+        alias="mime_type"
     )
-    file_type: Literal["image", "video", "audio", "document"] = Field(
+    media_type: Literal["image", "video", "audio", "document"] = Field(
         ..., 
-        description="File category: image, video, audio, document"
+        description="File category: image, video, audio, document",
+        alias="file_type"
     )
     title: Optional[constr(max_length=200, strip_whitespace=True)] = Field(
         None, 
@@ -478,7 +673,7 @@ class MediaAttachmentBase(BaseModel):
         description="Height in pixels for images/videos (1-8192px)"
     )
     
-    @validator('mime_type')
+    @validator('content_type')
     def validate_mime_type(cls, v):
         allowed_mime_types = {
             'image': ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'],
@@ -498,15 +693,15 @@ class MediaAttachmentBase(BaseModel):
             raise ValueError('Invalid MIME type format')
         return v
     
-    @validator('file_type')
+    @validator('media_type')
     def validate_file_type_consistency(cls, v, values):
-        if 'mime_type' in values:
-            mime_type = values['mime_type']
-            if v == 'image' and not mime_type.startswith('image/'):
+        if 'content_type' in values:
+            content_type = values['content_type']
+            if v == 'image' and not content_type.startswith('image/'):
                 raise ValueError('File type and MIME type mismatch')
-            elif v == 'video' and not mime_type.startswith('video/'):
+            elif v == 'video' and not content_type.startswith('video/'):
                 raise ValueError('File type and MIME type mismatch')
-            elif v == 'audio' and not mime_type.startswith('audio/'):
+            elif v == 'audio' and not content_type.startswith('audio/'):
                 raise ValueError('File type and MIME type mismatch')
         return v
 
@@ -532,7 +727,11 @@ class MediaAttachment(MediaAttachmentBase):
     task_id: Optional[int] = Field(None, description="Associated task ID")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
-
+    
+    # Additional fields for API backward compatibility
+    mime_type: Optional[str] = Field(None, description="MIME type (alias for content_type)")
+    file_type: Optional[str] = Field(None, description="File type category (alias for media_type)")
+    
     class Config:
         from_attributes = True
 
@@ -869,5 +1068,6 @@ class PublishRequest(BaseModel):
 ProjectOut.model_rebuild()
 TaskOut.model_rebuild()
 GoalOut.model_rebuild()
+HabitOut.model_rebuild()
 UserPreferencesOut.model_rebuild()
 UserOut.model_rebuild()
