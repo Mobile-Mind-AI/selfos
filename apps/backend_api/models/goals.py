@@ -12,6 +12,7 @@ class Goal(Base):
     user_id = Column(String, ForeignKey("users.uid"), nullable=False)
     life_area_id = Column(Integer, ForeignKey("life_areas.id"), nullable=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
+    parent_id = Column(Integer, ForeignKey("goals.id"), nullable=True)
     title = Column(String, nullable=False)
     description = Column(Text)
     # Status: e.g., todo, in_progress, completed
@@ -32,6 +33,10 @@ class Goal(Base):
     media_attachments = relationship("MediaAttachment", back_populates="goal")
     journal_entries = relationship("JournalEntry", back_populates="goal", cascade="all, delete-orphan")
     tags = relationship("Tag", secondary="goal_tags", back_populates="goals")
+    
+    # Hierarchical relationships
+    parent = relationship("Goal", remote_side=[id], back_populates="children")
+    children = relationship("Goal", back_populates="parent", cascade="all, delete-orphan")
 
 
 class Project(Base):
@@ -39,6 +44,7 @@ class Project(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String, ForeignKey("users.uid"), nullable=False)
     life_area_id = Column(Integer, ForeignKey("life_areas.id"), nullable=True)
+    parent_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     title = Column(String, nullable=False)
     description = Column(Text)
     # Status: e.g., planning, active, on_hold, completed
@@ -59,6 +65,10 @@ class Project(Base):
     tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
     journal_entries = relationship("JournalEntry", back_populates="project", cascade="all, delete-orphan")
     tags = relationship("Tag", secondary="project_tags", back_populates="projects")
+    
+    # Hierarchical relationships
+    parent = relationship("Project", remote_side=[id], back_populates="children")
+    children = relationship("Project", back_populates="parent", cascade="all, delete-orphan")
 
 
 class Task(Base):
@@ -230,12 +240,16 @@ Index('ix_goals_user_created', Goal.user_id, Goal.created_at.desc())
 Index('ix_goals_user_status', Goal.user_id, Goal.status)
 Index('ix_goals_life_area_created', Goal.life_area_id, Goal.created_at.desc())
 Index('ix_goals_project_created', Goal.project_id, Goal.created_at.desc())
+Index('ix_goals_parent_id', Goal.parent_id)
+Index('ix_goals_user_parent', Goal.user_id, Goal.parent_id)
 
 # Performance indexes for Project model
 Index('ix_projects_user_created', Project.user_id, Project.created_at.desc())
 Index('ix_projects_user_status', Project.user_id, Project.status)
 Index('ix_projects_user_priority', Project.user_id, Project.priority)
 Index('ix_projects_life_area_created', Project.life_area_id, Project.created_at.desc())
+Index('ix_projects_parent_id', Project.parent_id)
+Index('ix_projects_user_parent', Project.user_id, Project.parent_id)
 
 # Performance indexes for Task model
 Index('ix_tasks_user_created', Task.user_id, Task.created_at.desc())
