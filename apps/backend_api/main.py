@@ -40,6 +40,7 @@ from routers.sync import router as sync_router
 from routers.progress import router as progress_router
 from routers.storytelling import router as storytelling_router
 from routers.analytics import router as analytics_router
+from routers.tags import router as tags_router
 
 # Import event system
 import event_consumers
@@ -117,3 +118,4 @@ app.include_router(sync_router, tags=["sync"])
 app.include_router(progress_router, prefix="/api", tags=["progress"])
 app.include_router(storytelling_router, prefix="/api", tags=["storytelling"])
 app.include_router(analytics_router, prefix="/api", tags=["analytics"])
+app.include_router(tags_router, prefix="/api", tags=["tags"])

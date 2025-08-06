@@ -31,6 +31,7 @@ class Goal(Base):
     habits = relationship("Habit", back_populates="goal")
     media_attachments = relationship("MediaAttachment", back_populates="goal")
     journal_entries = relationship("JournalEntry", back_populates="goal", cascade="all, delete-orphan")
+    tags = relationship("Tag", secondary="goal_tags", back_populates="goals")
 
 
 class Project(Base):
@@ -57,6 +58,7 @@ class Project(Base):
     goals = relationship("Goal", back_populates="project", cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
     journal_entries = relationship("JournalEntry", back_populates="project", cascade="all, delete-orphan")
+    tags = relationship("Tag", secondary="project_tags", back_populates="projects")
 
 
 class Task(Base):
@@ -104,6 +106,7 @@ class Task(Base):
     
     media_attachments = relationship("MediaAttachment", back_populates="task")
     journal_entries = relationship("JournalEntry", back_populates="task", cascade="all, delete-orphan")
+    tags = relationship("Tag", secondary="task_tags", back_populates="tasks")
 
 
 class LifeArea(Base):
@@ -172,6 +175,7 @@ class Habit(Base):
     goal = relationship("Goal", back_populates="habits")
     life_area = relationship("LifeArea", back_populates="habits")
     completions = relationship("HabitCompletion", back_populates="habit", cascade="all, delete-orphan")
+    tags = relationship("Tag", secondary="habit_tags", back_populates="habits")
 
 
 class HabitCompletion(Base):
@@ -218,6 +222,7 @@ class JournalEntry(Base):
     project = relationship("Project", back_populates="journal_entries")
     goal = relationship("Goal", back_populates="journal_entries")
     task = relationship("Task", back_populates="journal_entries")
+    tags = relationship("Tag", secondary="journal_entry_tags", back_populates="journal_entries")
 
 
 # Performance indexes for Goal model

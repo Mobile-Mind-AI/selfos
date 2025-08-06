@@ -34,6 +34,7 @@ class User(Base):
     intent_feedback = relationship("IntentFeedback", back_populates="user", cascade="all, delete-orphan")
     preferences_history = relationship("UserPreferencesHistory", back_populates="user", cascade="all, delete-orphan")
     journal_entries = relationship("JournalEntry", back_populates="user", cascade="all, delete-orphan")
+    tags = relationship("Tag", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserPreferences(Base):

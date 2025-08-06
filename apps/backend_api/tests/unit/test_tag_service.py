@@ -1,0 +1,245 @@
+"""
+Unit tests for tag service.
+"""
+import pytest
+from sqlalchemy.orm import Session
+from unittest.mock import Mock
+
+from services.tag_service import TagService
+from models.tags import Tag
+from schemas import TagCreate, TagUpdate
+from db import get_db
+
+class TestTagService:
+    """Test cases for TagService class."""
+    
+    def test_create_tag_success(self, db: Session):
+        """Test successful tag creation."""
+        mock_user = {"uid": "test_user", "email": "test@example.com"}
+        tag_data = TagCreate(name="Test Tag", color="#FF5722")
+        
+        service = TagService(db, mock_user)
+        result = service.create_tag(tag_data)
+        
+        assert result.name == "Test Tag"
+        assert result.color == "#FF5722"
+        assert result.user_id == "test_user"
+        assert result.id is not None
+        assert result.created_at is not None
+        
+    def test_create_tag_duplicate_name(self, db: Session):
+        """Test creating tag with duplicate name fails."""
+        mock_user = {"uid": "test_user", "email": "test@example.com"}
+        tag_data = TagCreate(name="Duplicate", color="#FF5722")
+        
+        service = TagService(db, mock_user)
+        # Create first tag
+        service.create_tag(tag_data)
+        
+        # Try to create duplicate
+        with pytest.raises(ValueError, match="Tag with name 'Duplicate' already exists"):
+            service.create_tag(tag_data)
+    
+    def test_get_tag_success(self, db: Session):
+        """Test successful tag retrieval."""
+        mock_user = {"uid": "test_user", "email": "test@example.com"}
+        tag_data = TagCreate(name="Test Tag", color="#FF5722")
+        
+        service = TagService(db, mock_user)
+        created_tag = service.create_tag(tag_data)
+        
+        result = service.get_tag_by_id(created_tag.id)
+        
+        assert result.id == created_tag.id
+        assert result.name == "Test Tag"
+        assert result.user_id == "test_user"
+    
+    def test_get_tag_not_found(self, db: Session):
+        """Test getting non-existent tag returns None."""
+        mock_user = {"uid": "test_user", "email": "test@example.com"}
+        service = TagService(db, mock_user)
+        
+        result = service.get_tag_by_id(999)
+        assert result is None
+    
+    def test_get_tag_different_user(self, db: Session):
+        """Test user cannot access other user's tags."""
+        user1 = {"uid": "user1", "email": "user1@example.com"}
+        user2 = {"uid": "user2", "email": "user2@example.com"}
+        
+        tag_data = TagCreate(name="Private Tag", color="#FF5722")
+        
+        service1 = TagService(db, user1)
+        created_tag = service1.create_tag(tag_data)
+        
+        # User2 should not be able to access user1's tag
+        service2 = TagService(db, user2)
+        result = service2.get_tag_by_id(created_tag.id)
+        assert result is None
+    
+    def test_list_tags_empty(self, db: Session):
+        """Test listing tags when none exist."""
+        mock_user = {"uid": "test_user", "email": "test@example.com"}
+        service = TagService(db, mock_user)
+        
+        result = service.get_tags()
+        assert result == []
+    
+    def test_list_tags_with_data(self, db: Session):
+        """Test listing tags with data."""
+        mock_user = {"uid": "test_user", "email": "test@example.com"}
+        service = TagService(db, mock_user)
+        
+        # Create multiple tags
+        tags_data = [
+            TagCreate(name="Tag 1", color="#FF5722"),
+            TagCreate(name="Tag 2", color="#2196F3"),
+            TagCreate(name="Tag 3", color="#4CAF50")
+        ]
+        
+        for tag_data in tags_data:
+            service.create_tag(tag_data)
+        
+        result = service.get_tags()
+        assert len(result) == 3
+        
+        tag_names = [tag.name for tag in result]
+        assert "Tag 1" in tag_names
+        assert "Tag 2" in tag_names
+        assert "Tag 3" in tag_names
+    
+    def test_update_tag_success(self, db: Session):
+        """Test successful tag update."""
+        mock_user = {"uid": "test_user", "email": "test@example.com"}
+        tag_data = TagCreate(name="Original Tag", color="#FF5722")
+        
+        service = TagService(db, mock_user)
+        created_tag = service.create_tag(tag_data)
+        
+        update_data = TagUpdate(name="Updated Tag", color="#2196F3")
+        result = service.update_tag(created_tag.id, update_data)
+        
+        assert result.name == "Updated Tag"
+        assert result.color == "#2196F3"
+        assert result.id == created_tag.id
+        assert result.updated_at is not None
+    
+    def test_update_tag_partial(self, db: Session):
+        """Test partial tag update."""
+        mock_user = {"uid": "test_user", "email": "test@example.com"}
+        tag_data = TagCreate(name="Original Tag", color="#FF5722")
+        
+        service = TagService(db, mock_user)
+        created_tag = service.create_tag(tag_data)
+        
+        # Only update name
+        update_data = TagUpdate(name="Updated Tag")
+        result = service.update_tag(created_tag.id, update_data)
+        
+        assert result.name == "Updated Tag"
+        assert result.color == "#FF5722"  # Should remain unchanged
+    
+    def test_update_tag_not_found(self, db: Session):
+        """Test updating non-existent tag returns None."""
+        mock_user = {"uid": "test_user", "email": "test@example.com"}
+        service = TagService(db, mock_user)
+        
+        update_data = TagUpdate(name="Updated Tag")
+        result = service.update_tag(999, update_data)
+        assert result is None
+    
+    def test_update_tag_duplicate_name(self, db: Session):
+        """Test updating tag to duplicate name fails."""
+        mock_user = {"uid": "test_user", "email": "test@example.com"}
+        service = TagService(db, mock_user)
+        
+        # Create two tags
+        tag1_data = TagCreate(name="Tag 1", color="#FF5722")
+        tag2_data = TagCreate(name="Tag 2", color="#2196F3")
+        
+        tag1 = service.create_tag(tag1_data)
+        tag2 = service.create_tag(tag2_data)
+        
+        # Try to update tag2 to have same name as tag1
+        update_data = TagUpdate(name="Tag 1")
+        with pytest.raises(ValueError, match="Tag with name 'Tag 1' already exists"):
+            service.update_tag(tag2.id, update_data)
+    
+    def test_delete_tag_success(self, db: Session):
+        """Test successful tag deletion."""
+        mock_user = {"uid": "test_user", "email": "test@example.com"}
+        tag_data = TagCreate(name="Tag to Delete", color="#FF5722")
+        
+        service = TagService(db, mock_user)
+        created_tag = service.create_tag(tag_data)
+        
+        result = service.delete_tag(created_tag.id)
+        assert result is True
+        
+        # Verify tag is deleted
+        deleted_tag = service.get_tag_by_id(created_tag.id)
+        assert deleted_tag is None
+    
+    def test_delete_tag_not_found(self, db: Session):
+        """Test deleting non-existent tag returns False."""
+        mock_user = {"uid": "test_user", "email": "test@example.com"}
+        service = TagService(db, mock_user)
+        
+        result = service.delete_tag(999)
+        assert result is False
+    
+    def test_delete_tag_different_user(self, db: Session):
+        """Test user cannot delete other user's tags."""
+        user1 = {"uid": "user1", "email": "user1@example.com"}
+        user2 = {"uid": "user2", "email": "user2@example.com"}
+        
+        tag_data = TagCreate(name="Private Tag", color="#FF5722")
+        
+        service1 = TagService(db, user1)
+        created_tag = service1.create_tag(tag_data)
+        
+        # User2 should not be able to delete user1's tag
+        service2 = TagService(db, user2)
+        result = service2.delete_tag(created_tag.id)
+        assert result is False
+        
+        # Tag should still exist for user1
+        existing_tag = service1.get_tag_by_id(created_tag.id)
+        assert existing_tag is not None
+    
+    def test_user_isolation(self, db: Session):
+        """Test that users can only see their own tags."""
+        user1 = {"uid": "user1", "email": "user1@example.com"}
+        user2 = {"uid": "user2", "email": "user2@example.com"}
+        
+        service1 = TagService(db, user1)
+        service2 = TagService(db, user2)
+        
+        # User1 creates tags
+        tag1_data = TagCreate(name="User1 Tag1", color="#FF5722")
+        tag2_data = TagCreate(name="User1 Tag2", color="#2196F3")
+        service1.create_tag(tag1_data)
+        service1.create_tag(tag2_data)
+        
+        # User2 creates tags
+        tag3_data = TagCreate(name="User2 Tag1", color="#4CAF50")
+        service2.create_tag(tag3_data)
+        
+        # Each user should only see their own tags
+        user1_tags = service1.get_tags()
+        user2_tags = service2.get_tags()
+        
+        assert len(user1_tags) == 2
+        assert len(user2_tags) == 1
+        
+        user1_tag_names = [tag.name for tag in user1_tags]
+        user2_tag_names = [tag.name for tag in user2_tags]
+        
+        assert "User1 Tag1" in user1_tag_names
+        assert "User1 Tag2" in user1_tag_names
+        assert "User2 Tag1" in user2_tag_names
+        
+        # Cross-contamination check
+        assert "User2 Tag1" not in user1_tag_names
+        assert "User1 Tag1" not in user2_tag_names
+        assert "User1 Tag2" not in user2_tag_names

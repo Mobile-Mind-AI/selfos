@@ -164,6 +164,7 @@ class GoalBase(BaseModel):
 class GoalCreate(GoalBase):
     """Schema for creating a new Goal"""
     project_id: Optional[int] = Field(None, gt=0, description="Associated project ID (positive integer)")
+    tag_ids: Optional[List[int]] = Field(default_factory=list, description="List of tag IDs to associate")
 
 class Goal(GoalBase):
     id: int = Field(..., description="Unique goal ID")
@@ -220,7 +221,7 @@ class ProjectBase(BaseModel):
 
 class ProjectCreate(ProjectBase):
     """Schema for creating a new Project"""
-    pass
+    tag_ids: Optional[List[int]] = Field(default_factory=list, description="List of tag IDs to associate")
 
 class Project(ProjectBase):
     id: int = Field(..., description="Unique project ID")
@@ -307,6 +308,7 @@ class TaskBase(BaseModel):
 class TaskCreate(TaskBase):
     goal_id: Optional[int] = Field(None, description="Parent goal ID")
     project_id: Optional[int] = Field(None, description="Parent project ID")
+    tag_ids: Optional[List[int]] = Field(default_factory=list, description="List of tag IDs to associate")
     
     @root_validator(skip_on_failure=True)
     def validate_parent_reference(cls, values):
@@ -1011,6 +1013,80 @@ class FeedbackLogSummary(BaseModel):
     average_score: Optional[float] = Field(None, description="Average feedback score")
     context_breakdown: Dict[str, int] = Field(..., description="Breakdown by context type")
     recent_feedback: List[FeedbackLog] = Field(..., description="Most recent feedback entries")
+
+## Tag Schemas
+class TagBase(BaseModel):
+    name: constr(min_length=1, max_length=50, strip_whitespace=True) = Field(
+        ..., 
+        description="Name of the tag (1-50 characters)"
+    )
+    color: Optional[constr(max_length=7, strip_whitespace=True)] = Field(
+        None, 
+        description="Hex color code for UI (e.g., '#FF5722')"
+    )
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Tag name cannot be empty')
+        return v.strip()
+    
+    @validator('color')
+    def validate_color(cls, v):
+        if v is not None:
+            v = v.strip()
+            # Basic hex color validation
+            if v.startswith('#') and len(v) == 7:
+                if not all(c in '0123456789ABCDEFabcdef' for c in v[1:]):
+                    raise ValueError('Invalid hex color format')
+            else:
+                raise ValueError('Color must be a hex code like #FF5722')
+            return v
+        return v
+
+class TagCreate(TagBase):
+    """Schema for creating a new Tag"""
+    pass
+
+class TagUpdate(BaseModel):
+    """Schema for updating a Tag (all fields optional)"""
+    name: Optional[str] = Field(None, description="Name of the tag", min_length=1, max_length=50)
+    color: Optional[str] = Field(None, description="Hex color code for UI", max_length=7)
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if v is not None:
+            v = v.strip()
+            if len(v) == 0:
+                raise ValueError('Tag name cannot be empty')
+        return v
+    
+    @validator('color')
+    def validate_color(cls, v):
+        if v is not None:
+            v = v.strip()
+            # Basic hex color validation
+            if v.startswith('#') and len(v) == 7:
+                if not all(c in '0123456789ABCDEFabcdef' for c in v[1:]):
+                    raise ValueError('Invalid hex color format')
+            else:
+                raise ValueError('Color must be a hex code like #FF5722')
+            return v
+        return v
+
+class Tag(TagBase):
+    id: int = Field(..., description="Unique tag ID")
+    user_id: str = Field(..., description="Owner user ID")
+    version: int = Field(..., description="Version for sync")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+    class Config:
+        from_attributes = True
+
+class TagOut(Tag):
+    """Enhanced tag output schema"""
+    usage_count: Optional[int] = Field(None, description="Number of entities using this tag")
 
 ## StorySession Schemas
 class StorySessionBase(BaseModel):

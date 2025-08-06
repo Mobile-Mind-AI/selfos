@@ -100,6 +100,12 @@ try:
     JournalEntryUpdate = parent_schemas.JournalEntryUpdate
     JournalEntryOut = parent_schemas.JournalEntryOut
     
+    # Tag schemas
+    Tag = parent_schemas.Tag
+    TagCreate = parent_schemas.TagCreate
+    TagUpdate = parent_schemas.TagUpdate
+    TagOut = parent_schemas.TagOut
+    
     # Export all imported schemas
     __all__ = [
         'RegisterRequest', 'LoginRequest', 'TokenResponse', 'AuthResponse', 'User', 'UserOut', 'UserCreate',
@@ -113,7 +119,8 @@ try:
         'StorySession', 'StorySessionCreate', 'StorySessionUpdate', 'StorySessionSummary', 'GenerationRequest', 'PublishRequest',
         'RecurrenceRule', 'Habit', 'HabitCreate', 'HabitUpdate', 'HabitOut', 'HabitCompletion', 'HabitCompletionCreate', 'HabitCompletionUpdate', 'HabitProgress',
         'UserPreferencesHistoryItem', 'UserPreferencesChangeSummary',
-        'JournalEntry', 'JournalEntryCreate', 'JournalEntryUpdate', 'JournalEntryOut'
+        'JournalEntry', 'JournalEntryCreate', 'JournalEntryUpdate', 'JournalEntryOut',
+        'Tag', 'TagCreate', 'TagUpdate', 'TagOut'
     ]
     
 except (ImportError, AttributeError) as e:

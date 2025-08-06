@@ -29,7 +29,7 @@ from models import (
     MediaAttachment, MemoryItem, StorySession, FeedbackLog, PersonalProfile, 
     CustomLifeArea, OnboardingAnalytics, AssistantProfile, OnboardingState,
     ConversationLog, ConversationSession, IntentFeedback, AvatarImage,
-    UserPreferences, UserPreferencesHistory
+    UserPreferences, UserPreferencesHistory, Tag
 )
 from main import app
 from dependencies import get_db, get_current_user
@@ -332,6 +332,17 @@ def mock_user():
         "email": "testuser@example.com",
         "roles": ["user"]
     }
+
+
+@pytest.fixture(scope="function")
+def db(isolated_test_setup):
+    """Provide a database session for tests that need real DB access"""
+    setup = isolated_test_setup
+    session = setup["session_local"]()
+    try:
+        yield session
+    finally:
+        session.close()
 
 
 @pytest.fixture(autouse=True)

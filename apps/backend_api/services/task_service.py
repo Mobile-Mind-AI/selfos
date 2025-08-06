@@ -81,7 +81,7 @@ class TaskService:
     def create_task(self, db: Session, user_id: str, task_data: schemas.TaskCreate) -> models.Task:
         """
         Create a new task for a user.
-        
+
         Args:
             db: Database session
             user_id: ID of the user creating the task
@@ -91,11 +91,20 @@ class TaskService:
             Created task model instance
         """
         try:
-            task_payload = task_data.dict(exclude={"dependencies"})
+            # Exclude fields that need special handling
+            task_payload = task_data.dict(exclude={"dependencies", "tag_ids"})
             db_task = models.Task(**task_payload, user_id=user_id)
 
             if task_data.dependencies:
                 db_task.depends_on_task_id = task_data.dependencies[0]
+
+            # Handle tags if provided
+            if task_data.tag_ids:
+                tags = db.query(models.Tag).filter(
+                    models.Tag.id.in_(task_data.tag_ids),
+                    models.Tag.user_id == user_id
+                ).all()
+                db_task.tags = tags
             
             db.add(db_task)
             db.commit()
@@ -150,6 +159,15 @@ class TaskService:
                 task.depends_on_task_id = task_data.dependencies[0]
             else:
                 task.depends_on_task_id = None
+
+            # Handle tags if provided
+            if hasattr(task_data, 'tag_ids') and task_data.tag_ids is not None:
+                tags = db.query(models.Tag).filter(
+                    models.Tag.id.in_(task_data.tag_ids),
+                    models.Tag.user_id == user_id
+                ).all()
+                task.tags = tags
+
             task.updated_at = datetime.utcnow()
             
             db.commit()
