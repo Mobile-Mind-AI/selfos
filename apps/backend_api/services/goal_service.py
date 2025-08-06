@@ -473,6 +473,64 @@ class GoalService:
             logger.error(f"Database error moving goal {goal_id}: {e}")
             db.rollback()
             raise
+    
+    def get_goal_tree(self, db: Session, user_id: str) -> List[schemas.HierarchyTreeNode]:
+        """
+        Get complete hierarchical tree of goals for a user.
+        
+        Args:
+            db: Database session
+            user_id: ID of the user
+            
+        Returns:
+            List of HierarchyTreeNode representing the complete goal hierarchy
+        """
+        try:
+            root_goals = self.get_root_goals(db, user_id)
+            tree = []
+            
+            for root in root_goals:
+                tree_node = self._build_goal_tree_node(db, user_id, root)
+                tree.append(tree_node)
+            
+            logger.info(f"Built goal tree with {len(tree)} root nodes for user {user_id}")
+            return tree
+            
+        except Exception as e:
+            logger.error(f"Error building goal tree for user {user_id}: {e}")
+            raise
+    
+    def _build_goal_tree_node(self, db: Session, user_id: str, goal: models.Goal) -> schemas.HierarchyTreeNode:
+        """
+        Recursively build a tree node for a goal and its descendants.
+        
+        Args:
+            db: Database session
+            user_id: ID of the user
+            goal: Goal model instance
+            
+        Returns:
+            HierarchyTreeNode with nested children
+        """
+        # Get direct children
+        children = self.get_goal_children(db, user_id, goal.id)
+        child_nodes = []
+        
+        for child in children:
+            child_node = self._build_goal_tree_node(db, user_id, child)
+            child_nodes.append(child_node)
+        
+        return schemas.HierarchyTreeNode(
+            id=goal.id,
+            title=goal.title,
+            entity_type="goal",
+            level=0,  # Level will be calculated by the caller if needed
+            parent_id=goal.parent_id,
+            children=child_nodes,
+            status=goal.status,
+            progress=goal.progress,
+            created_at=goal.created_at
+        )
 
 
 # Create a singleton instance of the service

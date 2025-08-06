@@ -78,6 +78,7 @@ class Task(Base):
     goal_id = Column(Integer, ForeignKey("goals.id"), nullable=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     life_area_id = Column(Integer, ForeignKey("life_areas.id"), nullable=True)
+    parent_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
     
     title = Column(String, nullable=False)
     description = Column(Text)
@@ -111,8 +112,12 @@ class Task(Base):
     project = relationship("Project", back_populates="tasks")
     life_area = relationship("LifeArea", back_populates="tasks")
     
-    # Self-referential relationship for dependencies
-    dependent_task = relationship("Task", remote_side=[id], backref="blocking_tasks")
+    # Self-referential relationship for dependencies - specify foreign_keys
+    dependent_task = relationship("Task", remote_side=[id], foreign_keys=[depends_on_task_id], backref="blocking_tasks")
+    
+    # Hierarchical relationships - specify foreign_keys
+    parent = relationship("Task", remote_side=[id], foreign_keys=[parent_id], back_populates="children")
+    children = relationship("Task", foreign_keys=[parent_id], back_populates="parent", cascade="all, delete-orphan")
     
     media_attachments = relationship("MediaAttachment", back_populates="task")
     journal_entries = relationship("JournalEntry", back_populates="task", cascade="all, delete-orphan")
@@ -258,6 +263,8 @@ Index('ix_tasks_goal_created', Task.goal_id, Task.created_at.desc())
 Index('ix_tasks_project_created', Task.project_id, Task.created_at.desc())
 Index('ix_tasks_due_date', Task.due_date)
 Index('ix_tasks_completed', Task.completed_at)
+Index('ix_tasks_parent_id', Task.parent_id)
+Index('ix_tasks_user_parent', Task.user_id, Task.parent_id)
 
 # Performance indexes for LifeArea model
 Index('ix_life_areas_user_created', LifeArea.user_id, LifeArea.created_at.desc())

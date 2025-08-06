@@ -242,6 +242,7 @@ class ProjectCreate(ProjectBase):
 class Project(ProjectBase):
     id: int = Field(..., description="Unique project ID")
     user_id: str = Field(..., description="Owner user ID")
+    parent_id: Optional[int] = Field(None, description="Parent project ID for hierarchical organization")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -324,7 +325,15 @@ class TaskBase(BaseModel):
 class TaskCreate(TaskBase):
     goal_id: Optional[int] = Field(None, description="Parent goal ID")
     project_id: Optional[int] = Field(None, description="Parent project ID")
+    parent_id: Optional[int] = Field(None, gt=0, description="Parent task ID for hierarchical organization")
     tag_ids: Optional[List[int]] = Field(default_factory=list, description="List of tag IDs to associate")
+    
+    @validator('parent_id')
+    def validate_parent_id(cls, v, values):
+        # Cannot be parent of itself (will be validated in service layer)
+        if v is not None and v <= 0:
+            raise ValueError('Parent ID must be a positive integer')
+        return v
     
     @root_validator(skip_on_failure=True)
     def validate_parent_reference(cls, values):
@@ -876,10 +885,8 @@ class ProjectOut(Project):
     media: List['MediaAttachmentOut'] = Field(default_factory=list, description="Associated media attachments")
     life_area: Optional['LifeAreaOut'] = Field(None, description="Associated life area details")
     
-    # Hierarchy fields
+    # Hierarchy fields (without circular references)
     parent_id: Optional[int] = Field(None, description="Parent project ID")
-    parent: Optional['ProjectOut'] = Field(None, description="Parent project details")
-    children: List['ProjectOut'] = Field(default_factory=list, description="Child projects")
     hierarchy_level: Optional[int] = Field(None, ge=0, description="Hierarchy level (0 = root)")
     children_count: Optional[int] = Field(None, ge=0, description="Number of direct children")
 
@@ -888,6 +895,11 @@ class TaskOut(Task):
     media: List['MediaAttachmentOut'] = Field(default_factory=list, description="Associated media attachments")
     life_area: Optional['LifeAreaOut'] = Field(None, description="Associated life area details")
     project: Optional['ProjectOut'] = Field(None, description="Associated project details")
+    
+    # Hierarchy fields (without circular references)
+    parent_id: Optional[int] = Field(None, description="Parent task ID")
+    hierarchy_level: Optional[int] = Field(None, ge=0, description="Hierarchy level (0 = root)")
+    children_count: Optional[int] = Field(None, ge=0, description="Number of direct children")
 
 class GoalOut(Goal):
     """Enhanced goal output schema with nested relationships"""
@@ -896,10 +908,8 @@ class GoalOut(Goal):
     life_area: Optional['LifeAreaOut'] = Field(None, description="Associated life area details")
     project: Optional['ProjectOut'] = Field(None, description="Associated project details")
     
-    # Hierarchy fields
+    # Hierarchy fields (without circular references)
     parent_id: Optional[int] = Field(None, description="Parent goal ID")
-    parent: Optional['GoalOut'] = Field(None, description="Parent goal details")
-    children: List['GoalOut'] = Field(default_factory=list, description="Child goals")
     hierarchy_level: Optional[int] = Field(None, ge=0, description="Hierarchy level (0 = root)")
     children_count: Optional[int] = Field(None, ge=0, description="Number of direct children")
 

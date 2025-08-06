@@ -91,6 +91,11 @@ class TaskService:
             Created task model instance
         """
         try:
+            # Validate parent_id if provided
+            if task_data.parent_id:
+                if not self.get_task(db, user_id, task_data.parent_id):
+                    raise ValueError(f"Parent task {task_data.parent_id} not found")
+            
             # Exclude fields that need special handling
             task_payload = task_data.dict(exclude={"dependencies", "tag_ids"})
             db_task = models.Task(**task_payload, user_id=user_id)
@@ -110,9 +115,9 @@ class TaskService:
             db.commit()
             db.refresh(db_task)
             
-            logger.info(f"Created task {db_task.id} '{db_task.title}' for user {user_id}")
+            logger.info(f"Created task {db_task.id} '{db_task.title}' for user {user_id} (parent: {task_data.parent_id})")
             return db_task
-        except SQLAlchemyError as e:
+        except (SQLAlchemyError, ValueError) as e:
             logger.error(f"Database error creating task for user {user_id}: {e}")
             db.rollback()
             raise
@@ -296,12 +301,12 @@ class TaskService:
     def get_tasks_by_status(self, db: Session, user_id: str, status: str) -> List[models.Task]:
         """
         Retrieve all tasks with a specific status.
-        
+
         Args:
             db: Database session
             user_id: ID of the user
             status: Task status to filter by
-            
+
         Returns:
             List of tasks with the specified status
         """
@@ -313,12 +318,242 @@ class TaskService:
                 models.Task.user_id == user_id,
                 models.Task.status == status
             ).all()
-            
+
             logger.info(f"Retrieved {len(tasks)} tasks with status '{status}' for user {user_id}")
             return tasks
         except SQLAlchemyError as e:
             logger.error(f"Database error retrieving tasks with status '{status}': {e}")
             raise
+    
+    # Hierarchy methods
+    def get_children(self, db: Session, user_id: str, parent_id: int) -> List[models.Task]:
+        """Get direct children of a task."""
+        try:
+            children = db.query(models.Task).options(
+                joinedload(models.Task.media_attachments),
+                joinedload(models.Task.life_area)
+            ).filter(
+                models.Task.parent_id == parent_id,
+                models.Task.user_id == user_id
+            ).order_by(models.Task.created_at.asc()).all()
+            
+            logger.info(f"Retrieved {len(children)} children for task {parent_id}, user {user_id}")
+            return children
+        except SQLAlchemyError as e:
+            logger.error(f"Database error getting children for task {parent_id}: {e}")
+            raise
+    
+    def get_descendants(self, db: Session, user_id: str, parent_id: int) -> List[models.Task]:
+        """Get all descendants of a task recursively."""
+        try:
+            descendants = []
+            children = self.get_children(db, user_id, parent_id)
+            
+            for child in children:
+                descendants.append(child)
+                # Recursively get descendants
+                child_descendants = self.get_descendants(db, user_id, child.id)
+                descendants.extend(child_descendants)
+            
+            logger.info(f"Retrieved {len(descendants)} descendants for task {parent_id}, user {user_id}")
+            return descendants
+        except Exception as e:
+            logger.error(f"Error getting descendants for task {parent_id}: {e}")
+            raise
+    
+    def get_ancestors(self, db: Session, user_id: str, task_id: int) -> List[models.Task]:
+        """Get all ancestors of a task up to root."""
+        try:
+            ancestors = []
+            current_task = self.get_task(db, user_id, task_id)
+            
+            while current_task and current_task.parent_id:
+                parent = self.get_task(db, user_id, current_task.parent_id)
+                if parent:
+                    ancestors.append(parent)
+                    current_task = parent
+                else:
+                    break
+            
+            logger.info(f"Retrieved {len(ancestors)} ancestors for task {task_id}, user {user_id}")
+            return list(reversed(ancestors))  # Root first
+        except Exception as e:
+            logger.error(f"Error getting ancestors for task {task_id}: {e}")
+            raise
+    
+    def get_root_tasks(self, db: Session, user_id: str, project_id: Optional[int] = None, goal_id: Optional[int] = None) -> List[models.Task]:
+        """Get root level tasks (parent_id = None)."""
+        try:
+            query = db.query(models.Task).options(
+                joinedload(models.Task.media_attachments),
+                joinedload(models.Task.life_area)
+            ).filter(
+                models.Task.user_id == user_id,
+                models.Task.parent_id.is_(None)
+            )
+            
+            if project_id:
+                query = query.filter(models.Task.project_id == project_id)
+            if goal_id:
+                query = query.filter(models.Task.goal_id == goal_id)
+                
+            root_tasks = query.order_by(models.Task.created_at.asc()).all()
+            
+            logger.info(f"Retrieved {len(root_tasks)} root tasks for user {user_id}")
+            return root_tasks
+        except SQLAlchemyError as e:
+            logger.error(f"Database error getting root tasks for user {user_id}: {e}")
+            raise
+    
+    def validate_hierarchy_move(self, db: Session, user_id: str, task_id: int, new_parent_id: Optional[int]) -> bool:
+        """Validate that moving a task won't create a circular dependency."""
+        if new_parent_id is None:
+            return True  # Moving to root is always valid
+        
+        if task_id == new_parent_id:
+            return False  # Cannot be parent of itself
+        
+        # Check if new_parent_id is a descendant of task_id
+        descendants = self.get_descendants(db, user_id, task_id)
+        descendant_ids = {desc.id for desc in descendants}
+        
+        return new_parent_id not in descendant_ids
+    
+    def move_task(self, db: Session, user_id: str, task_id: int, new_parent_id: Optional[int]) -> Optional[models.Task]:
+        """Move a task to a new parent in the hierarchy."""
+        try:
+            # Validate the move
+            if not self.validate_hierarchy_move(db, user_id, task_id, new_parent_id):
+                raise ValueError("Invalid hierarchy move: would create circular dependency")
+            
+            # Get the task
+            task = self.get_task(db, user_id, task_id)
+            if not task:
+                return None
+            
+            # If new parent is specified, verify it exists and belongs to user
+            if new_parent_id:
+                parent = self.get_task(db, user_id, new_parent_id)
+                if not parent:
+                    raise ValueError(f"Parent task {new_parent_id} not found")
+                
+                # Ensure parent and child have compatible project/goal associations
+                if task.project_id != parent.project_id and parent.project_id is not None:
+                    task.project_id = parent.project_id
+                if task.goal_id != parent.goal_id and parent.goal_id is not None:
+                    task.goal_id = parent.goal_id
+            
+            # Update parent
+            task.parent_id = new_parent_id
+            task.updated_at = datetime.utcnow()
+            
+            db.commit()
+            db.refresh(task)
+            
+            logger.info(f"Moved task {task_id} to parent {new_parent_id} for user {user_id}")
+            return task
+        except (SQLAlchemyError, ValueError) as e:
+            logger.error(f"Error moving task {task_id}: {e}")
+            db.rollback()
+            raise
+    
+    def get_task_tree(self, db: Session, user_id: str, root_id: Optional[int] = None, project_id: Optional[int] = None, goal_id: Optional[int] = None) -> List[dict]:
+        """Get hierarchical tree of tasks."""
+        try:
+            def build_tree_node(task: models.Task, level: int = 0) -> dict:
+                children = self.get_children(db, user_id, task.id)
+                return {
+                    'id': task.id,
+                    'title': task.title,
+                    'status': task.status,
+                    'progress': task.progress,
+                    'level': level,
+                    'parent_id': task.parent_id,
+                    'created_at': task.created_at,
+                    'children': [build_tree_node(child, level + 1) for child in children],
+                    'children_count': len(children)
+                }
+            
+            if root_id:
+                # Start from specific root
+                root_task = self.get_task(db, user_id, root_id)
+                if not root_task:
+                    return []
+                return [build_tree_node(root_task)]
+            else:
+                # Get all root level tasks
+                root_tasks = self.get_root_tasks(db, user_id, project_id, goal_id)
+                return [build_tree_node(task) for task in root_tasks]
+                
+        except Exception as e:
+            logger.error(f"Error building task tree for user {user_id}: {e}")
+            raise
+    
+    def get_hierarchy_stats(self, db: Session, user_id: str, project_id: Optional[int] = None, goal_id: Optional[int] = None) -> dict:
+        """Get hierarchy statistics for tasks."""
+        try:
+            query = db.query(models.Task).filter(models.Task.user_id == user_id)
+            
+            if project_id:
+                query = query.filter(models.Task.project_id == project_id)
+            if goal_id:
+                query = query.filter(models.Task.goal_id == goal_id)
+                
+            all_tasks = query.all()
+            
+            # Calculate statistics
+            total_tasks = len(all_tasks)
+            root_tasks = [t for t in all_tasks if t.parent_id is None]
+            
+            # Calculate max depth
+            max_depth = 0
+            for root_task in root_tasks:
+                depth = self._calculate_depth(db, user_id, root_task.id)
+                max_depth = max(max_depth, depth)
+            
+            # Calculate completion by level
+            completion_by_level = {}
+            for task in all_tasks:
+                level = self._get_task_level(db, user_id, task.id)
+                if level not in completion_by_level:
+                    completion_by_level[level] = {'total': 0, 'completed': 0}
+                completion_by_level[level]['total'] += 1
+                if task.status == 'completed':
+                    completion_by_level[level]['completed'] += 1
+            
+            # Convert to completion rates
+            completion_rates = {}
+            for level, stats in completion_by_level.items():
+                completion_rates[level] = stats['completed'] / stats['total'] if stats['total'] > 0 else 0.0
+            
+            return {
+                'total_items': total_tasks,
+                'root_items': len(root_tasks),
+                'max_depth': max_depth,
+                'completion_rate_by_level': completion_rates
+            }
+            
+        except Exception as e:
+            logger.error(f"Error calculating hierarchy stats for user {user_id}: {e}")
+            raise
+    
+    def _calculate_depth(self, db: Session, user_id: str, task_id: int, current_depth: int = 0) -> int:
+        """Calculate the maximum depth of a task subtree."""
+        children = self.get_children(db, user_id, task_id)
+        if not children:
+            return current_depth
+        
+        max_child_depth = current_depth
+        for child in children:
+            child_depth = self._calculate_depth(db, user_id, child.id, current_depth + 1)
+            max_child_depth = max(max_child_depth, child_depth)
+        
+        return max_child_depth
+    
+    def _get_task_level(self, db: Session, user_id: str, task_id: int) -> int:
+        """Get the hierarchy level of a task (0 = root)."""
+        ancestors = self.get_ancestors(db, user_id, task_id)
+        return len(ancestors)
     
     async def _handle_task_completion(self, db: Session, task: models.Task, old_status: str):
         """

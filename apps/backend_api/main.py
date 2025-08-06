@@ -96,8 +96,8 @@ async def on_shutdown():
 # Register routers
 app.include_router(health_router)
 app.include_router(auth_router, prefix="/auth", tags=["authentication"])
-app.include_router(goals_router, prefix="/api", tags=["goals"])
-app.include_router(projects_router, prefix="/api", tags=["projects"])
+app.include_router(goals_router, prefix="/api")
+app.include_router(projects_router, prefix="/api")
 app.include_router(tasks_router, prefix="/api", tags=["tasks"])
 app.include_router(habits_router, prefix="/api", tags=["habits"])
 app.include_router(journal_router, prefix="/api/journal", tags=["journal"])
