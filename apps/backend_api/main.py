@@ -20,8 +20,8 @@ from routers.auth import router as auth_router
 from routers.goals import router as goals_router
 from routers.projects import router as projects_router
 from routers.tasks import router as tasks_router
-from routers.habits import router as habits_router
-from routers.journal import router as journal_router
+# from routers.habits import router as habits_router  # TODO: Create habit_service first
+# from routers.journal import router as journal_router  # TODO: Create journal_service first
 from routers.life_areas import router as life_areas_router
 from routers.media_attachments import router as media_attachments_router
 from routers.user_preferences import router as user_preferences_router
@@ -31,16 +31,9 @@ from routers.health import router as health_router
 from routers.ai import router as ai_router
 from routers.conversation import router as conversation_router
 from routers.assistant_profiles import router as assistant_profiles_router
-from routers.onboarding import router as onboarding_router
 from routers.avatars import router as avatars_router
 from routers.assistant import router as assistant_router
-from routers.personal_config import router as personal_config_router
-from routers.assistant_permissions import router as assistant_permissions_router
-from routers.sync import router as sync_router
-from routers.progress import router as progress_router
-from routers.storytelling import router as storytelling_router
-from routers.analytics import router as analytics_router
-from routers.tags import router as tags_router
+# from routers.entities import router as entities_router  # TODO: Create entities router
 
 # Import event system
 import event_consumers
@@ -99,8 +92,8 @@ app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 app.include_router(goals_router, prefix="/api")
 app.include_router(projects_router, prefix="/api")
 app.include_router(tasks_router, prefix="/api", tags=["tasks"])
-app.include_router(habits_router, prefix="/api", tags=["habits"])
-app.include_router(journal_router, prefix="/api/journal", tags=["journal"])
+# app.include_router(habits_router, prefix="/api", tags=["habits"])  # TODO: Enable when habit_service is ready
+# app.include_router(journal_router, prefix="/api/journal", tags=["journal"])  # TODO: Enable when journal_service is ready
 app.include_router(life_areas_router, prefix="/api", tags=["life_areas"])
 app.include_router(media_attachments_router, prefix="/api", tags=["media"])
 app.include_router(user_preferences_router, prefix="/api", tags=["preferences"])
@@ -109,13 +102,6 @@ app.include_router(story_sessions_router, prefix="/api", tags=["stories"])
 app.include_router(ai_router, prefix="/api", tags=["ai"])
 app.include_router(conversation_router, tags=["conversation"])
 app.include_router(assistant_profiles_router, prefix="/api", tags=["assistant_profiles"])
-app.include_router(onboarding_router, prefix="/api", tags=["onboarding"])
 app.include_router(avatars_router, tags=["avatars"])
 app.include_router(assistant_router, tags=["assistant"])
-app.include_router(personal_config_router, prefix="/api/personal-config", tags=["personal-config"])
-app.include_router(assistant_permissions_router, prefix="/api", tags=["assistant-permissions"])
-app.include_router(sync_router, tags=["sync"])
-app.include_router(progress_router, prefix="/api", tags=["progress"])
-app.include_router(storytelling_router, prefix="/api", tags=["storytelling"])
-app.include_router(analytics_router, prefix="/api", tags=["analytics"])
-app.include_router(tags_router, prefix="/api", tags=["tags"])
+# app.include_router(entities_router, prefix="/api", tags=["entities"])  # TODO: Enable when entities router is ready

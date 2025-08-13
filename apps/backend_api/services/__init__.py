@@ -9,10 +9,8 @@ and provide intelligent features for the SelfOS platform.
 from .goal_service import goal_service
 from .project_service import project_service
 from .task_service import task_service
-from .habit_service import habit_service
-from .tag_service import tag_service
-from .journal_service import journal_service
 from .preferences_service import preferences_service
+from .entity_extraction import entity_extraction_service
 
 # Import AI-oriented services
 from . import progress
@@ -26,10 +24,8 @@ __all__ = [
     'goal_service',
     'project_service', 
     'task_service',
-    'habit_service',
-    'tag_service',
-    'journal_service',
     'preferences_service',
+    'entity_extraction_service',
     # AI services
     'progress',
     'storytelling',

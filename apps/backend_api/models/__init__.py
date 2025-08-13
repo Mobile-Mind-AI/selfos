@@ -1,33 +1,73 @@
 """
 Models package for SelfOS Backend API
 
-This package contains all SQLAlchemy models organized by domain:
-- base: Common imports and base setup
-- user: User model and user-related models  
-- goals: Goal, Project, Task models
-- content: Media, Memory, Story models
-- onboarding: Onboarding, PersonalProfile, CustomLifeArea models
-- analytics: Analytics and feedback models
+This package contains all SQLAlchemy models organized by domain.
 """
 
-# Import db and Base first
-from db import Base
+# Import Base first
+from .base import Base
 
-# Import all models to ensure they are registered with SQLAlchemy
-from .user import User, UserPreferences, UserPreferencesHistory
-from .goals import Goal, Project, Task, LifeArea, Habit, HabitCompletion, JournalEntry
-from .tags import Tag, project_tags, goal_tags, task_tags, habit_tags, journal_entry_tags
-from .content import AvatarImage, MediaAttachment, MemoryItem, StorySession, FeedbackLog
-from .onboarding import PersonalProfile, CustomLifeArea, OnboardingAnalytics, AssistantProfile, OnboardingState
+# Import User model
+from .user import User
+
+# Import all domain models
+from .goals import Goal
+from .projects import Project
+from .tasks import Task
+from .life_areas import LifeArea
+from .preferences import UserPreferences, UserPreferencesHistory
+from .assistant import AssistantProfile
 from .conversation import ConversationLog, ConversationSession, IntentFeedback
+from .content import MediaAttachment, MemoryItem, StorySession, FeedbackLog
+from .entities import (
+    EntityType, Entity, EntityRelationship,
+    GoalEntity, ProjectEntity, TaskEntity
+)
+from .journal import JournalEntry
+from .habits import Habit, HabitCompletion
+from .tags import Tag
 
 # Export all models for easy importing
 __all__ = [
+    # Base
     'Base',
-    'User', 'UserPreferences', 'UserPreferencesHistory',
-    'Goal', 'Project', 'Task', 'LifeArea', 'Habit', 'HabitCompletion', 'JournalEntry',
-    'Tag', 'project_tags', 'goal_tags', 'task_tags', 'habit_tags', 'journal_entry_tags',
-    'AvatarImage', 'MediaAttachment', 'MemoryItem', 'StorySession', 'FeedbackLog',
-    'PersonalProfile', 'CustomLifeArea', 'OnboardingAnalytics', 'AssistantProfile', 'OnboardingState',
-    'ConversationLog', 'ConversationSession', 'IntentFeedback'
+    
+    # User
+    'User',
+    
+    # Goals & Planning
+    'Goal',
+    'Project', 
+    'Task',
+    'LifeArea',
+    
+    # User Configuration
+    'UserPreferences',
+    'UserPreferencesHistory',
+    'AssistantProfile',
+    
+    # Conversation & AI
+    'ConversationLog',
+    'ConversationSession',
+    'IntentFeedback',
+    
+    # Content & Memory
+    'MemoryItem',
+    'StorySession',
+    'FeedbackLog',
+    'MediaAttachment',
+    
+    # Habits & Journal
+    'JournalEntry',
+    'Habit',
+    'HabitCompletion',
+    'Tag',
+    
+    # Knowledge Graph
+    'EntityType',
+    'Entity',
+    'EntityRelationship',
+    'GoalEntity',
+    'ProjectEntity',
+    'TaskEntity',
 ]

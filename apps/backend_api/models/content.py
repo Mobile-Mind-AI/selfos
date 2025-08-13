@@ -4,39 +4,7 @@ from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Floa
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from uuid import uuid4
-from db import Base
-
-
-class AvatarImage(Base):
-    __tablename__ = "avatar_images"
-    id = Column(String, primary_key=True, default=lambda: str(uuid4()), index=True)
-    user_id = Column(String, ForeignKey("users.uid"), nullable=False)
-    
-    # File details
-    filename = Column(String, nullable=False)
-    content_type = Column(String, nullable=False)
-    size_bytes = Column(Integer, nullable=False)
-    storage_type = Column(String, nullable=False)
-    
-    # Image data storage (either blob or URL)
-    image_data = Column(LargeBinary, nullable=True)  # For embedded storage
-    storage_url = Column(String, nullable=True)      # For external storage
-    
-    # Image dimensions
-    width = Column(Integer, nullable=True)
-    height = Column(Integer, nullable=True)
-    thumbnail_data = Column(LargeBinary, nullable=True)
-    
-    # Usage tracking
-    is_active = Column(Boolean, nullable=False, default=True)
-    usage_count = Column(Integer, nullable=False, default=0)
-    
-    # Timestamps
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    last_used_at = Column(DateTime, nullable=True)
-    
-    # Relationships
-    user = relationship("User", back_populates="avatar_images")
+from .base import Base
 
 
 class MediaAttachment(Base):
@@ -48,6 +16,10 @@ class MediaAttachment(Base):
     goal_id = Column(Integer, ForeignKey("goals.id"), nullable=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
+    journal_entry_id = Column(Integer, ForeignKey("journal_entries.id"), nullable=True)
+    
+    # Media category for special types
+    category = Column(String, nullable=False, default="attachment")  # attachment, avatar, cover, generated
     
     # Media details
     filename = Column(String, nullable=False)
@@ -64,6 +36,10 @@ class MediaAttachment(Base):
     height = Column(Integer, nullable=True)        # For images/videos
     duration = Column(Float, nullable=True)        # For videos/audio (seconds)
     
+    # Avatar-specific fields (only used when category="avatar")
+    is_active_avatar = Column(Boolean, nullable=False, default=False)
+    avatar_type = Column(String, nullable=True)  # custom, preset, generated
+    
     # Versioning for sync
     version = Column(Integer, nullable=False, default=1)
     
@@ -74,7 +50,9 @@ class MediaAttachment(Base):
     # Relationships
     user = relationship("User", back_populates="media_attachments")
     goal = relationship("Goal", back_populates="media_attachments")
+    project = relationship("Project", back_populates="media_attachments")
     task = relationship("Task", back_populates="media_attachments")
+    journal_entry = relationship("JournalEntry", back_populates="media_attachments")
 
 
 class MemoryItem(Base):
@@ -206,9 +184,12 @@ class FeedbackLog(Base):
 # Performance indexes for MediaAttachment model
 Index('ix_media_user_created', MediaAttachment.user_id, MediaAttachment.created_at.desc())
 Index('ix_media_user_type', MediaAttachment.user_id, MediaAttachment.media_type)
+Index('ix_media_user_category', MediaAttachment.user_id, MediaAttachment.category)
+Index('ix_media_user_avatar', MediaAttachment.user_id, MediaAttachment.is_active_avatar)
 Index('ix_media_goal', MediaAttachment.goal_id, MediaAttachment.created_at.desc())
 Index('ix_media_project', MediaAttachment.project_id, MediaAttachment.created_at.desc())
 Index('ix_media_task', MediaAttachment.task_id, MediaAttachment.created_at.desc())
+Index('ix_media_journal', MediaAttachment.journal_entry_id, MediaAttachment.created_at.desc())
 
 # Performance indexes for MemoryItem model
 Index('ix_memory_user_timestamp', MemoryItem.user_id, MemoryItem.timestamp.desc())

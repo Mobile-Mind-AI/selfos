@@ -6,7 +6,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from dependencies import get_current_user, get_db
-from models.goals import LifeArea
+from models.life_areas import LifeArea
+from models.goals import Goal
+from models.projects import Project
+from models.tasks import Task
 from schemas import (
     LifeAreaCreate, 
     LifeAreaUpdate, 
@@ -186,7 +189,6 @@ def delete_life_area(
         )
     
     # Check if there are any goals/tasks/projects associated
-    from models.goals import Goal, Project, Task
     
     associated_items = []
     

@@ -25,11 +25,13 @@ if backend_api_dir not in sys.path:
 # Import after path modification (AI models should take precedence for AI functionality)
 # Import all models to ensure tables are created in test database
 from models import (
-    Base, User, Goal, Project, Task, LifeArea, JournalEntry, Habit, HabitCompletion,
-    MediaAttachment, MemoryItem, StorySession, FeedbackLog, PersonalProfile, 
-    CustomLifeArea, OnboardingAnalytics, AssistantProfile, OnboardingState,
-    ConversationLog, ConversationSession, IntentFeedback, AvatarImage,
-    UserPreferences, UserPreferencesHistory, Tag
+    Base, User, Goal, Project, Task, LifeArea,
+    MediaAttachment, MemoryItem, StorySession, FeedbackLog,
+    AssistantProfile, UserPreferences,
+    ConversationLog, ConversationSession, IntentFeedback,
+    Entity, EntityType, EntityRelationship,
+    GoalEntity, ProjectEntity, TaskEntity,
+    JournalEntry, Habit, HabitCompletion, Tag
 )
 from main import app
 from dependencies import get_db, get_current_user
