@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import json
 
 from main import app
-from models.onboarding import AssistantProfile, AssistantPermission
+from models.assistant import AssistantProfile
 from models.user import User
 
 

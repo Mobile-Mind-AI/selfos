@@ -32,3 +32,5 @@ class User(Base):
     journal_entries = relationship("JournalEntry", back_populates="user", cascade="all, delete-orphan")
     tags = relationship("Tag", back_populates="user", cascade="all, delete-orphan")
     entities = relationship("Entity", back_populates="user", cascade="all, delete-orphan")
+    entity_types = relationship("EntityType", back_populates="user", cascade="all, delete-orphan")
+    entity_relationships = relationship("EntityRelationship", back_populates="user", cascade="all, delete-orphan")

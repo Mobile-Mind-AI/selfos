@@ -41,7 +41,7 @@ class Goal(Base):
     tasks = relationship("Task", back_populates="goal", cascade="all, delete-orphan")
     habits = relationship("Habit", back_populates="goal")
     media_attachments = relationship("MediaAttachment", back_populates="goal")
-    entities = relationship("GoalEntity", back_populates="goal", cascade="all, delete-orphan")
+    entities = relationship("Entity", secondary="goal_entities")
     
     # Hierarchical relationships
     parent = relationship("Goal", remote_side=[id], back_populates="children")

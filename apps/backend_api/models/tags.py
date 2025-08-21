@@ -3,7 +3,7 @@
 from sqlalchemy import Column, String, Integer, ForeignKey, Table, DateTime, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from db import Base
+from .base import Base
 
 # Association tables for many-to-many relationships
 project_tags = Table(

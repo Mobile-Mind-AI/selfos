@@ -4,7 +4,7 @@ from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Floa
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from uuid import uuid4
-from db import Base
+from .base import Base
 
 
 class ConversationLog(Base):

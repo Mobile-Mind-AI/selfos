@@ -12,28 +12,34 @@ Dependency utilities for authentication and database session.
 
 print("🚀 Dependencies module is being imported!")
 
-# Initialize Firebase Admin SDK (silently skip if invalid/missing credentials)
+# Initialize Firebase Admin SDK (optional for testing)
 cred_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
 firebase_initialized = False
-try:
-    if cred_path:
-        print(f"🔥 FIREBASE: Attempting to initialize with credentials: {cred_path}")
-        import os.path
-        if os.path.exists(cred_path):
-            print(f"🔥 FIREBASE: Credentials file exists")
-            cred = credentials.Certificate(cred_path)
-            firebase_admin.initialize_app(cred)
-            firebase_initialized = True
-            print(f"🔥 FIREBASE: Successfully initialized with service account")
+is_testing = os.environ.get("TESTING", "false").lower() == "true" or os.environ.get("ENVIRONMENT", "").lower() == "testing"
+
+if not is_testing:
+    try:
+        if cred_path:
+            print(f"🔥 FIREBASE: Attempting to initialize with credentials: {cred_path}")
+            import os.path
+            if os.path.exists(cred_path):
+                print(f"🔥 FIREBASE: Credentials file exists")
+                cred = credentials.Certificate(cred_path)
+                firebase_admin.initialize_app(cred)
+                firebase_initialized = True
+                print(f"🔥 FIREBASE: Successfully initialized with service account")
+            else:
+                print(f"🔥 FIREBASE: Credentials file does not exist: {cred_path}")
         else:
-            print(f"🔥 FIREBASE: Credentials file does not exist: {cred_path}")
-    else:
-        print(f"🔥 FIREBASE: No GOOGLE_APPLICATION_CREDENTIALS set, trying default")
-        firebase_admin.initialize_app()
-        firebase_initialized = True
-        print(f"🔥 FIREBASE: Successfully initialized with default credentials")
-except Exception as e:
-    print(f"🔥 FIREBASE: Failed to initialize: {e}")
+            print(f"🔥 FIREBASE: No GOOGLE_APPLICATION_CREDENTIALS set, trying default")
+            firebase_admin.initialize_app()
+            firebase_initialized = True
+            print(f"🔥 FIREBASE: Successfully initialized with default credentials")
+    except Exception as e:
+        print(f"🔥 FIREBASE: Failed to initialize: {e}")
+        firebase_initialized = False
+else:
+    print(f"🔥 FIREBASE: Testing mode detected, skipping Firebase initialization")
     firebase_initialized = False
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
