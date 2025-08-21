@@ -177,3 +177,25 @@ cython_debug/
 !/apps/selfos/ios/Runner/GoogleService-Info.plist
 !/apps/selfos/macos/Runner/GoogleService-Info.plist
 /.idea/encodings.xml
+
+# VSCode
+.vscode/
+
+.clinerules/
+
+# macOS
+.DS_Store
+
+# Test and temporary files
+*.db
+demo_*.py
+fix_*.py
+*_debug.py
+*_simple.py
+
+# Temporary scripts directory
+/apps/backend_api/scripts/
+
+# Flutter/UI apps (to be rebuilt)
+/apps/selfos/
+
