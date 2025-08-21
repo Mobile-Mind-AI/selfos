@@ -63,7 +63,24 @@ python test_server.py                  # Basic functionality test
 cd apps/backend_api
 alembic upgrade head        # Apply migrations
 alembic revision --autogenerate -m "description"  # Create new migration
+
+# Running migrations in Docker
+docker exec selfos-backend-1 alembic upgrade head
+docker exec selfos-backend-1 alembic current      # Check current version
 ```
+
+### Default Data Setup
+The database includes default life areas that are shared across all users:
+- Health & Fitness
+- Career & Work  
+- Relationships
+- Personal Growth
+- Finance
+- Spirituality
+- Fun & Recreation
+- Environment
+
+These are created automatically by migration 016_add_default_life_areas.py
 
 ## Architecture Overview
 
@@ -84,9 +101,14 @@ alembic revision --autogenerate -m "description"  # Create new migration
 
 ### Database Schema
 Current tables:
-- `users`: Firebase UID, email
+- `users`: Firebase UID, email (includes 'system' user for shared data)
+- `life_areas`: Life categories with user_id='system' for defaults, user-specific for custom
 - `goals`: User goals with progress tracking, media attachments
-- `tasks`: Goal-linked tasks with dependencies, progress tracking
+- `tasks`: Goal-linked tasks with dependencies, progress tracking  
+- `projects`: Project management with life area associations
+- `personal_profiles`: User preferences and onboarding data
+- `assistant_profiles`: AI assistant configurations
+- `onboarding_states`: Tracks user onboarding progress
 - `memory_items`: User conversation/reflection storage
 
 ## Code Structure

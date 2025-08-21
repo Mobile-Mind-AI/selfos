@@ -6,6 +6,7 @@ from datetime import datetime
 from dependencies import get_db, get_current_user
 from models import UserPreferences
 from schemas import UserPreferencesCreate, UserPreferencesUpdate, UserPreferences as UserPreferencesSchema
+from services.preferences_service import update_user_preferences_with_history
 
 if TYPE_CHECKING:
     from models import LifeArea
@@ -84,45 +85,27 @@ def update_user_preferences(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Update existing user preferences"""
+    """Update existing user preferences (with automatic change history tracking)"""
     user_id = current_user["uid"]
+    update_data = preferences_update.dict(exclude_unset=True)
     
-    preferences = db.query(UserPreferences).filter(
-        UserPreferences.user_id == user_id
-    ).first()
+    # Validate default_life_area_id if provided  
+    if 'default_life_area_id' in update_data and update_data['default_life_area_id'] is not None:
+        from models import LifeArea
+        life_area_id = update_data['default_life_area_id']
+        if life_area_id > 0:  # Valid positive ID
+            life_area = db.query(LifeArea).filter(
+                LifeArea.id == life_area_id,
+                LifeArea.user_id == user_id
+            ).first()
+            if not life_area:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Default life area not found or doesn't belong to user"
+                )
     
-    if not preferences:
-        # Create new preferences if none exist
-        preferences = UserPreferences(
-            user_id=user_id,
-            **preferences_update.dict(exclude_unset=True)
-        )
-        db.add(preferences)
-    else:
-        # Update existing preferences
-        update_data = preferences_update.dict(exclude_unset=True)
-        
-        # Validate default_life_area_id if provided  
-        if 'default_life_area_id' in update_data and update_data['default_life_area_id'] is not None:
-            from models import LifeArea
-            life_area_id = update_data['default_life_area_id']
-            if life_area_id > 0:  # Valid positive ID
-                life_area = db.query(LifeArea).filter(
-                    LifeArea.id == life_area_id,
-                    LifeArea.user_id == user_id
-                ).first()
-                if not life_area:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Default life area not found or doesn't belong to user"
-                    )
-        for field, value in update_data.items():
-            setattr(preferences, field, value)
-        
-        preferences.updated_at = datetime.utcnow()
-    
-    db.commit()
-    db.refresh(preferences)
+    # Use the service to update preferences and track changes
+    preferences = update_user_preferences_with_history(db, user_id, update_data)
     
     return preferences
 
@@ -197,29 +180,12 @@ def quick_setup_preferences(
             detail=f"Invalid view. Must be one of: {', '.join(valid_views)}"
         )
     
-    # Check if preferences already exist
-    existing_preferences = db.query(UserPreferences).filter(
-        UserPreferences.user_id == user_id
-    ).first()
+    # Use the service to update preferences and track changes
+    update_data = {
+        "tone": tone,
+        "notifications_enabled": notifications,
+        "default_view": default_view
+    }
+    preferences = update_user_preferences_with_history(db, user_id, update_data)
     
-    if existing_preferences:
-        # Update existing preferences
-        existing_preferences.tone = tone
-        existing_preferences.notifications_enabled = notifications
-        existing_preferences.default_view = default_view
-        existing_preferences.updated_at = datetime.utcnow()
-        db.commit()
-        db.refresh(existing_preferences)
-        return existing_preferences
-    else:
-        # Create new preferences
-        preferences = UserPreferences(
-            user_id=user_id,
-            tone=tone,
-            notifications_enabled=notifications,
-            default_view=default_view
-        )
-        db.add(preferences)
-        db.commit()
-        db.refresh(preferences)
-        return preferences
+    return preferences

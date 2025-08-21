@@ -1,211 +1,327 @@
 # SelfOS Backend API
 
-This folder contains the FastAPI backend gateway handling all requests for the SelfOS application.
+FastAPI-based backend service providing the core business logic, data management, and API endpoints for the SelfOS personal AI assistant platform.
 
-## Overview
+## 🚀 Features
 
-The backend API provides comprehensive endpoints for:
-- 🔐 **Authentication** - User registration, login, and JWT token management
-- 🎯 **Goals** - Create, manage, and track personal goals
-- ✅ **Tasks** - Task management with dependencies and progress tracking
-- 🏠 **Life Areas** - Organize goals and tasks by life domains
-- 📎 **Media Attachments** - File uploads and media management
-- ⚙️ **User Preferences** - Personalized settings and configurations
-- 📊 **Feedback Logs** - Training data collection for ML/RLHF
-- 📖 **Story Sessions** - AI-generated narrative content and social media publishing
-- 📧 **Email Service** - Password reset emails and system notifications
+- **RESTful API**: Complete CRUD operations for goals, tasks, and user management
+- **Authentication**: JWT-based auth with Firebase integration
+- **AI Integration**: Seamless connection to AI providers (OpenAI, Anthropic, Local)
+- **Progress Analytics**: Advanced user insights and completion predictions
+- **Story Generation**: Automated narrative creation from completed tasks
+- **Notification System**: Push and email notifications for task completion
+- **Database Management**: PostgreSQL with automated archival and optimization
+- **Testing**: 87% test coverage with 174+ passing tests
+- **Documentation**: Auto-generated OpenAPI/Swagger docs
 
-## Testing
+## 🏗️ Architecture
 
-### Quick Start
-
-Run all tests with the recommended module-by-module approach:
-
-```bash
-python run_tests.py
+```
+├── routers/          # API endpoints (thin HTTP layer)
+├── services/         # Business logic layer
+├── models/           # Database models (SQLAlchemy)
+├── schemas/          # Pydantic validation schemas
+├── tests/            # Unit and integration tests
+├── migrations/       # Database migration scripts
+└── scripts/          # Utility and management scripts
 ```
 
-### Test Structure
+### Clean Architecture Pattern
 
-The test suite is organized into:
-- **Unit Tests** (`tests/unit/`) - Test individual components in isolation
-- **Integration Tests** (`tests/integration/`) - Test component interactions
-- **Main API Tests** (`tests/test_main.py`) - Test core API functionality
+The backend follows clean architecture principles:
 
-### Available Test Commands
+- **Routers** (`routers/`): Handle HTTP requests, authentication, and response formatting
+- **Services** (`services/`): Contain all business logic, validation, and workflow orchestration
+- **Models** (`models/`): Define database schema and relationships
+- **Schemas** (`schemas/`): Validate input/output data with Pydantic
 
-#### Run All Tests
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.11+
+- PostgreSQL 12+
+- Redis 6+
+- Firebase Service Account credentials
+
+### Installation
+
 ```bash
-# Recommended: Run all tests module-by-module (avoids isolation issues)
-python run_tests.py
+# Navigate to backend directory
+cd apps/backend_api
 
-# Alternative: Run all tests together (may have isolation issues)
-python run_tests.py --all-together
+# Create virtual environment
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your configuration
 ```
 
-#### Run Specific Test Categories
+### Database Setup
+
 ```bash
-# Unit tests only
-python run_tests.py --unit
+# Initialize database (creates tables and indexes)
+python manage_db.py init
 
-# Integration tests only  
-python run_tests.py --integration
+# Load demo data (optional)
+python demo_life_areas.py
 
-# Main API tests only
-python run_tests.py --main
+# Run migrations (if any)
+alembic upgrade head
 ```
 
-#### Run Individual Modules
+### Running the Server
+
 ```bash
-# Authentication tests
-python run_tests.py --auth
+# Development server with auto-reload
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
-# Goals functionality
-python run_tests.py --goals
+# Or use the convenience script
+python scripts/start_server.py
 
-# Tasks functionality
-python run_tests.py --tasks
-
-# Life areas functionality
-python run_tests.py --life-areas
-
-# Media attachments
-python run_tests.py --media
-
-# User preferences
-python run_tests.py --preferences
-
-# Feedback logs
-python run_tests.py --feedback
-
-# Story sessions
-python run_tests.py --stories
+# Production server
+gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker
 ```
 
-#### Advanced Options
+### Health Check
+
 ```bash
-# Run with test coverage report
-python run_tests.py --coverage
-
-# Stop on first failure (fast feedback)
-python run_tests.py --fast
-
-# Verbose output
-python run_tests.py --verbose
-
-# Quiet output
-python run_tests.py --quiet
+curl http://localhost:8000/health
+# Expected: {"status": "healthy", "version": "1.0.0"}
 ```
 
-### Test Database
+### API Documentation
 
-Tests use isolated in-memory SQLite databases to ensure:
-- ✅ Fast execution
-- ✅ No interference between test modules
-- ✅ Clean state for each test
-- ✅ No impact on development/production databases
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+- OpenAPI Schema: http://localhost:8000/openapi.json
 
-## Email Service Configuration
+## 🧪 Testing
 
-The backend includes a production-ready email service for password resets and notifications.
+```bash
+# Run all tests
+pytest
 
-### Quick Setup (Gmail)
+# Run with coverage
+pytest --cov=. --cov-report=html
 
-1. **Configure SMTP in `.env`**:
-   ```bash
-   SMTP_USERNAME=your-email@gmail.com
-   SMTP_PASSWORD="your-app-password"  # Gmail App Password
-   FROM_EMAIL=noreply@yourcompany.com
-   FROM_NAME=YourApp
-   ```
+# Run specific test file
+pytest tests/test_goals.py
 
-2. **Generate Gmail App Password**:
-   - Enable 2FA on Google account
-   - Visit: https://myaccount.google.com/apppasswords
-   - Generate password for "Mail"
+# Run tests in parallel
+pytest -n auto
+```
 
-3. **Test Password Reset**:
-   ```bash
-   curl -X POST "http://localhost:8000/auth/forgot-password" \
-     -H "Content-Type: application/json" \
-     -d '{"email": "test@example.com"}'
-   ```
+### Test Categories
 
-### Email Service Features
-- ✅ **Production-Ready**: Real SMTP email sending
-- ✅ **Professional Templates**: HTML and text email templates
-- ✅ **Development Mode**: Console output when SMTP not configured
-- ✅ **Security Focused**: Built-in security warnings and best practices
-- ✅ **Firebase Integration**: Secure password reset links with expiration
+- **Unit Tests**: Individual service and utility functions
+- **Integration Tests**: End-to-end API workflows
+- **Database Tests**: Model relationships and constraints
+- **Auth Tests**: Authentication and authorization flows
 
-> 📧 See [Email Service Documentation](../../docs/EMAIL_SERVICE.md) for complete setup and configuration guide.
+## 📊 Core Services
 
-### Current Test Coverage
+### Goal Service (`services/goal_service.py`)
+- Complete CRUD operations for goals
+- Life area integration
+- Progress tracking and status management
+- Advanced filtering and querying
 
-| Module | Tests | Coverage |
-|--------|-------|----------|
-| Main API | 5 tests | Core endpoints, CORS, health checks |
-| Authentication | 7 tests | Registration, login, JWT validation, password reset |
-| Email Service | Integrated | Password reset emails (tested via auth module) |
-| Goals | 9 tests | CRUD operations, validation |
-| Tasks | 9 tests | CRUD operations, dependencies |
-| Life Areas | 18 tests | CRUD, validation, user isolation |
-| Media Attachments | 18 tests | File management, associations |
-| User Preferences | 19 tests | Settings, defaults, validation |
-| Feedback Logs | 22 tests | ML/RLHF data collection |
-| Story Sessions | 26 tests | Narrative generation, publishing |
-| Integration | 4 tests | Cross-module workflows |
-| **Total** | **137 tests** | **All functionality covered** |
+### Task Service (`services/task_service.py`)
+- Task lifecycle management
+- Goal association and dependency tracking
+- Completion workflows with AI integration
+- Automated progress updates and notifications
 
-### Test Isolation Strategy
+### Progress Service (`services/progress.py`)
+- User analytics and insights generation
+- Goal completion predictions based on velocity
+- Weekly/monthly progress reports
+- Personalized recommendations
 
-The test suite uses a module-by-module execution strategy to avoid test isolation issues:
+### Storytelling Service (`services/storytelling.py`)
+- Automated story generation from completed tasks
+- Weekly summary narratives
+- AI prompt suggestions for personalized content
+- Media integration for rich storytelling
 
-1. **Per-Module Databases**: Each test module uses its own in-memory SQLite database
-2. **Dependency Overrides**: Clean dependency injection overrides per module
-3. **Sequential Execution**: Modules run sequentially to prevent interference
-4. **Automatic Cleanup**: Database and dependency cleanup after each module
+### Notification Service (`services/notifications.py`)
+- Multi-channel notification delivery (push, email)
+- User preference management
+- Achievement celebration workflows
+- Weekly progress summaries
 
-### Writing New Tests
+## 🔧 Configuration
 
-When adding new functionality:
+Key environment variables:
 
-1. **Create test file**: `tests/unit/test_your_module.py`
-2. **Follow naming convention**: `test_*` functions for pytest discovery
-3. **Use isolated database**:
-   ```python
-   # Use in-memory SQLite with StaticPool
-   SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-   engine = create_engine(SQLALCHEMY_DATABASE_URL, poolclass=StaticPool)
-   ```
-4. **Override dependencies**:
-   ```python
-   app.dependency_overrides[get_db] = override_get_db
-   app.dependency_overrides[get_current_user] = override_get_current_user
-   ```
-5. **Add to test runner**: Update `run_tests.py` module list
-6. **Clean up**: Implement proper cleanup in `pytest_sessionfinish`
+```bash
+# Database
+DATABASE_URL=postgresql://user:pass@localhost/selfos
 
-### Debugging Test Failures
+# Redis
+REDIS_URL=redis://localhost:6379
 
-If tests fail:
+# Firebase Authentication
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccountKey.json
 
-1. **Run specific module**: `python run_tests.py --module-name`
-2. **Check isolation**: Run failing test individually
-3. **Review logs**: Use `--verbose` for detailed output
-4. **Database state**: Tests use fresh databases, check data setup
-5. **Dependency overrides**: Ensure proper mock user/database injection
+# AI Providers
+OPENAI_API_KEY=your_openai_key
+ANTHROPIC_API_KEY=your_anthropic_key
 
-### Performance
+# Email Service (optional)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your_email
+SMTP_PASSWORD=your_password
+```
 
-- **Fast execution**: All 137 tests run in ~1 second
-- **Parallel potential**: Module-by-module structure allows future parallelization
-- **Memory efficient**: In-memory databases with automatic cleanup
+## 📊 API Endpoints
 
-### Continuous Integration
+### Core Resources
+- `GET/POST/PUT/DELETE /api/goals/` - Goal management
+- `GET/POST/PUT/DELETE /api/tasks/` - Task management
+- `PUT /api/tasks/{id}/complete` - Mark task complete (triggers workflows)
 
-The test suite is designed for CI/CD environments:
-- No external dependencies
-- Deterministic results
-- Clear pass/fail reporting
-- Detailed error messages
+### Analytics
+- `GET /api/progress/insights` - Comprehensive user analytics
+- `GET /api/progress/goals/{id}/prediction` - Goal completion predictions
+- `GET /api/progress/summary` - Dashboard-ready progress summary
+
+### AI & Storytelling
+- `GET /api/storytelling/weekly-summary` - Auto-generated weekly narratives
+- `POST /api/storytelling/prompts` - AI prompt suggestions
+- `GET /api/storytelling/recent-stories` - Story session history
+
+### Authentication
+- `POST /auth/register` - User registration
+- `POST /auth/login` - User authentication
+- `GET /auth/me` - Current user info
+
+For complete API documentation, see [API_REFERENCE.md](../../docs/API_REFERENCE.md)
+
+## 🔍 Database Management
+
+### Archival System
+Automatic archival for high-volume tables:
+
+```bash
+# Run archival process
+python manage_db.py archive
+
+# Check archive status
+python manage_db.py status
+```
+
+### Performance Monitoring
+
+```bash
+# Analyze query performance
+python manage_db.py analyze
+
+# Generate performance report
+python scripts/db_performance_report.py
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Database connection failed**
+```bash
+# Check PostgreSQL is running
+pg_isready -h localhost -p 5432
+
+# Verify connection string
+python -c "from db import engine; print(engine.url)"
+```
+
+**Tests failing**
+```bash
+# Run specific failing test with verbose output
+pytest tests/test_specific.py::test_function -v -s
+
+# Check test database setup
+python -c "from conftest import test_db; print('Test DB OK')"
+```
+
+**Authentication errors**
+```bash
+# Verify Firebase credentials
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json
+python -c "import firebase_admin; print('Firebase OK')"
+```
+
+### Performance Issues
+
+- Check database query performance with `EXPLAIN ANALYZE`
+- Monitor Redis memory usage and hit rates
+- Review application logs for slow endpoints
+- Use profiling tools like `py-spy` for bottleneck identification
+
+## 🚀 Deployment
+
+### Docker
+```bash
+# Build image
+docker build -t selfos-backend .
+
+# Run container
+docker run -p 8000:8000 -e DATABASE_URL="..." selfos-backend
+```
+
+### Production Checklist
+- [ ] Environment variables configured
+- [ ] Database migrations applied
+- [ ] SSL/HTTPS enabled
+- [ ] Monitoring and logging configured
+- [ ] Backup strategy implemented
+- [ ] Rate limiting enabled
+- [ ] Security headers configured
+
+## 📈 Monitoring
+
+### Health Endpoints
+- `GET /health` - Basic health check
+- `GET /health/detailed` - Detailed system status
+- `GET /metrics` - Application metrics (Prometheus format)
+
+### Key Metrics
+- Response time per endpoint
+- Database query performance
+- AI provider response times
+- User activity patterns
+- Error rates and types
+
+## 🤝 Contributing
+
+### Development Workflow
+1. Create feature branch from `main`
+2. Write tests for new functionality
+3. Implement feature with proper service layer separation
+4. Update documentation and API schemas
+5. Run full test suite and ensure 90%+ coverage
+6. Submit pull request with detailed description
+
+### Code Standards
+- Follow PEP 8 style guidelines
+- Use type hints for all functions
+- Write docstrings for public APIs
+- Keep router functions thin (business logic in services)
+- Maintain test coverage above 87%
+
+### Service Layer Guidelines
+- All business logic goes in `services/`
+- Services should be stateless and testable
+- Use dependency injection for external resources
+- Handle errors gracefully with proper logging
+- Return structured results with clear error messages
+
+---
+
+For more detailed technical information, see the [Architecture Documentation](../../docs/ARCHITECTURE.md) and [Developer Guide](../../docs/DEVELOPER_GUIDE.md).

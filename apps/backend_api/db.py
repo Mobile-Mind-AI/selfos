@@ -24,6 +24,15 @@ Base = declarative_base()
 
 logger = logging.getLogger(__name__)
 
+# Database dependency for FastAPI
+def get_db():
+    """Get database session for FastAPI dependency injection."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 # ============================================================================
 # ARCHIVAL CONFIGURATION AND UTILITIES
 # ============================================================================

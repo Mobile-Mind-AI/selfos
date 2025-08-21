@@ -23,11 +23,20 @@ if backend_api_dir not in sys.path:
     sys.path.append(backend_api_dir)  # Append so it comes after AI paths
 
 # Import after path modification (AI models should take precedence for AI functionality)
-from models import Base, User
+# Import all models to ensure tables are created in test database
+from models import (
+    Base, User, Goal, Project, Task, LifeArea,
+    MediaAttachment, MemoryItem, StorySession, FeedbackLog,
+    AssistantProfile, UserPreferences,
+    ConversationLog, ConversationSession, IntentFeedback,
+    Entity, EntityType, EntityRelationship,
+    GoalEntity, ProjectEntity, TaskEntity,
+    JournalEntry, Habit, HabitCompletion, Tag
+)
 from main import app
 from dependencies import get_db, get_current_user
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 def isolated_test_setup():
     """Create isolated database and override dependencies for each test"""
     # Create unique in-memory database for this test
@@ -58,11 +67,8 @@ def isolated_test_setup():
             "roles": ["user"]
         }
     
-    # Store original overrides
-    original_db_override = app.dependency_overrides.get(get_db)
-    original_user_override = app.dependency_overrides.get(get_current_user)
-    
-    # Set test overrides
+    # Clear all existing overrides and set test ones
+    app.dependency_overrides.clear()
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_user] = override_get_current_user
     
@@ -73,18 +79,8 @@ def isolated_test_setup():
         "user_override": override_get_current_user
     }
     
-    # Restore original overrides
-    if original_db_override:
-        app.dependency_overrides[get_db] = original_db_override
-    else:
-        app.dependency_overrides.pop(get_db, None)
-        
-    if original_user_override:
-        app.dependency_overrides[get_current_user] = original_user_override
-    else:
-        app.dependency_overrides.pop(get_current_user, None)
-    
-    # Clean up engine
+    # Clean up
+    app.dependency_overrides.clear()
     engine.dispose()
 
 # Test environment configuration
@@ -338,6 +334,17 @@ def mock_user():
         "email": "testuser@example.com",
         "roles": ["user"]
     }
+
+
+@pytest.fixture(scope="function")
+def db(isolated_test_setup):
+    """Provide a database session for tests that need real DB access"""
+    setup = isolated_test_setup
+    session = setup["session_local"]()
+    try:
+        yield session
+    finally:
+        session.close()
 
 
 @pytest.fixture(autouse=True)

@@ -236,16 +236,18 @@
 
 ### 📁 `/docs/` - Documentation
 **Purpose**: Comprehensive project documentation
-- `ARCHITECTURE.md` - Complete system architecture overview
+**Status**: ✅ **RECENTLY CONSOLIDATED** (15 → 10 files, 33% reduction)
+- `README.md` - Documentation navigation and overview
+- `DEVELOPER_GUIDE.md` - Complete development setup, commands, and workflows
 - `API_REFERENCE.md` - Detailed API endpoint documentation
-- `GETTING_STARTED.md` - Developer onboarding guide
-- `TROUBLESHOOTING.md` - Common issues and solutions
-- `MVP-2025-07.md` - MVP planning and roadmap
-- `COMPREHENSIVE_PLANNING.md` - Detailed project planning
+- `ARCHITECTURE.md` - Complete system architecture overview with assessment and improvements
+- `SYNC_ARCHITECTURE.md` - Offline-first sync implementation with conflict resolution
+- `MVP-2025-07.md` - MVP planning, roadmap, and comprehensive technical assessment
+- `UNIVERSAL_INPUT_PLAN.md` - AI-powered universal input system specification
 - `DATABASE_OPTIMIZATION.md` - Database performance strategies
 - `EMAIL_SERVICE.md` - Email service implementation details
-- `SYSTEM_REVIEW_RECOMMENDATIONS.md` - System improvement recommendations
-- `TEST_RECOMMENDATIONS.md` - Testing strategy recommendations
+- `MCP_SERVER.md` - Model Context Protocol server documentation
+- `TROUBLESHOOTING.md` - Common issues and solutions
 
 ### 📁 `/infra/` - Infrastructure as Code
 **Purpose**: Deployment and infrastructure configuration

@@ -47,8 +47,8 @@ def create_media_attachment(
         original_filename=attachment.original_filename,
         file_path=attachment.file_path,
         file_size=attachment.file_size,
-        mime_type=attachment.mime_type,
-        file_type=attachment.file_type,
+        content_type=attachment.content_type,
+        media_type=attachment.media_type,
         title=attachment.title,
         description=attachment.description,
         duration=attachment.duration,
@@ -58,6 +58,11 @@ def create_media_attachment(
     db.add(db_attachment)
     db.commit()
     db.refresh(db_attachment)
+    
+    # Set backward compatibility fields
+    db_attachment.mime_type = db_attachment.content_type
+    db_attachment.file_type = db_attachment.media_type
+    
     return db_attachment
 
 @router.get("/media-attachments", response_model=List[schemas.MediaAttachment])
@@ -80,9 +85,16 @@ def list_media_attachments(
         query = query.filter(models.MediaAttachment.task_id == task_id)
     
     if file_type is not None:
-        query = query.filter(models.MediaAttachment.file_type == file_type)
+        query = query.filter(models.MediaAttachment.media_type == file_type)
     
-    return query.order_by(models.MediaAttachment.created_at.desc()).all()
+    attachments = query.order_by(models.MediaAttachment.created_at.desc()).all()
+    
+    # Set backward compatibility fields for each attachment
+    for attachment in attachments:
+        attachment.mime_type = attachment.content_type
+        attachment.file_type = attachment.media_type
+    
+    return attachments
 
 @router.get("/media-attachments/{attachment_id}", response_model=schemas.MediaAttachment)
 def get_media_attachment(
@@ -101,6 +113,10 @@ def get_media_attachment(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Media attachment not found"
         )
+    
+    # Set backward compatibility fields
+    attachment.mime_type = attachment.content_type
+    attachment.file_type = attachment.media_type
     
     return attachment
 
@@ -160,6 +176,11 @@ def update_media_attachment(
     db_attachment.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(db_attachment)
+    
+    # Set backward compatibility fields
+    db_attachment.mime_type = db_attachment.content_type
+    db_attachment.file_type = db_attachment.media_type
+    
     return db_attachment
 
 @router.delete("/media-attachments/{attachment_id}")
@@ -197,12 +218,12 @@ def get_media_statistics(
     # Count by file type
     from sqlalchemy import func
     file_type_counts = db.query(
-        models.MediaAttachment.file_type,
+        models.MediaAttachment.media_type,
         func.count(models.MediaAttachment.id).label('count'),
         func.sum(models.MediaAttachment.file_size).label('total_size')
     ).filter(
         models.MediaAttachment.user_id == current_user["uid"]
-    ).group_by(models.MediaAttachment.file_type).all()
+    ).group_by(models.MediaAttachment.media_type).all()
     
     # Total storage used
     total_size = db.query(func.sum(models.MediaAttachment.file_size)).filter(
@@ -215,7 +236,7 @@ def get_media_statistics(
         "total_size_mb": round(total_size / (1024 * 1024), 2),
         "by_file_type": [
             {
-                "file_type": row.file_type,
+                "file_type": row.media_type,
                 "count": row.count,
                 "total_size_bytes": row.total_size or 0,
                 "total_size_mb": round((row.total_size or 0) / (1024 * 1024), 2)

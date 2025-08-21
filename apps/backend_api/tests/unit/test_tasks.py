@@ -108,22 +108,22 @@ def test_create_task():
         "title": "Test Task",
         "description": "Test Task Description",
         "due_date": "2024-12-31T23:59:59",
-        "duration": 120,
+        "estimated_hours": 2.0,
         "status": "in_progress",
         "progress": 25.0,
         "life_area_id": None,
         "dependencies": []
     }
-    
+
     response = client.post("/api/tasks", json=task_data)
-    
+
     assert response.status_code == 201
     data = response.json()
     assert "id" in data
     assert data["title"] == "Test Task"
     assert data["description"] == "Test Task Description"
     assert data["goal_id"] == goal_id
-    assert data["duration"] == 120
+    assert data["estimated_hours"] == 2.0
     assert data["status"] == "in_progress"
     assert data["progress"] == 25.0
     assert data["user_id"] == "test_user_123"
@@ -217,19 +217,19 @@ def test_update_task():
         "goal_id": goal_id,  # Required field
         "title": "Updated Task",
         "description": "Updated Description",
-        "duration": 60,
+        "estimated_hours": 1.0,
         "status": "completed",
         "progress": 100.0
     }
-    
+
     response = client.put(f"/api/tasks/{task_id}", json=update_data)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == task_id
     assert data["title"] == "Updated Task"
     assert data["description"] == "Updated Description"
-    assert data["duration"] == 60
+    assert data["estimated_hours"] == 1.0
     assert data["status"] == "completed"
     assert data["progress"] == 100.0
 
@@ -270,4 +270,3 @@ def test_delete_task_not_found():
     
     assert response.status_code == 404
     assert "Task not found" in response.json()["detail"]
-

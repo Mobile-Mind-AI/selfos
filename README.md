@@ -28,25 +28,9 @@
 
 ---
 
-## 🆚 Comparative Advantages
-
-| Feature                            | SelfOS                          | Traditional Planners        | AI Productivity Tools      |
-|-----------------------------------|----------------------------------|-----------------------------|----------------------------|
-| Deep Personalization              | ✅ Life areas, mood, habits       | ❌ Static priorities         | ⚠️ Some learning            |
-| Rich Media Task Integration       | ✅ Attach images, videos, audio   | ❌ Notes only                | ⚠️ Few apps support media   |
-| Automated Storytelling            | ✅ Narratives + video generator   | ❌ Manual summaries          | ❌ No native storytelling    |
-| AI Memory & Long-Term Recall      | ✅ Vector-based memory            | ❌ None                      | ⚠️ Short context only        |
-| Social-Ready Outputs              | ✅ Auto-generated + post-ready    | ❌ Not applicable            | ⚠️ Rare or basic             |
-| Proactive Suggestions             | ✅ Event-driven, context-aware    | ❌ User-initiated only       | ⚠️ Limited context           |
-| RLHF Personal AI Engine           | ✅ Custom LLM fine-tuning option  | ❌ N/A                       | ⚠️ Generalized LLMs          |
-
----
-
 ## 🏗 High-Level Architecture
 
 ```
-User ↔️ Flutter Frontend (Web/Mobile/Desktop)
-             ↓
         API Gateway (FastAPI)
              ↓
 ├── Backend API (Core CRUD & Business Logic)
@@ -56,7 +40,6 @@ User ↔️ Flutter Frontend (Web/Mobile/Desktop)
 ├── Storytelling Engine (Narrative + Media)
 ├── Email Service (SMTP + Templates)
 ├── Notification Service
-├── RLHF Trainer (Phase 3+)
 └── Integrations (Calendar, Obsidian, Trello, Social APIs)
              ↓
      Persistence Layer
@@ -65,7 +48,7 @@ User ↔️ Flutter Frontend (Web/Mobile/Desktop)
       Event Bus (Redis Streams)
 ```
 
-> 📁 See `docs/components/` for detailed breakdowns of each service, their APIs, and design decisions.
+> 📁 See `docs/` for detailed breakdowns of each service, their APIs, and design decisions.
 
 ---
 
@@ -73,9 +56,8 @@ User ↔️ Flutter Frontend (Web/Mobile/Desktop)
 
 ### Prerequisites
 - Docker & Docker Compose installed
-- (Optional) Python 3.11+ for running backend tests locally
-- Firebase service account JSON – obtain credentials as described in [docs/AUTHENTICATION_SETUP.md](docs/AUTHENTICATION_SETUP.md)
-- (Optional) SMTP credentials for email functionality – see [docs/EMAIL_SERVICE.md](docs/EMAIL_SERVICE.md)
+- Python 3.11+ for running backend tests locally
+- Firebase service account JSON – obtain credentials as described in `docs/DEVELOPER_GUIDE.md`
 
 ### Start Services
 ```bash
@@ -85,28 +67,19 @@ User ↔️ Flutter Frontend (Web/Mobile/Desktop)
 # Start core services (DB, Redis, Backend API)
 docker-compose up --build
 
-# Start with MCP server for AI integration
-docker-compose up --build backend mcp-server
-
-# Start with frontend (Flutter web)
-docker-compose --profile frontend up --build
-
 # Or use the convenience script:
-./apps/mcp_server/start_mcp_server.sh docker
+./start-services.sh
 ```
 
 ### Health Checks
 ```bash
 # Backend API
-curl http://localhost:8000/
-# Expected: {"message": "SelfOS Backend API"}
+curl http://localhost:8000/health
+# Expected: {"status": "healthy"}
 
 # MCP Server (if running)
 curl http://localhost:8001/health
 # Expected: {"status": "healthy", "server": "selfos-mcp-server"}
-
-# MCP Server capabilities
-curl http://localhost:8001/mcp/capabilities
 ```
 
 ### Run Backend Tests
@@ -115,13 +88,13 @@ cd apps/backend_api
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-pytest -q
+python run_tests.py
 ```
 
 ### Quick Reference
-- **📋 [Quick Reference Guide](docs/QUICK_REFERENCE.md)** - Essential commands and endpoints
+- **👨‍💻 [Developer Guide](docs/DEVELOPER_GUIDE.md)** - Comprehensive development instructions
 - **🤖 [MCP Server Documentation](docs/MCP_SERVER.md)** - AI integration details
-- **👨‍💻 [Developer Guide](CLAUDE.md)** - Comprehensive development instructions
+- **📚 [API Reference](docs/API_REFERENCE.md)** - API endpoints and schemas
 
 ---
 ## 🛠 Get Involved
@@ -131,5 +104,3 @@ We’re building something deeply meaningful. If you’re a:
 - Creator who wants to show their journey — not just their results
 
 Join us.
-
-

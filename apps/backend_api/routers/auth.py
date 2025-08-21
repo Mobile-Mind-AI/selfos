@@ -189,6 +189,19 @@ async def login(req: LoginRequest, db: Session = Depends(get_db)):
         
         # Use a simple secret for development (in production, use proper Firebase)
         token = jwt.encode(payload, "dev-secret", algorithm="HS256")
+        
+        # Ensure user exists in database even in fallback mode
+        existing_user = db.query(models.User).filter(models.User.uid == uid).first()
+        if not existing_user:
+            db_user = models.User(
+                uid=uid,
+                email=email
+            )
+            db.add(db_user)
+            db.commit()
+            db.refresh(db_user)
+            print(f"🔐 AUTH: Created user in database (fallback): {uid}")
+        
         user = User(uid=uid, email=email)
         return AuthResponse(access_token=token, user=user)
 

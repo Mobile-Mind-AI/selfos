@@ -59,7 +59,7 @@ def run_module_by_module():
     failed_modules = []
     
     for module in test_modules:
-        cmd = ["python", "-m", "pytest", module, "-v", "--tb=short"]
+        cmd = ["python3", "-m", "pytest", module, "-v", "--tb=short"]
         description = f"Testing {module}"
         
         success = run_command(cmd, description)
@@ -152,7 +152,7 @@ def main():
         sys.exit(0 if success else 1)
     
     # Base pytest command
-    base_cmd = ["python", "-m", "pytest"]
+    base_cmd = ["python3", "-m", "pytest"]
     
     # Determine what to test
     test_targets = []

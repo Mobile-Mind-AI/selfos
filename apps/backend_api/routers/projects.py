@@ -13,11 +13,14 @@ from typing import List, Optional
 from datetime import datetime
 
 from dependencies import get_db, get_current_user
+from services.project_service import project_service
 from models import Project, Goal, Task, MediaAttachment, LifeArea
 from schemas import (
     ProjectCreate, Project as ProjectSchema, ProjectOut,
-    GoalOut, TaskOut, MediaAttachmentOut, LifeAreaOut
+    GoalOut, TaskOut, MediaAttachmentOut, LifeAreaOut,
+    HierarchyMoveRequest, HierarchyPathItem, HierarchyTreeNode
 )
+import schemas
 
 router = APIRouter(
     prefix="/projects",
@@ -103,9 +106,14 @@ async def create_project(
                 detail="Life area not found"
             )
     
-    # Create the project
+    # Create the project - only use fields that exist in the model
+    project_fields = project_data.dict()
+    # Remove any fields that don't exist in the Project model
+    allowed_fields = {'title', 'description', 'status', 'priority', 'progress', 'life_area_id'}
+    filtered_data = {k: v for k, v in project_fields.items() if k in allowed_fields}
+    
     project = Project(
-        **project_data.dict(),
+        **filtered_data,
         user_id=current_user["uid"],
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow()
@@ -125,6 +133,42 @@ async def create_project(
     project_dict["life_area"] = LifeAreaOut.from_orm(life_area).dict() if life_area else None
     
     return ProjectOut(**project_dict)
+
+
+# Hierarchy endpoints - MUST be before /{project_id}
+@router.get("/roots", response_model=List[ProjectOut])
+async def get_root_projects(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all root-level projects (projects without parents)."""
+    projects = project_service.get_root_projects(db, current_user["uid"])
+    # Convert to ProjectOut format with necessary relationships
+    result = []
+    for project in projects:
+        goals = db.query(Goal).filter(Goal.project_id == project.id).all()
+        tasks = db.query(Task).filter(Task.project_id == project.id).all()
+        media = db.query(MediaAttachment).filter(MediaAttachment.project_id == project.id).all()
+        life_area = db.query(LifeArea).filter(LifeArea.id == project.life_area_id).first() if project.life_area_id else None
+        
+        project_dict = ProjectSchema.from_orm(project).dict()
+        project_dict["goals"] = [GoalOut.from_orm(goal).dict() for goal in goals]
+        project_dict["tasks"] = [TaskOut.from_orm(task).dict() for task in tasks]
+        project_dict["media"] = [MediaAttachmentOut.from_orm(m).dict() for m in media]
+        project_dict["life_area"] = LifeAreaOut.from_orm(life_area).dict() if life_area else None
+        
+        result.append(ProjectOut(**project_dict))
+    
+    return result
+
+
+@router.get("/tree", response_model=List[schemas.HierarchyTreeNode])
+async def get_project_tree(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get hierarchical tree structure of all projects."""
+    return project_service.get_project_tree_structure(db, current_user["uid"])
 
 
 @router.get("/{project_id}", response_model=ProjectOut)
@@ -195,9 +239,12 @@ async def update_project(
                 detail="Life area not found"
             )
     
-    # Update project fields
+    # Update project fields - only use fields that exist in the model
     update_data = project_data.dict(exclude_unset=True)
-    for field, value in update_data.items():
+    allowed_fields = {'title', 'description', 'status', 'priority', 'progress', 'life_area_id'}
+    filtered_updates = {k: v for k, v in update_data.items() if k in allowed_fields}
+    
+    for field, value in filtered_updates.items():
         setattr(project, field, value)
     
     project.updated_at = datetime.utcnow()
@@ -376,3 +423,113 @@ async def get_project_timeline(
     timeline_events.sort(key=lambda x: x["date"], reverse=True)
     
     return timeline_events
+
+
+# Additional hierarchy endpoints with individual IDs
+@router.get("/{project_id}/children", response_model=List[ProjectOut])
+async def get_project_children(
+    project_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get direct children of a project."""
+    # Verify project exists and user has access
+    project = project_service.get_project(db, current_user["uid"], project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    children = project_service.get_project_children(db, current_user["uid"], project_id)
+    # Convert to ProjectOut format
+    result = []
+    for child in children:
+        goals = db.query(Goal).filter(Goal.project_id == child.id).all()
+        tasks = db.query(Task).filter(Task.project_id == child.id).all()
+        media = db.query(MediaAttachment).filter(MediaAttachment.project_id == child.id).all()
+        life_area = db.query(LifeArea).filter(LifeArea.id == child.life_area_id).first() if child.life_area_id else None
+        
+        child_dict = ProjectSchema.from_orm(child).dict()
+        child_dict["goals"] = [GoalOut.from_orm(goal).dict() for goal in goals]
+        child_dict["tasks"] = [TaskOut.from_orm(task).dict() for task in tasks]
+        child_dict["media"] = [MediaAttachmentOut.from_orm(m).dict() for m in media]
+        child_dict["life_area"] = LifeAreaOut.from_orm(life_area).dict() if life_area else None
+        
+        result.append(ProjectOut(**child_dict))
+    
+    return result
+
+
+@router.get("/{project_id}/descendants", response_model=List[ProjectOut])
+async def get_project_descendants(
+    project_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all descendants (children, grandchildren, etc.) of a project."""
+    # Verify project exists and user has access
+    project = project_service.get_project(db, current_user["uid"], project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    descendants = project_service.get_project_descendants(db, current_user["uid"], project_id)
+    # Convert to ProjectOut format
+    result = []
+    for descendant in descendants:
+        goals = db.query(Goal).filter(Goal.project_id == descendant.id).all()
+        tasks = db.query(Task).filter(Task.project_id == descendant.id).all()
+        media = db.query(MediaAttachment).filter(MediaAttachment.project_id == descendant.id).all()
+        life_area = db.query(LifeArea).filter(LifeArea.id == descendant.life_area_id).first() if descendant.life_area_id else None
+        
+        descendant_dict = ProjectSchema.from_orm(descendant).dict()
+        descendant_dict["goals"] = [GoalOut.from_orm(goal).dict() for goal in goals]
+        descendant_dict["tasks"] = [TaskOut.from_orm(task).dict() for task in tasks]
+        descendant_dict["media"] = [MediaAttachmentOut.from_orm(m).dict() for m in media]
+        descendant_dict["life_area"] = LifeAreaOut.from_orm(life_area).dict() if life_area else None
+        
+        result.append(ProjectOut(**descendant_dict))
+    
+    return result
+
+
+@router.get("/{project_id}/path", response_model=List[HierarchyPathItem])
+async def get_project_path(
+    project_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get the full path from root to the specified project."""
+    # Verify project exists and user has access
+    project = project_service.get_project(db, current_user["uid"], project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    return project_service.get_project_path(db, current_user["uid"], project_id)
+
+
+@router.put("/{project_id}/move", response_model=ProjectOut)
+async def move_project(
+    project_id: int,
+    move_request: HierarchyMoveRequest,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Move a project to a new parent in the hierarchy."""
+    try:
+        project = project_service.move_project(db, current_user["uid"], project_id, move_request.parent_id)
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        # Convert to ProjectOut format
+        goals = db.query(Goal).filter(Goal.project_id == project.id).all()
+        tasks = db.query(Task).filter(Task.project_id == project.id).all()
+        media = db.query(MediaAttachment).filter(MediaAttachment.project_id == project.id).all()
+        life_area = db.query(LifeArea).filter(LifeArea.id == project.life_area_id).first() if project.life_area_id else None
+        
+        project_dict = ProjectSchema.from_orm(project).dict()
+        project_dict["goals"] = [GoalOut.from_orm(goal).dict() for goal in goals]
+        project_dict["tasks"] = [TaskOut.from_orm(task).dict() for task in tasks]
+        project_dict["media"] = [MediaAttachmentOut.from_orm(m).dict() for m in media]
+        project_dict["life_area"] = LifeAreaOut.from_orm(life_area).dict() if life_area else None
+        
+        return ProjectOut(**project_dict)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

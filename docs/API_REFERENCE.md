@@ -1,351 +1,136 @@
 # SelfOS API Reference
 
-**Version:** v0.1  
-**Base URL:** `http://localhost:8000/api`  
-**Authentication:** JWT Bearer Token
+**Version:** v0.2
+**Base URL:** `http://localhost:8000/api`
+**Authentication:** JWT Bearer Token (Firebase)
 
-## Authentication Endpoints
+## Authentication Endpoints (`auth.py`)
 
 ### Register User
-```http
-POST /auth/register
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "securepassword",
-  "full_name": "John Doe"
-}
-```
-
-**Response:**
-```json
-{
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-  "token_type": "bearer",
-  "user": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "full_name": "John Doe",
-    "is_active": true
-  }
-}
-```
+`POST /auth/register`
+- Creates a new user in Firebase and the local database.
 
 ### Login
-```http
-POST /auth/login
-Content-Type: application/json
-
-{
-  "email": "user@example.com", 
-  "password": "securepassword"
-}
-```
+`POST /auth/login`
+- Authenticates a user and returns a JWT.
 
 ### Get Current User
-```http
-GET /auth/me
-Authorization: Bearer {access_token}
-```
-
-## Goals Management
-
-### List Goals
-```http
-GET /goals
-Authorization: Bearer {access_token}
-```
-
-### Create Goal
-```http
-POST /goals
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "title": "Learn Guitar",
-  "description": "Master basic guitar skills",
-  "target_date": "2025-12-31",
-  "life_area_id": "uuid"
-}
-```
-
-### Update Goal
-```http
-PUT /goals/{goal_id}
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "title": "Learn Guitar - Updated",
-  "status": "in_progress"
-}
-```
-
-### Delete Goal
-```http
-DELETE /goals/{goal_id}
-Authorization: Bearer {access_token}
-```
-
-## Tasks Management
-
-### List Tasks
-```http
-GET /tasks
-Authorization: Bearer {access_token}
-Query Parameters:
-- goal_id: Filter by goal ID
-- status: Filter by status (pending, in_progress, completed)
-```
-
-### Create Task
-```http
-POST /tasks
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "title": "Practice scales",
-  "description": "Practice major and minor scales",
-  "goal_id": "uuid",
-  "due_date": "2025-07-15"
-}
-```
-
-### Update Task
-```http
-PUT /tasks/{task_id}
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "status": "completed",
-  "completed_at": "2025-06-30T10:00:00Z"
-}
-```
-
-### Delete Task
-```http
-DELETE /tasks/{task_id}
-Authorization: Bearer {access_token}
-```
-
-## AI Services
-
-### Decompose Goal
-```http
-POST /ai/decompose-goal
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "goal_description": "I want to learn guitar",
-  "context": {
-    "user_preferences": ["acoustic", "beginner"],
-    "time_available": "1 hour daily"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "tasks": [
-    {
-      "title": "Get a guitar",
-      "description": "Purchase or borrow an acoustic guitar",
-      "priority": "high",
-      "estimated_duration": "1 day"
-    },
-    {
-      "title": "Learn basic chords",
-      "description": "Master A, D, E, G, C chords",
-      "priority": "high", 
-      "estimated_duration": "2 weeks"
-    }
-  ],
-  "timeline": "3-6 months",
-  "difficulty": "beginner"
-}
-```
-
-### Chat with AI
-```http
-POST /ai/chat
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "message": "How do I stay motivated with my goals?",
-  "conversation_id": "uuid",
-  "user_context": {
-    "current_goals": ["learn guitar", "get fit"],
-    "emotional_state": "discouraged"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "response": "I understand feeling discouraged is normal...",
-  "conversation_id": "uuid",
-  "suggestions": [
-    "Break down large goals into smaller tasks",
-    "Celebrate small wins along the way"
-  ]
-}
-```
-
-### AI Health Check
-```http
-GET /ai/health
-Authorization: Bearer {access_token}
-```
-
-**Response:**
-```json
-{
-  "status": "healthy",
-  "providers": {
-    "openai": "healthy",
-    "anthropic": "healthy",
-    "local": "healthy"
-  },
-  "response_time_ms": 150
-}
-```
-
-## Error Responses
-
-All endpoints may return these common error responses:
-
-### 401 Unauthorized
-```json
-{
-  "detail": "Not authenticated"
-}
-```
-
-### 403 Forbidden
-```json
-{
-  "detail": "Not enough permissions"
-}
-```
-
-### 422 Validation Error
-```json
-{
-  "detail": [
-    {
-      "loc": ["body", "email"],
-      "msg": "field required",
-      "type": "value_error.missing"
-    }
-  ]
-}
-```
-
-### 500 Internal Server Error
-```json
-{
-  "detail": "Internal server error"
-}
-```
-
-## Rate Limits
-
-- **Authentication endpoints**: 5 requests per minute
-- **AI endpoints**: 10 requests per minute  
-- **CRUD endpoints**: 100 requests per minute
-
-## SDKs and Libraries
-
-### Python
-```python
-import requests
-
-class SelfOSClient:
-    def __init__(self, base_url="http://localhost:8000/api", token=None):
-        self.base_url = base_url
-        self.token = token
-        
-    def login(self, email, password):
-        response = requests.post(f"{self.base_url}/auth/login", 
-                               json={"email": email, "password": password})
-        self.token = response.json()["access_token"]
-        return response.json()
-        
-    def create_goal(self, title, description):
-        headers = {"Authorization": f"Bearer {self.token}"}
-        return requests.post(f"{self.base_url}/goals",
-                           json={"title": title, "description": description},
-                           headers=headers).json()
-```
-
-### JavaScript
-```javascript
-class SelfOSClient {
-  constructor(baseURL = 'http://localhost:8000/api', token = null) {
-    this.baseURL = baseURL;
-    this.token = token;
-  }
-  
-  async login(email, password) {
-    const response = await fetch(`${this.baseURL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await response.json();
-    this.token = data.access_token;
-    return data;
-  }
-  
-  async createGoal(title, description) {
-    return fetch(`${this.baseURL}/goals`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.token}`
-      },
-      body: JSON.stringify({ title, description })
-    }).then(r => r.json());
-  }
-}
-```
-
-## Webhooks (Planned)
-
-Future webhook support for real-time notifications:
-
-### Goal Completed
-```json
-{
-  "event": "goal.completed",
-  "data": {
-    "goal_id": "uuid",
-    "user_id": "uuid",
-    "completed_at": "2025-06-30T10:00:00Z"
-  }
-}
-```
-
-### Task Due Soon
-```json
-{
-  "event": "task.due_soon", 
-  "data": {
-    "task_id": "uuid",
-    "due_date": "2025-07-01T10:00:00Z",
-    "hours_remaining": 24
-  }
-}
-```
+`GET /auth/me`
+- Returns the currently authenticated user's details.
 
 ---
 
-For more information and examples, see the [Development Guide](DEVELOPMENT.md) and [Getting Started](GETTING_STARTED.md) documentation.
+## Core Data Endpoints
+
+### Goals (`goals.py`)
+- `GET /goals`: List all goals for the user.
+- `POST /goals`: Create a new goal.
+- `GET /goals/{goal_id}`: Retrieve a specific goal.
+- `PUT /goals/{goal_id}`: Update a goal.
+- `DELETE /goals/{goal_id}`: Delete a goal.
+
+### Projects (`projects.py`)
+- `GET /projects`: List all projects for the user.
+- `POST /projects`: Create a new project.
+- `GET /projects/{project_id}`: Retrieve a specific project.
+- `PUT /projects/{project_id}`: Update a project.
+- `DELETE /projects/{project_id}`: Delete a project.
+
+### Tasks (`tasks.py`)
+- `GET /tasks`: List all tasks, with filtering options.
+- `POST /tasks`: Create a new task.
+- `GET /tasks/{task_id}`: Retrieve a specific task.
+- `PUT /tasks/{task_id}`: Update a task.
+- `DELETE /tasks/{task_id}`: Delete a task.
+
+### Life Areas (`life_areas.py`)
+- `GET /life-areas`: List all life areas.
+- `POST /life-areas`: Create a new life area.
+- `GET /life-areas/{life_area_id}`: Retrieve a specific life area.
+- `PUT /life-areas/{life_area_id}`: Update a life area.
+- `DELETE /life-areas/{life_area_id}`: Delete a life area.
+
+### Habits (`habits.py`)
+- `GET /habits`: List all habits.
+- `POST /habits`: Create a new habit.
+- `GET /habits/{habit_id}`: Retrieve a specific habit.
+- `PUT /habits/{habit_id}`: Update a habit.
+- `DELETE /habits/{habit_id}`: Delete a habit.
+- `POST /habits/{habit_id}/log`: Log a completion for a habit.
+
+### Journal (`journal.py`)
+- `GET /journal-entries`: List all journal entries.
+- `POST /journal-entries`: Create a new journal entry.
+- `GET /journal-entries/{entry_id}`: Retrieve a specific entry.
+- `PUT /journal-entries/{entry_id}`: Update an entry.
+- `DELETE /journal-entries/{entry_id}`: Delete an entry.
+
+### Media Attachments (`media_attachments.py`)
+- `GET /media-attachments`: List all media attachments.
+- `POST /media-attachments`: Upload a new media file.
+- `GET /media-attachments/{attachment_id}`: Retrieve a specific media attachment.
+- `DELETE /media-attachments/{attachment_id}`: Delete a media attachment.
+
+### Tags (`tags.py`)
+- `GET /tags`: List all tags.
+- `POST /tags`: Create a new tag.
+- `GET /tags/{tag_id}`: Retrieve a specific tag.
+- `DELETE /tags/{tag_id}`: Delete a tag.
+
+---
+
+## AI & Content Generation Endpoints
+
+### AI Services (`ai.py`)
+- `POST /ai/decompose-goal`: Break down a goal into tasks using AI.
+- `POST /ai/chat`: General chat with the AI assistant.
+- `GET /ai/health`: Health check for AI providers.
+
+### Storytelling (`storytelling.py` & `story_sessions.py`)
+- `GET /storytelling/recent-stories`: Get recently generated stories.
+- `POST /story-sessions`: Create a new story generation session.
+- `GET /story-sessions/{session_id}`: Retrieve a story session.
+- `POST /story-sessions/{session_id}/generate`: Generate a story from a session.
+
+### Entities (`entities.py`)
+- `GET /entities`: List all extracted entities.
+- `GET /entities/{entity_id}`: Retrieve a specific entity.
+
+---
+
+## User & System Endpoints
+
+### User Preferences (`user_preferences.py`)
+- `GET /users/me/preferences`: Get preferences for the current user.
+- `PUT /users/me/preferences`: Update preferences for the current user.
+
+### Assistant Profiles (`assistant_profiles.py`)
+- `GET /assistant-profiles`: List available assistant profiles.
+- `POST /assistant-profiles`: Create a new assistant profile.
+
+### Onboarding (`onboarding.py`)
+- `GET /onboarding/state`: Get the user's current onboarding state.
+- `POST /onboarding/complete`: Mark onboarding as complete.
+
+### Analytics (`analytics.py`)
+- `GET /analytics/summary`: Get a summary of user activity.
+
+### Progress (`progress.py`)
+- `GET /progress/insights`: Get insights into goal and task progress.
+
+### Health (`health.py`)
+- `GET /health`: System health check.
+
+---
+
+## Error Responses
+
+- **401 Unauthorized**: Authentication is required.
+- **403 Forbidden**: You don't have permission to access this resource.
+- **404 Not Found**: The requested resource was not found.
+- **422 Unprocessable Entity**: The request body is invalid.
+- **500 Internal Server Error**: An unexpected error occurred on the server.
+
+---
+
+*This document provides a high-level overview. For detailed request/response schemas, please refer to the FastAPI-generated documentation at `/docs` when the server is running.*
