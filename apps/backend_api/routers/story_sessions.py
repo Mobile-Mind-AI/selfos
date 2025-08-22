@@ -3,14 +3,9 @@ from datetime import datetime, timedelta
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from models import Goal, LifeArea, StorySession, Task
-from schemas import (
-    GenerationRequest,
-    PublishRequest,
-    StorySessionCreate,
-    StorySessionSummary,
-    StorySessionUpdate,
-)
+from schemas import GenerationRequest, PublishRequest
 from schemas import StorySession as StorySessionSchema
+from schemas import StorySessionCreate, StorySessionSummary, StorySessionUpdate
 from sqlalchemy import and_, desc, func
 from sqlalchemy.orm import Session
 
