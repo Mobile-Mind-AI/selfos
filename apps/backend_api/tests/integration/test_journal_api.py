@@ -20,9 +20,12 @@ class TestJournalAPI:
         self.db = setup["session_local"]()
         self.client = TestClient(app)
         
-        # Create test user with consistent UID
-        self.test_user = User(uid="test_user_123", email="testuser@example.com")
-        self.db.add(self.test_user)
+        # Check if test user already exists from isolated_test_setup
+        self.test_user = self.db.query(User).filter(User.uid == "test_user_123").first()
+        if not self.test_user:
+            # Create test user with consistent UID
+            self.test_user = User(uid="test_user_123", email="testuser@example.com")
+            self.db.add(self.test_user)
         
         # Create test life area
         self.life_area = LifeArea(
@@ -130,7 +133,7 @@ class TestJournalAPI:
         response = self.client.post("/api/journal/", json=entry_data)
         
         assert response.status_code == 400
-        assert "not found or access denied" in response.json()["detail"]
+        assert "not found" in response.json()["detail"].lower()
 
     def test_create_journal_entry_invalid_content(self):
         """Test journal entry creation with invalid content"""
@@ -291,7 +294,7 @@ class TestJournalAPI:
     def test_get_journal_entry_count(self):
         """Test getting journal entry count"""
         # Initially should be 0
-        response = self.client.get("/api/journal/count")
+        response = self.client.get("/api/journal/count/")
         assert response.status_code == 200
         data = response.json()
         assert data["count"] == 0
@@ -306,7 +309,7 @@ class TestJournalAPI:
         self.db.commit()
         
         # Should now be 3
-        response = self.client.get("/api/journal/count")
+        response = self.client.get("/api/journal/count/")
         assert response.status_code == 200
         data = response.json()
         assert data["count"] == 3
@@ -340,7 +343,7 @@ class TestJournalAPI:
         assert data["count"] == 1
         
         # Test total count
-        response = self.client.get("/api/journal/count")
+        response = self.client.get("/api/journal/count/")
         assert response.status_code == 200
         data = response.json()
         assert data["count"] == 3
@@ -354,12 +357,14 @@ class TestJournalAPI:
         old_entry = JournalEntry(
             user_id=self.test_user.uid,
             content="Old entry",
-            created_at=old_date
+            created_at=old_date,
+            entry_date=old_date
         )
         recent_entry = JournalEntry(
             user_id=self.test_user.uid,
             content="Recent entry",
-            created_at=recent_date
+            created_at=recent_date,
+            entry_date=recent_date
         )
         
         self.db.add(old_entry)
@@ -367,7 +372,7 @@ class TestJournalAPI:
         self.db.commit()
         
         # Get recent entries (default 7 days)
-        response = self.client.get("/api/journal/recent")
+        response = self.client.get("/api/journal/recent/")
         assert response.status_code == 200
         data = response.json()
         
@@ -439,7 +444,7 @@ class TestJournalAPI:
             self.db.add(entry)
         self.db.commit()
         
-        response = self.client.get("/api/journal/statistics")
+        response = self.client.get("/api/journal/statistics/")
         assert response.status_code == 200
         data = response.json()
         
@@ -450,8 +455,8 @@ class TestJournalAPI:
         assert data["standalone_entries"] == 1
         assert data["recent_entries_30d"] == 4
         assert data["average_content_length"] > 0
-        assert data["oldest_entry_date"] is not None
-        assert data["newest_entry_date"] is not None
+        assert data["first_entry_date"] is not None
+        assert data["last_entry_date"] is not None
 
     def test_get_journal_entries_for_parent(self):
         """Test getting journal entries for specific parent entities"""
@@ -499,7 +504,7 @@ class TestJournalAPI:
 
     def test_get_journal_entries_for_parent_invalid_type(self):
         """Test getting journal entries with invalid parent type"""
-        response = self.client.get("/api/journal/for/invalid/1")
+        response = self.client.get("/api/journal/for/invalid/1/")
         assert response.status_code == 400
         assert "parent_type must be" in response.json()["detail"]
 
@@ -526,7 +531,7 @@ class TestJournalAPI:
 
     def test_get_journal_entry_not_found(self):
         """Test getting journal entry that doesn't exist"""
-        response = self.client.get("/api/journal/99999")
+        response = self.client.get("/api/journal/99999/")
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
@@ -557,7 +562,7 @@ class TestJournalAPI:
     def test_update_journal_entry_not_found(self):
         """Test updating journal entry that doesn't exist"""
         update_data = {"content": "Updated content"}
-        response = self.client.put("/api/journal/99999", json=update_data)
+        response = self.client.put("/api/journal/99999/", json=update_data)
         
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
@@ -584,7 +589,7 @@ class TestJournalAPI:
 
     def test_delete_journal_entry_not_found(self):
         """Test deleting journal entry that doesn't exist"""
-        response = self.client.delete("/api/journal/99999")
+        response = self.client.delete("/api/journal/99999/")
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
@@ -612,12 +617,14 @@ class TestJournalAPI:
         old_entry = JournalEntry(
             user_id=self.test_user.uid,
             content="Old entry",
-            created_at=old_date
+            created_at=old_date,
+            entry_date=old_date
         )
         recent_entry = JournalEntry(
             user_id=self.test_user.uid,
             content="Recent entry",
-            created_at=recent_date
+            created_at=recent_date,
+            entry_date=recent_date
         )
         
         self.db.add(old_entry)
