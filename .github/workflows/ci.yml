@@ -347,7 +347,7 @@ jobs:
         run: |
           # Find and copy .coverage data files (not XML)
           find coverage-artifacts -name ".coverage*" -exec cp {} . \; || true
-          
+
           # If we found .coverage files, combine them
           if ls .coverage* 1> /dev/null 2>&1; then
             coverage combine || true
@@ -356,7 +356,7 @@ jobs:
           else
             echo "No .coverage data files found, skipping combine" > coverage-summary.md
           fi
-          
+
           # Also copy XML files for reference
           find coverage-artifacts -name "coverage-*.xml" -exec cp {} . \; || true
 
