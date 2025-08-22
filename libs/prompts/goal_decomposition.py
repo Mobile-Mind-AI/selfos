@@ -5,9 +5,9 @@ This module contains prompt templates for breaking down high-level goals
 into actionable tasks and subtasks.
 """
 
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 
 
 @dataclass
@@ -15,17 +15,17 @@ class GoalContext:
     """Context information for goal decomposition."""
 
     user_id: str
-    life_areas: List[Dict[str, Any]]
-    existing_goals: List[Dict[str, Any]]
-    user_preferences: Optional[Dict[str, Any]] = None
-    current_date: Optional[str] = None
+    life_areas: list[dict[str, Any]]
+    existing_goals: list[dict[str, Any]]
+    user_preferences: dict[str, Any] | None = None
+    current_date: str | None = None
 
 
 class GoalDecompositionPrompts:
     """Prompt templates for AI-powered goal decomposition."""
 
     @staticmethod
-    def system_prompt(user_preferences: Optional[Dict[str, Any]] = None) -> str:
+    def system_prompt(user_preferences: dict[str, Any] | None = None) -> str:
         """Base system prompt for goal decomposition conversations."""
         tone = "friendly and encouraging"
         if user_preferences and user_preferences.get("tone"):
@@ -37,7 +37,7 @@ class GoalDecompositionPrompts:
             }
             tone = tone_mapping.get(user_preferences["tone"], tone)
 
-        return f"""You are SelfOS, an AI life management assistant that helps users break down their goals into actionable tasks. 
+        return f"""You are SelfOS, an AI life management assistant that helps users break down their goals into actionable tasks.
 
 Your personality is {tone}. You excel at:
 - Breaking down complex goals into smaller, manageable tasks
@@ -61,7 +61,7 @@ Always respond in a structured format that can be easily parsed and converted in
     def decompose_goal_prompt(
         goal_description: str,
         context: GoalContext,
-        additional_info: Optional[str] = None,
+        additional_info: str | None = None,
     ) -> str:
         """Generate a prompt for decomposing a specific goal."""
 
@@ -123,7 +123,7 @@ Please format your response as a structured breakdown that I can easily follow a
 
     @staticmethod
     def refine_tasks_prompt(
-        original_goal: str, proposed_tasks: List[Dict[str, Any]], user_feedback: str
+        original_goal: str, proposed_tasks: list[dict[str, Any]], user_feedback: str
     ) -> str:
         """Generate a prompt for refining tasks based on user feedback."""
 
@@ -153,7 +153,7 @@ Provide the updated task breakdown with explanations for the changes you made.""
 
     @staticmethod
     def suggest_life_area_prompt(
-        goal_description: str, existing_life_areas: List[Dict[str, Any]]
+        goal_description: str, existing_life_areas: list[dict[str, Any]]
     ) -> str:
         """Generate a prompt for suggesting appropriate life area categorization."""
 
@@ -183,8 +183,8 @@ Please explain your reasoning briefly."""
     @staticmethod
     def estimate_timeline_prompt(
         goal_description: str,
-        tasks: List[Dict[str, Any]],
-        user_availability: Optional[str] = None,
+        tasks: list[dict[str, Any]],
+        user_availability: str | None = None,
     ) -> str:
         """Generate a prompt for estimating realistic timelines."""
 
@@ -218,8 +218,8 @@ Consider that people often underestimate time requirements and that life can be 
     @staticmethod
     def identify_obstacles_prompt(
         goal_description: str,
-        tasks: List[Dict[str, Any]],
-        user_context: Optional[str] = None,
+        tasks: list[dict[str, Any]],
+        user_context: str | None = None,
     ) -> str:
         """Generate a prompt for identifying potential obstacles and solutions."""
 
@@ -250,9 +250,9 @@ class PromptFormatter:
 
     @staticmethod
     def format_user_context(
-        user_preferences: Optional[Dict[str, Any]] = None,
-        life_areas: List[Dict[str, Any]] = None,
-        recent_activity: Optional[str] = None,
+        user_preferences: dict[str, Any] | None = None,
+        life_areas: list[dict[str, Any]] = None,
+        recent_activity: str | None = None,
     ) -> str:
         """Format user context for inclusion in prompts."""
         context_parts = []

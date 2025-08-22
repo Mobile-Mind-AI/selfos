@@ -5,15 +5,14 @@ This module contains prompt templates for natural language conversations
 about goals, tasks, and life management.
 """
 
-from typing import Dict, List, Optional, Any
-from datetime import datetime
+from typing import Any
 
 
 class ConversationPrompts:
     """Prompt templates for conversational AI interactions."""
 
     @staticmethod
-    def chat_system_prompt(user_preferences: Optional[Dict[str, Any]] = None) -> str:
+    def chat_system_prompt(user_preferences: dict[str, Any] | None = None) -> str:
         """System prompt for general chat conversations about life management."""
 
         tone = "friendly and supportive"
@@ -60,9 +59,9 @@ Keep responses conversational but purposeful. You're here to help users achieve 
 
     @staticmethod
     def check_in_prompt(
-        recent_activities: List[Dict[str, Any]],
-        pending_tasks: List[Dict[str, Any]],
-        user_name: Optional[str] = None,
+        recent_activities: list[dict[str, Any]],
+        pending_tasks: list[dict[str, Any]],
+        user_name: str | None = None,
     ) -> str:
         """Generate a prompt for proactive check-ins with users."""
 
@@ -130,9 +129,9 @@ You don't need to answer all of these at once - just share what comes to mind. W
 
     @staticmethod
     def progress_review_prompt(
-        goal: Dict[str, Any],
-        completed_tasks: List[Dict[str, Any]],
-        challenges: Optional[str] = None,
+        goal: dict[str, Any],
+        completed_tasks: list[dict[str, Any]],
+        challenges: str | None = None,
     ) -> str:
         """Generate a prompt for reviewing progress on a goal."""
 
@@ -175,7 +174,7 @@ Based on your experience so far, what would help you maintain momentum and tackl
 
     @staticmethod
     def motivation_boost_prompt(
-        goal: Dict[str, Any], recent_setback: Optional[str] = None
+        goal: dict[str, Any], recent_setback: str | None = None
     ) -> str:
         """Generate a motivational prompt to help users overcome challenges."""
 
@@ -205,7 +204,7 @@ What feels like the most helpful thing to focus on right now?"""
 
     @staticmethod
     def planning_session_prompt(
-        available_time: Optional[str] = None, current_priorities: List[str] = None
+        available_time: str | None = None, current_priorities: list[str] = None
     ) -> str:
         """Generate a prompt for structured planning sessions."""
 
@@ -248,7 +247,7 @@ What would be most valuable to focus on in our planning session today?"""
 
     @staticmethod
     def reflection_prompt(
-        time_period: str = "week", completed_items: List[Dict[str, Any]] = None
+        time_period: str = "week", completed_items: list[dict[str, Any]] = None
     ) -> str:
         """Generate a prompt for reflection and learning."""
 
@@ -289,9 +288,9 @@ class ConversationUtils:
 
     @staticmethod
     def format_context_summary(
-        goals: List[Dict[str, Any]],
-        recent_tasks: List[Dict[str, Any]],
-        life_areas: List[Dict[str, Any]],
+        goals: list[dict[str, Any]],
+        recent_tasks: list[dict[str, Any]],
+        life_areas: list[dict[str, Any]],
     ) -> str:
         """Create a context summary for conversation continuity."""
 
@@ -303,7 +302,7 @@ class ConversationUtils:
                 goal_list = [
                     f"- {g.get('title', 'Untitled goal')}" for g in active_goals[:3]
                 ]
-                context_parts.append(f"Active goals:\n" + "\n".join(goal_list))
+                context_parts.append("Active goals:\n" + "\n".join(goal_list))
 
         if recent_tasks:
             completed_recently = [
@@ -314,7 +313,7 @@ class ConversationUtils:
                     f"- {t.get('title', 'Completed task')}"
                     for t in completed_recently[-3:]
                 ]
-                context_parts.append(f"Recently completed:\n" + "\n".join(task_list))
+                context_parts.append("Recently completed:\n" + "\n".join(task_list))
 
         if life_areas:
             area_list = [area.get("name", "Unnamed area") for area in life_areas[:4]]
@@ -327,7 +326,7 @@ class ConversationUtils:
         )
 
     @staticmethod
-    def suggest_conversation_starters() -> List[str]:
+    def suggest_conversation_starters() -> list[str]:
         """Provide conversation starter suggestions."""
         return [
             "I want to set a new goal",
@@ -341,7 +340,7 @@ class ConversationUtils:
         ]
 
     @staticmethod
-    def detect_conversation_intent(user_message: str) -> Dict[str, Any]:
+    def detect_conversation_intent(user_message: str) -> dict[str, Any]:
         """Analyze user message to detect intent and extract key information."""
         message_lower = user_message.lower()
 

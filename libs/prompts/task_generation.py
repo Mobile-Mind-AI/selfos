@@ -5,8 +5,8 @@ This module contains prompt templates for generating and refining tasks,
 including smart suggestions and task optimization.
 """
 
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -15,10 +15,10 @@ class TaskContext:
 
     goal_id: int
     goal_title: str
-    goal_description: Optional[str]
-    existing_tasks: List[Dict[str, Any]]
-    life_area: Optional[Dict[str, Any]] = None
-    user_preferences: Optional[Dict[str, Any]] = None
+    goal_description: str | None
+    existing_tasks: list[dict[str, Any]]
+    life_area: dict[str, Any] | None = None
+    user_preferences: dict[str, Any] | None = None
 
 
 class TaskGenerationPrompts:
@@ -27,7 +27,7 @@ class TaskGenerationPrompts:
     @staticmethod
     def suggest_next_tasks_prompt(
         context: TaskContext,
-        completed_tasks: List[Dict[str, Any]],
+        completed_tasks: list[dict[str, Any]],
         max_suggestions: int = 3,
     ) -> str:
         """Generate prompt for suggesting next logical tasks."""
@@ -64,7 +64,7 @@ class TaskGenerationPrompts:
 {completed_text}
 {pending_text}
 
-Based on my progress and current situation, please suggest {max_suggestions} specific next tasks that would help me advance toward this goal. 
+Based on my progress and current situation, please suggest {max_suggestions} specific next tasks that would help me advance toward this goal.
 
 For each suggestion, provide:
 1. **Task title** (clear and actionable)
@@ -81,7 +81,7 @@ Focus on tasks that:
 
     @staticmethod
     def optimize_task_sequence_prompt(
-        tasks: List[Dict[str, Any]], constraints: Optional[str] = None
+        tasks: list[dict[str, Any]], constraints: str | None = None
     ) -> str:
         """Generate prompt for optimizing task order and dependencies."""
 
@@ -122,7 +122,7 @@ Consider:
 
     @staticmethod
     def break_down_complex_task_prompt(
-        task_title: str, task_description: str, available_time: Optional[str] = None
+        task_title: str, task_description: str, available_time: str | None = None
     ) -> str:
         """Generate prompt for breaking down a complex task into subtasks."""
 
@@ -157,8 +157,8 @@ Also suggest:
     def estimate_task_duration_prompt(
         task_title: str,
         task_description: str,
-        user_experience: Optional[str] = None,
-        similar_tasks: List[Dict[str, Any]] = None,
+        user_experience: str | None = None,
+        similar_tasks: list[dict[str, Any]] = None,
     ) -> str:
         """Generate prompt for estimating realistic task duration."""
 
@@ -203,8 +203,8 @@ Be realistic rather than optimistic - it's better to overestimate and finish ear
     def suggest_task_improvements_prompt(
         task_title: str,
         task_description: str,
-        current_progress: Optional[str] = None,
-        challenges: Optional[str] = None,
+        current_progress: str | None = None,
+        challenges: str | None = None,
     ) -> str:
         """Generate prompt for improving task definition and approach."""
 
@@ -277,7 +277,7 @@ class TaskPromptUtils:
 
     @staticmethod
     def format_task_list(
-        tasks: List[Dict[str, Any]], include_details: bool = True
+        tasks: list[dict[str, Any]], include_details: bool = True
     ) -> str:
         """Format a list of tasks for inclusion in prompts."""
         if not tasks:
@@ -300,7 +300,7 @@ class TaskPromptUtils:
         return "\n\n".join(formatted) if include_details else "\n".join(formatted)
 
     @staticmethod
-    def extract_time_estimates(text: str) -> Dict[str, Any]:
+    def extract_time_estimates(text: str) -> dict[str, Any]:
         """Extract time estimates from AI responses."""
         # This is a placeholder for parsing logic
         # In practice, you'd implement proper parsing of time expressions
@@ -322,7 +322,7 @@ class TaskPromptUtils:
         return estimates
 
     @staticmethod
-    def validate_task_structure(task_data: Dict[str, Any]) -> List[str]:
+    def validate_task_structure(task_data: dict[str, Any]) -> list[str]:
         """Validate that a task has required structure."""
         errors = []
 
