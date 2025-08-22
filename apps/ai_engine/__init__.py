@@ -10,8 +10,21 @@ import importlib.util
 # Import AIConfig from current directory to avoid conflicts
 import os
 
-from models import *
-from orchestrator import AIOrchestrator
+from .models import (
+    ChatContext,
+    ChatMessage,
+    ChatResponse,
+    GoalDecomposition,
+    HierarchicalTask,
+    Intent,
+    IntentClassification,
+    MemoryItem,
+    MemorySearchResult,
+    PromptTemplate,
+    RecurrenceRule,
+    TaskSuggestion,
+)
+from .orchestrator import AIOrchestrator
 
 current_dir = os.path.dirname(__file__)
 config_path = os.path.join(current_dir, "config.py")

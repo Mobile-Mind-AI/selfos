@@ -7,6 +7,7 @@ caching, and response processing.
 
 import asyncio
 import hashlib
+import importlib.util
 import json
 import logging
 import os
@@ -18,7 +19,6 @@ from typing import Any
 # Import config from current directory (ai_engine)
 current_dir = os.path.dirname(__file__)
 config_path = os.path.join(current_dir, "config.py")
-import importlib.util
 
 config_spec = importlib.util.spec_from_file_location("ai_config", config_path)
 ai_config_module = importlib.util.module_from_spec(config_spec)
@@ -74,13 +74,7 @@ except ImportError:
         ConversationPrompts = MockPrompts
 
 # Import models directly at module level
-import os
-import sys
-
-current_dir = os.path.dirname(__file__)
 models_path = os.path.join(current_dir, "models.py")
-import importlib.util
-
 models_spec = importlib.util.spec_from_file_location("models", models_path)
 models_module = importlib.util.module_from_spec(models_spec)
 models_spec.loader.exec_module(models_module)
@@ -130,10 +124,10 @@ class OpenAIClient(ProviderClient):
                 import openai
 
                 self._client = openai.AsyncOpenAI(api_key=self.api_key)
-            except ImportError:
+            except ImportError as e:
                 raise ImportError(
                     "OpenAI package not installed. Run: pip install openai"
-                )
+                ) from e
         return self._client
 
     async def generate_completion(
@@ -169,8 +163,8 @@ class OpenAIClient(ProviderClient):
                 "finish_reason": response.choices[0].finish_reason,
             }
 
-        except asyncio.TimeoutError:
-            raise Exception(f"Request timed out after {timeout} seconds")
+        except asyncio.TimeoutError as e:
+            raise Exception(f"Request timed out after {timeout} seconds") from e
         except Exception as e:
             logger.error(f"OpenAI API error: {e}")
             raise
@@ -190,10 +184,10 @@ class AnthropicClient(ProviderClient):
                 import anthropic
 
                 self._client = anthropic.AsyncAnthropic(api_key=self.api_key)
-            except ImportError:
+            except ImportError as e:
                 raise ImportError(
                     "Anthropic package not installed. Run: pip install anthropic"
-                )
+                ) from e
         return self._client
 
     async def generate_completion(
@@ -230,8 +224,8 @@ class AnthropicClient(ProviderClient):
                 "finish_reason": response.stop_reason,
             }
 
-        except asyncio.TimeoutError:
-            raise Exception(f"Request timed out after {timeout} seconds")
+        except asyncio.TimeoutError as e:
+            raise Exception(f"Request timed out after {timeout} seconds") from e
         except Exception as e:
             logger.error(f"Anthropic API error: {e}")
             raise
@@ -394,7 +388,7 @@ How would you like to structure your weekly practice time? Are there specific da
                 word in user_message
                 for word in ["meditation", "wellness", "mindfulness", "health"]
             ):
-                return """I understand you'd like to discuss your wellness and mindfulness goals. 
+                return """I understand you'd like to discuss your wellness and mindfulness goals.
 
 Meditation and wellness practices are excellent for mental clarity and stress management. I can help with:
 - Creating a meditation routine that fits your schedule
@@ -523,7 +517,7 @@ What areas feel most important to you right now? Sometimes it helps to think abo
 What resonates most with you? I'm here to help you break down any area into manageable, actionable goals."""
 
             else:
-                return """I understand you'd like to discuss your goals and progress. 
+                return """I understand you'd like to discuss your goals and progress.
 
 What specific area would you like to focus on today? I can help with:
 - Breaking down complex goals into tasks
@@ -553,7 +547,7 @@ What would be most helpful right now?"""
    - Time: Variable"""
 
         else:
-            return """I'm here to help you with goal setting, task management, and life planning. 
+            return """I'm here to help you with goal setting, task management, and life planning.
 
 Could you provide more details about what you'd like to work on? For example:
 - A specific goal you want to achieve
@@ -1184,7 +1178,7 @@ class AIOrchestrator:
                     provider_enum = None
 
                 config = self.config.get_model_config("conversation", provider_enum)
-                result = await client.generate_completion(
+                await client.generate_completion(
                     prompt=test_prompt,
                     max_tokens=5,
                     temperature=0.1,

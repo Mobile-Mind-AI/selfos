@@ -251,7 +251,7 @@ class PromptTemplate:
         try:
             return self.template.format(**kwargs)
         except KeyError as e:
-            raise ValueError(f"Template variable not provided: {e}")
+            raise ValueError(f"Template variable not provided: {e}") from e
 
     def get_variables(self) -> list[str]:
         """Extract all variable names from template."""
