@@ -1,3 +1,7 @@
+"""
+Dependency utilities for authentication and database session.
+"""
+
 import os
 
 import firebase_admin
@@ -7,10 +11,6 @@ from fastapi.security import OAuth2PasswordBearer
 from firebase_admin import auth as firebase_auth
 from firebase_admin import credentials
 from sqlalchemy.orm import Session
-
-"""
-Dependency utilities for authentication and database session.
-"""
 
 print("🚀 Dependencies module is being imported!")
 

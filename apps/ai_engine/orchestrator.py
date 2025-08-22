@@ -574,7 +574,7 @@ class ResponseCache:
             "temperature": model_config.get("temperature"),
         }
         key_string = json.dumps(key_data, sort_keys=True)
-        return hashlib.md5(key_string.encode()).hexdigest()
+        return hashlib.md5(key_string.encode(), usedforsecurity=False).hexdigest()
 
     async def get(self, prompt: str, model_config: dict[str, Any]) -> AIResponse | None:
         """Get cached response."""
