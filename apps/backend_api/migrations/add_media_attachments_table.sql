@@ -7,7 +7,7 @@ CREATE TABLE media_attachments (
     user_id VARCHAR(255) NOT NULL REFERENCES users(uid),
     goal_id INTEGER REFERENCES goals(id),
     task_id INTEGER REFERENCES tasks(id),
-    
+
     -- File information
     filename VARCHAR(255) NOT NULL,
     original_filename VARCHAR(255) NOT NULL,
@@ -15,14 +15,14 @@ CREATE TABLE media_attachments (
     file_size INTEGER NOT NULL CHECK (file_size >= 0),
     mime_type VARCHAR(100) NOT NULL,
     file_type VARCHAR(50) NOT NULL CHECK (file_type IN ('image', 'video', 'audio', 'document')),
-    
+
     -- Optional metadata for storytelling
     title VARCHAR(200),
     description TEXT,
     duration INTEGER CHECK (duration >= 0),  -- Duration in seconds for video/audio
     width INTEGER CHECK (width >= 0),        -- Width in pixels for images/videos
     height INTEGER CHECK (height >= 0),      -- Height in pixels for images/videos
-    
+
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

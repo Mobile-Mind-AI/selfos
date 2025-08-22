@@ -3,11 +3,11 @@
 -- Description: Adds parent_id fields to goals and projects tables to support hierarchical (nested) structures
 
 -- Add parent_id column to goals table
-ALTER TABLE goals 
+ALTER TABLE goals
 ADD COLUMN parent_id INTEGER REFERENCES goals(id) ON DELETE CASCADE;
 
--- Add parent_id column to projects table  
-ALTER TABLE projects 
+-- Add parent_id column to projects table
+ALTER TABLE projects
 ADD COLUMN parent_id INTEGER REFERENCES projects(id) ON DELETE CASCADE;
 
 -- Add indexes for performance optimization

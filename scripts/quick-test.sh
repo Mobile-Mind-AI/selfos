@@ -73,7 +73,7 @@ if [ $test_result -eq 0 ]; then
     echo ""
     echo "Your SelfOS backend is fully operational with:"
     echo "✅ Database connectivity"
-    echo "✅ AI event system" 
+    echo "✅ AI event system"
     echo "✅ All services (progress, storytelling, notifications, memory)"
     echo "✅ Authentication system"
     echo "✅ Complete API workflow"
@@ -101,7 +101,7 @@ fi
 echo ""
 echo "🛠️  Useful commands:"
 echo "   📊 View logs: docker-compose logs -f backend"
-echo "   🔄 Restart: docker-compose restart"  
+echo "   🔄 Restart: docker-compose restart"
 echo "   🛑 Stop: docker-compose down"
 echo "   🗑️  Reset: docker-compose down -v && docker-compose up -d"
 

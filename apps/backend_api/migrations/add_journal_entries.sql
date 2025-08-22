@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS journal_entries (
     version INTEGER NOT NULL DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
+
     -- Foreign key constraints
     FOREIGN KEY (user_id) REFERENCES users (uid) ON DELETE CASCADE,
     FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
@@ -22,16 +22,16 @@ CREATE TABLE IF NOT EXISTS journal_entries (
 );
 
 -- Create performance indexes for journal_entries
-CREATE INDEX IF NOT EXISTS ix_journal_entries_user_created 
+CREATE INDEX IF NOT EXISTS ix_journal_entries_user_created
     ON journal_entries (user_id, created_at DESC);
-    
-CREATE INDEX IF NOT EXISTS ix_journal_entries_project_created 
+
+CREATE INDEX IF NOT EXISTS ix_journal_entries_project_created
     ON journal_entries (project_id, created_at DESC);
-    
-CREATE INDEX IF NOT EXISTS ix_journal_entries_goal_created 
+
+CREATE INDEX IF NOT EXISTS ix_journal_entries_goal_created
     ON journal_entries (goal_id, created_at DESC);
-    
-CREATE INDEX IF NOT EXISTS ix_journal_entries_task_created 
+
+CREATE INDEX IF NOT EXISTS ix_journal_entries_task_created
     ON journal_entries (task_id, created_at DESC);
 
 -- Add basic indexes

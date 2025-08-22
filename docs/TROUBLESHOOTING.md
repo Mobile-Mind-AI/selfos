@@ -134,8 +134,8 @@ docker stats
 
 # Check database performance
 docker-compose exec db psql -U selfos -d selfos_dev -c "
-SELECT query, calls, total_time, mean_time 
-FROM pg_stat_statements 
+SELECT query, calls, total_time, mean_time
+FROM pg_stat_statements
 ORDER BY total_time DESC LIMIT 10;"
 
 # Check application logs for timeouts
@@ -374,7 +374,7 @@ For debugging, increase log verbosity:
 # In docker-compose.yml
 environment:
   LOG_LEVEL: DEBUG
-  
+
 # Or restart with debug
 docker-compose restart backend
 docker-compose logs -f backend

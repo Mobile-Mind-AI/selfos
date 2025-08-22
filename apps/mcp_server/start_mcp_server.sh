@@ -39,7 +39,7 @@ case "${1:-docker}" in
         cd ../..
         docker-compose up --build backend mcp-server
         ;;
-        
+
     "standalone")
         echo "🔧 Starting MCP Server in standalone mode..."
         echo "Make sure you have the backend_api dependencies installed:"
@@ -47,27 +47,27 @@ case "${1:-docker}" in
         echo ""
         python fastapi_integration.py --host 0.0.0.0 --port 8001 --reload
         ;;
-        
+
     "fastapi")
         echo "🌐 Starting MCP Server with FastAPI integration..."
         python fastapi_integration.py --host 127.0.0.1 --port 8001 --reload
         ;;
-        
+
     "stdio")
         echo "📱 Starting MCP Server with stdio transport..."
         echo "This mode is for AI agents that communicate via standard input/output."
         python cli.py --transport stdio
         ;;
-        
+
     "test")
         echo "🧪 Running MCP Server tests..."
         python run_tests.py --coverage
         ;;
-        
+
     "help"|"-h"|"--help")
         show_usage
         ;;
-        
+
     *)
         echo "❌ Unknown option: $1"
         echo ""

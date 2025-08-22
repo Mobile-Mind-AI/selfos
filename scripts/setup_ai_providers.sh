@@ -60,7 +60,7 @@ get_env_value() {
 is_configured() {
     local value=$1
     local default_patterns=("your_.*_key_here" "not set" "" "your-.*-key-here")
-    
+
     for pattern in "${default_patterns[@]}"; do
         if [[ "$value" =~ $pattern ]]; then
             return 1

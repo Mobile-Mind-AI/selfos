@@ -12,7 +12,7 @@ CREATE TABLE life_areas (
     description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    
+
     -- Ensure unique life area names per user
     UNIQUE(user_id, name)
 );

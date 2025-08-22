@@ -5,19 +5,20 @@ MCP tools for managing tasks in the SelfOS system.
 Provides CRUD operations and dependency management for tasks.
 """
 
-from typing import Dict, List, Any
+from typing import Any
+
 from mcp.types import Tool
 from tools.base_tools import BaseToolsHandler
 
 
 class TasksToolsHandler(BaseToolsHandler):
     """Handler for task-related MCP tools."""
-    
+
     def __init__(self):
         super().__init__()
         self.tool_prefix = "tasks_"
-    
-    async def list_tools(self) -> List[Tool]:
+
+    async def list_tools(self) -> list[Tool]:
         """Return list of task-related tools."""
         return [
             Tool(
@@ -27,13 +28,19 @@ class TasksToolsHandler(BaseToolsHandler):
                     "type": "object",
                     "properties": {
                         "user_id": {"type": "string", "description": "User identifier"},
-                        "status": {"type": "string", "description": "Filter by task status"},
+                        "status": {
+                            "type": "string",
+                            "description": "Filter by task status",
+                        },
                         "goal_id": {"type": "integer", "description": "Filter by goal"},
-                        "project_id": {"type": "integer", "description": "Filter by project"},
-                        "limit": {"type": "integer", "default": 100}
+                        "project_id": {
+                            "type": "integer",
+                            "description": "Filter by project",
+                        },
+                        "limit": {"type": "integer", "default": 100},
                     },
-                    "required": ["user_id"]
-                }
+                    "required": ["user_id"],
+                },
             ),
             Tool(
                 name="tasks_get",
@@ -42,14 +49,17 @@ class TasksToolsHandler(BaseToolsHandler):
                     "type": "object",
                     "properties": {
                         "user_id": {"type": "string", "description": "User identifier"},
-                        "task_id": {"type": "integer", "description": "Task identifier"}
+                        "task_id": {
+                            "type": "integer",
+                            "description": "Task identifier",
+                        },
                     },
-                    "required": ["user_id", "task_id"]
-                }
-            )
+                    "required": ["user_id", "task_id"],
+                },
+            ),
         ]
-    
-    async def call_tool(self, name: str, arguments: Dict[str, Any]) -> Dict:
+
+    async def call_tool(self, name: str, arguments: dict[str, Any]) -> dict:
         """Execute a task-related tool."""
         # Placeholder implementation
         return {"message": f"Task tool {name} not yet implemented", "success": False}

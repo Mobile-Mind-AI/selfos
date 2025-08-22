@@ -10,32 +10,32 @@ CREATE TYPE view_mode AS ENUM ('list', 'card', 'timeline');
 CREATE TABLE user_preferences (
     id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id VARCHAR NOT NULL UNIQUE REFERENCES users(uid) ON DELETE CASCADE,
-    
+
     -- Tone and communication preferences
     tone tone_style DEFAULT 'friendly',
-    
+
     -- Notification preferences
     notification_time TIME,
     notifications_enabled BOOLEAN DEFAULT true,
     email_notifications BOOLEAN DEFAULT false,
-    
+
     -- Content and visualization preferences
     prefers_video BOOLEAN DEFAULT true,
     prefers_audio BOOLEAN DEFAULT false,
     default_view view_mode DEFAULT 'card',
-    
+
     -- Feature preferences
     mood_tracking_enabled BOOLEAN DEFAULT false,
     progress_charts_enabled BOOLEAN DEFAULT true,
     ai_suggestions_enabled BOOLEAN DEFAULT true,
-    
+
     -- Default associations
     default_life_area_id INTEGER REFERENCES life_areas(id) ON DELETE SET NULL,
-    
+
     -- Privacy and data preferences
     data_sharing_enabled BOOLEAN DEFAULT false,
     analytics_enabled BOOLEAN DEFAULT true,
-    
+
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -64,32 +64,32 @@ CREATE TRIGGER update_user_preferences_updated_at
 CREATE TABLE user_preferences (
     id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     user_id TEXT NOT NULL UNIQUE REFERENCES users(uid) ON DELETE CASCADE,
-    
+
     -- Tone and communication preferences
     tone TEXT CHECK(tone IN ('friendly', 'coach', 'minimal', 'professional')) DEFAULT 'friendly',
-    
-    -- Notification preferences  
+
+    -- Notification preferences
     notification_time TEXT, -- Stored as HH:MM format
     notifications_enabled BOOLEAN DEFAULT 1,
     email_notifications BOOLEAN DEFAULT 0,
-    
+
     -- Content and visualization preferences
     prefers_video BOOLEAN DEFAULT 1,
     prefers_audio BOOLEAN DEFAULT 0,
     default_view TEXT CHECK(default_view IN ('list', 'card', 'timeline')) DEFAULT 'card',
-    
+
     -- Feature preferences
     mood_tracking_enabled BOOLEAN DEFAULT 0,
     progress_charts_enabled BOOLEAN DEFAULT 1,
     ai_suggestions_enabled BOOLEAN DEFAULT 1,
-    
+
     -- Default associations
     default_life_area_id INTEGER REFERENCES life_areas(id) ON DELETE SET NULL,
-    
+
     -- Privacy and data preferences
     data_sharing_enabled BOOLEAN DEFAULT 0,
     analytics_enabled BOOLEAN DEFAULT 1,
-    
+
     -- Timestamps
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -103,8 +103,8 @@ CREATE INDEX idx_user_preferences_default_life_area ON user_preferences(default_
 CREATE TRIGGER update_user_preferences_updated_at
     AFTER UPDATE ON user_preferences
 BEGIN
-    UPDATE user_preferences 
-    SET updated_at = CURRENT_TIMESTAMP 
+    UPDATE user_preferences
+    SET updated_at = CURRENT_TIMESTAMP
     WHERE id = NEW.id;
 END;
 */

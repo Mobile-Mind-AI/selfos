@@ -54,7 +54,7 @@ apps/backend_api/
 ```python
 class Habit(Base):
     __tablename__ = "habits"
-    
+
     id: int (Primary Key)
     user_id: str (Foreign Key to users)
     title: str (1-200 characters)
@@ -78,7 +78,7 @@ class Habit(Base):
 ```python
 class HabitCompletion(Base):
     __tablename__ = "habit_completions"
-    
+
     id: int (Primary Key)
     habit_id: int (Foreign Key to habits)
     completion_date: datetime
@@ -360,32 +360,32 @@ def _calculate_current_streak(self, db: Session, habit: models.Habit) -> int:
         .filter(models.HabitCompletion.habit_id == habit.id)\
         .order_by(models.HabitCompletion.completion_date.desc())\
         .all()
-    
+
     if not completions:
         return 0
-    
+
     streak = 0
     current_date = datetime.utcnow().date()
-    
+
     # Check each period working backwards
     while True:
         period_start, period_end = self._get_period_bounds(
             habit.recurrence_rule["type"], current_date
         )
-        
+
         # Count completions in this period
         period_completions = [
-            c for c in completions 
+            c for c in completions
             if period_start <= c.completion_date.date() <= period_end
         ]
-        
+
         # Check if target was met
         if len(period_completions) >= habit.recurrence_rule["target_count"]:
             streak += 1
             current_date = period_start - timedelta(days=1)
         else:
             break
-    
+
     return streak
 ```
 
@@ -413,7 +413,7 @@ CREATE TABLE habits (
     total_completions INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
+
     FOREIGN KEY (goal_id) REFERENCES goals(id) ON DELETE SET NULL,
     FOREIGN KEY (life_area_id) REFERENCES life_areas(id) ON DELETE SET NULL
 );
@@ -430,7 +430,7 @@ CREATE TABLE habit_completions (
     duration_minutes INTEGER,
     intensity_rating INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
+
     FOREIGN KEY (habit_id) REFERENCES habits(id) ON DELETE CASCADE,
     UNIQUE(habit_id, completion_date)
 );
@@ -474,11 +474,11 @@ def test_create_habit_success(self):
             target_type="count"
         )
     )
-    
+
     result = self.habit_service.create_habit(
         self.mock_db, self.user_id, habit_data
     )
-    
+
     assert result.title == "Test Habit"
     assert result.current_streak == 0
     assert result.total_completions == 0
@@ -497,16 +497,16 @@ def test_complete_habit_success(self, client, auth_headers):
             "target_type": "count"
         }
     }, headers=auth_headers)
-    
+
     habit_id = habit_response.json()["id"]
-    
+
     # Complete habit
     completion_response = client.post(
         f"/api/habits/{habit_id}/complete",
         json={"notes": "Done!"},
         headers=auth_headers
     )
-    
+
     assert completion_response.status_code == 201
     assert completion_response.json()["notes"] == "Done!"
 ```
@@ -537,7 +537,7 @@ const createHabit = async () => {
       goal_id: goalId
     })
   });
-  
+
   return response.json();
 };
 ```
@@ -557,7 +557,7 @@ const completeHabit = async (habitId: number) => {
       intensity_rating: 8
     })
   });
-  
+
   return response.json();
 };
 ```
@@ -573,7 +573,7 @@ const getHabitProgress = async (habitId: number) => {
       }
     }
   );
-  
+
   return response.json();
 };
 ```
@@ -586,7 +586,7 @@ import { useHabits } from './hooks/useHabits';
 
 const HabitsScreen = () => {
   const { habits, loading, completeHabit } = useHabits();
-  
+
   const handleComplete = async (habitId: number) => {
     try {
       await completeHabit(habitId, {
@@ -598,11 +598,11 @@ const HabitsScreen = () => {
       console.error('Failed to complete habit:', error);
     }
   };
-  
+
   return (
     <View>
       {habits.map(habit => (
-        <HabitCard 
+        <HabitCard
           key={habit.id}
           habit={habit}
           onComplete={() => handleComplete(habit.id)}
@@ -679,10 +679,10 @@ for habit in due_habits:
 def get_habits_optimized(db, user_id, active_only=None, limit=50, offset=0):
     query = db.query(models.Habit)\
         .filter(models.Habit.user_id == user_id)
-    
+
     if active_only is not None:
         query = query.filter(models.Habit.is_active == active_only)
-    
+
     return query.order_by(models.Habit.created_at.desc())\
         .limit(limit)\
         .offset(offset)\
@@ -697,13 +697,13 @@ def update_all_streaks(db, user_id):
         .filter(models.Habit.user_id == user_id)\
         .filter(models.Habit.is_active == True)\
         .all()
-    
+
     # Batch process streaks
     for habit in habits:
         new_streak = self._calculate_current_streak(db, habit)
         habit.current_streak = new_streak
         habit.best_streak = max(habit.best_streak, new_streak)
-    
+
     db.commit()
 ```
 

@@ -2,38 +2,34 @@
 Avatar management endpoints for custom avatar upload and retrieval.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
-from fastapi.responses import Response
-from sqlalchemy.orm import Session
-from typing import List, Optional
 import base64
 import io
-from PIL import Image
 import uuid
 from datetime import datetime
 
-from dependencies import get_db, get_current_user
 import models
-from schemas.assistant_schemas import AssistantProfile
+from dependencies import get_current_user, get_db
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import Response
+from PIL import Image
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/avatars", tags=["avatars"])
 
 from fastapi import Request
+
 
 @router.get("/debug/auth")
 async def debug_auth(request: Request):
     """Debug endpoint to check authentication headers"""
     auth_header = request.headers.get("authorization", "Not found")
     print(f"🔍 DEBUG AUTH: Authorization header: {auth_header}")
-    return {
-        "authorization_header": auth_header,
-        "all_headers": dict(request.headers)
-    }
+    return {"authorization_header": auth_header, "all_headers": dict(request.headers)}
+
 
 @router.get("/debug/auth-test")
 async def debug_auth_test(
-    request: Request,
-    current_user: dict = Depends(get_current_user)
+    request: Request, current_user: dict = Depends(get_current_user)
 ):
     """Debug endpoint to test authentication"""
     auth_header = request.headers.get("authorization", "Not found")
@@ -42,19 +38,15 @@ async def debug_auth_test(
     return {
         "authorization_header": auth_header,
         "current_user": current_user,
-        "success": True
+        "success": True,
     }
+
 
 # Maximum file size: 5MB
 MAX_FILE_SIZE = 5 * 1024 * 1024
 
 # Allowed content types
-ALLOWED_CONTENT_TYPES = {
-    "image/jpeg",
-    "image/jpg", 
-    "image/png",
-    "image/webp"
-}
+ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
 
 # Thumbnail size
 THUMBNAIL_SIZE = (64, 64)
@@ -64,11 +56,11 @@ THUMBNAIL_SIZE = (64, 64)
 async def upload_avatar(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Upload a custom avatar image.
-    
+
     Returns:
         dict: Avatar ID and metadata
     """
@@ -77,44 +69,50 @@ async def upload_avatar(
     if len(file_content) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File size exceeds {MAX_FILE_SIZE // (1024*1024)}MB limit"
+            detail=f"File size exceeds {MAX_FILE_SIZE // (1024*1024)}MB limit",
         )
-    
+
     # Debug logging
-    print(f"🔍 DEBUG: Received file - filename: {file.filename}, content_type: {file.content_type}, size: {len(file_content)}")
-    
+    print(
+        f"🔍 DEBUG: Received file - filename: {file.filename}, content_type: {file.content_type}, size: {len(file_content)}"
+    )
+
     # Validate content type
     if file.content_type not in ALLOWED_CONTENT_TYPES:
-        print(f"❌ DEBUG: Content type '{file.content_type}' not in allowed types: {ALLOWED_CONTENT_TYPES}")
+        print(
+            f"❌ DEBUG: Content type '{file.content_type}' not in allowed types: {ALLOWED_CONTENT_TYPES}"
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported file type '{file.content_type}'. Allowed types: {', '.join(ALLOWED_CONTENT_TYPES)}"
+            detail=f"Unsupported file type '{file.content_type}'. Allowed types: {', '.join(ALLOWED_CONTENT_TYPES)}",
         )
-    
+
     try:
         # Open and validate image
         image = Image.open(io.BytesIO(file_content))
         width, height = image.size
-        
+
         # Convert to RGB if necessary
-        if image.mode in ('RGBA', 'P'):
-            background = Image.new('RGB', image.size, (255, 255, 255))
-            background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+        if image.mode in ("RGBA", "P"):
+            background = Image.new("RGB", image.size, (255, 255, 255))
+            background.paste(
+                image, mask=image.split()[-1] if image.mode == "RGBA" else None
+            )
             image = background
-        
+
         # Create thumbnail
         thumbnail = image.copy()
         thumbnail.thumbnail(THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
-        
+
         # Convert images to bytes
         img_byte_arr = io.BytesIO()
-        image.save(img_byte_arr, format='JPEG', quality=85)
+        image.save(img_byte_arr, format="JPEG", quality=85)
         image_data = img_byte_arr.getvalue()
-        
+
         thumb_byte_arr = io.BytesIO()
-        thumbnail.save(thumb_byte_arr, format='JPEG', quality=70)
+        thumbnail.save(thumb_byte_arr, format="JPEG", quality=70)
         thumbnail_data = thumb_byte_arr.getvalue()
-        
+
         # Create avatar record
         avatar_id = str(uuid.uuid4())
         db_avatar = models.AvatarImage(
@@ -129,13 +127,13 @@ async def upload_avatar(
             height=height,
             thumbnail_data=thumbnail_data,
             is_active=True,
-            usage_count=0
+            usage_count=0,
         )
-        
+
         db.add(db_avatar)
         db.commit()
         db.refresh(db_avatar)
-        
+
         return {
             "avatar_id": avatar_id,
             "filename": db_avatar.filename,
@@ -143,14 +141,14 @@ async def upload_avatar(
             "height": height,
             "size_bytes": len(image_data),
             "content_type": "image/jpeg",
-            "created_at": db_avatar.created_at.isoformat()
+            "created_at": db_avatar.created_at.isoformat(),
         }
-        
+
     except Exception as e:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to process image: {str(e)}"
+            detail=f"Failed to process image: {str(e)}",
         )
 
 
@@ -158,26 +156,26 @@ async def upload_avatar(
 def list_user_avatars(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
-    include_inactive: bool = False
+    include_inactive: bool = False,
 ):
     """
     List all avatars for the current user.
-    
+
     Args:
         include_inactive: Include deactivated avatars
-        
+
     Returns:
         List of avatar metadata
     """
     query = db.query(models.AvatarImage).filter(
         models.AvatarImage.user_id == current_user["uid"]
     )
-    
+
     if not include_inactive:
-        query = query.filter(models.AvatarImage.is_active == True)
-    
+        query = query.filter(models.AvatarImage.is_active)
+
     avatars = query.order_by(models.AvatarImage.created_at.desc()).all()
-    
+
     return [
         {
             "avatar_id": avatar.id,
@@ -189,7 +187,9 @@ def list_user_avatars(
             "usage_count": avatar.usage_count,
             "is_active": avatar.is_active,
             "created_at": avatar.created_at.isoformat(),
-            "last_used_at": avatar.last_used_at.isoformat() if avatar.last_used_at else None
+            "last_used_at": (
+                avatar.last_used_at.isoformat() if avatar.last_used_at else None
+            ),
         }
         for avatar in avatars
     ]
@@ -200,52 +200,58 @@ def get_avatar_image(
     avatar_id: str,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
-    thumbnail: bool = False
+    thumbnail: bool = False,
 ):
     """
     Get avatar image data.
-    
+
     Args:
         avatar_id: Avatar ID
         thumbnail: Return thumbnail instead of full image
-        
+
     Returns:
         Image response
     """
     print(f"🎨 Avatar GET request - avatar_id: {avatar_id}, user: {current_user}")
-    avatar = db.query(models.AvatarImage).filter(
-        models.AvatarImage.id == avatar_id,
-        models.AvatarImage.user_id == current_user["uid"],
-        models.AvatarImage.is_active == True
-    ).first()
-    
+    avatar = (
+        db.query(models.AvatarImage)
+        .filter(
+            models.AvatarImage.id == avatar_id,
+            models.AvatarImage.user_id == current_user["uid"],
+            models.AvatarImage.is_active,
+        )
+        .first()
+    )
+
     if not avatar:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Avatar not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Avatar not found"
         )
-    
+
     # Update usage tracking
     avatar.usage_count += 1
     avatar.last_used_at = datetime.utcnow()
     db.commit()
-    
+
     # Return image data
-    image_data = avatar.thumbnail_data if thumbnail and avatar.thumbnail_data else avatar.image_data
-    
+    image_data = (
+        avatar.thumbnail_data
+        if thumbnail and avatar.thumbnail_data
+        else avatar.image_data
+    )
+
     if not image_data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Image data not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Image data not found"
         )
-    
+
     return Response(
         content=image_data,
         media_type=avatar.content_type,
         headers={
             "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
-            "Content-Disposition": f"inline; filename={avatar.filename}"
-        }
+            "Content-Disposition": f"inline; filename={avatar.filename}",
+        },
     )
 
 
@@ -254,53 +260,59 @@ def get_avatar_base64(
     avatar_id: str,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
-    thumbnail: bool = False
+    thumbnail: bool = False,
 ):
     """
     Get avatar image as base64 encoded string.
-    
+
     Args:
         avatar_id: Avatar ID
         thumbnail: Return thumbnail instead of full image
-        
+
     Returns:
         Base64 encoded image data
     """
-    avatar = db.query(models.AvatarImage).filter(
-        models.AvatarImage.id == avatar_id,
-        models.AvatarImage.user_id == current_user["uid"],
-        models.AvatarImage.is_active == True
-    ).first()
-    
+    avatar = (
+        db.query(models.AvatarImage)
+        .filter(
+            models.AvatarImage.id == avatar_id,
+            models.AvatarImage.user_id == current_user["uid"],
+            models.AvatarImage.is_active,
+        )
+        .first()
+    )
+
     if not avatar:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Avatar not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Avatar not found"
         )
-    
+
     # Update usage tracking
     avatar.usage_count += 1
     avatar.last_used_at = datetime.utcnow()
     db.commit()
-    
+
     # Return base64 encoded image
-    image_data = avatar.thumbnail_data if thumbnail and avatar.thumbnail_data else avatar.image_data
-    
+    image_data = (
+        avatar.thumbnail_data
+        if thumbnail and avatar.thumbnail_data
+        else avatar.image_data
+    )
+
     if not image_data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Image data not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Image data not found"
         )
-    
-    base64_data = base64.b64encode(image_data).decode('utf-8')
-    
+
+    base64_data = base64.b64encode(image_data).decode("utf-8")
+
     return {
         "avatar_id": avatar_id,
         "base64_data": f"data:{avatar.content_type};base64,{base64_data}",
         "content_type": avatar.content_type,
         "width": avatar.width,
         "height": avatar.height,
-        "is_thumbnail": thumbnail and avatar.thumbnail_data is not None
+        "is_thumbnail": thumbnail and avatar.thumbnail_data is not None,
     }
 
 
@@ -308,32 +320,35 @@ def get_avatar_base64(
 def delete_avatar(
     avatar_id: str,
     current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Delete (deactivate) an avatar.
-    
+
     Args:
         avatar_id: Avatar ID to delete
-        
+
     Returns:
         Success message
     """
-    avatar = db.query(models.AvatarImage).filter(
-        models.AvatarImage.id == avatar_id,
-        models.AvatarImage.user_id == current_user["uid"]
-    ).first()
-    
+    avatar = (
+        db.query(models.AvatarImage)
+        .filter(
+            models.AvatarImage.id == avatar_id,
+            models.AvatarImage.user_id == current_user["uid"],
+        )
+        .first()
+    )
+
     if not avatar:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Avatar not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Avatar not found"
         )
-    
+
     # Soft delete - mark as inactive
     avatar.is_active = False
     db.commit()
-    
+
     return {"message": "Avatar deleted successfully", "avatar_id": avatar_id}
 
 
@@ -341,29 +356,32 @@ def delete_avatar(
 def restore_avatar(
     avatar_id: str,
     current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Restore a previously deleted avatar.
-    
+
     Args:
         avatar_id: Avatar ID to restore
-        
+
     Returns:
         Success message
     """
-    avatar = db.query(models.AvatarImage).filter(
-        models.AvatarImage.id == avatar_id,
-        models.AvatarImage.user_id == current_user["uid"]
-    ).first()
-    
+    avatar = (
+        db.query(models.AvatarImage)
+        .filter(
+            models.AvatarImage.id == avatar_id,
+            models.AvatarImage.user_id == current_user["uid"],
+        )
+        .first()
+    )
+
     if not avatar:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Avatar not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Avatar not found"
         )
-    
+
     avatar.is_active = True
     db.commit()
-    
+
     return {"message": "Avatar restored successfully", "avatar_id": avatar_id}

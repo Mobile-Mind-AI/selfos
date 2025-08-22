@@ -1,3 +1,3 @@
 """Backend API package"""
 
-from .dependencies import get_db, get_current_user
+from .dependencies import get_current_user, get_db

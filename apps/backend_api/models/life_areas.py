@@ -2,9 +2,11 @@
 LifeArea model for SelfOS Backend API.
 """
 
-from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Index
-from sqlalchemy.orm import relationship
 from datetime import datetime
+
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy.orm import relationship
+
 from .base import Base
 
 
@@ -23,7 +25,7 @@ class LifeArea(Base):
     description = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Relationships
     user = relationship("User", back_populates="life_areas")
     goals = relationship("Goal", back_populates="life_area")
@@ -32,6 +34,7 @@ class LifeArea(Base):
     habits = relationship("Habit", back_populates="life_area")
     journal_entries = relationship("JournalEntry", back_populates="life_area")
 
+
 # Performance indexes for LifeArea model
-Index('ix_life_areas_user_created', LifeArea.user_id, LifeArea.created_at.desc())
-Index('ix_life_areas_user_name', LifeArea.user_id, LifeArea.name)
+Index("ix_life_areas_user_created", LifeArea.user_id, LifeArea.created_at.desc())
+Index("ix_life_areas_user_name", LifeArea.user_id, LifeArea.name)

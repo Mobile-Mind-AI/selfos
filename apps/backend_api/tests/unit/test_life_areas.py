@@ -1,7 +1,3 @@
-import pytest
-from fastapi.testclient import TestClient
-
-
 def test_create_life_area(client):
     """Test creating a new life area"""
     life_area_data = {
@@ -9,11 +5,11 @@ def test_create_life_area(client):
         "weight": 25,
         "icon": "fitness_center",
         "color": "#4CAF50",
-        "description": "Physical health, exercise, nutrition"
+        "description": "Physical health, exercise, nutrition",
     }
-    
-    response = client.post("/api/life-areas", json=life_area_data)
-    
+
+    response = client.post("/api/life-areas/", json=life_area_data)
+
     assert response.status_code == 201
     data = response.json()
     assert "id" in data
@@ -29,12 +25,10 @@ def test_create_life_area(client):
 
 def test_create_life_area_minimal(client):
     """Test creating a life area with minimal data"""
-    life_area_data = {
-        "name": "Career"
-    }
-    
-    response = client.post("/api/life-areas", json=life_area_data)
-    
+    life_area_data = {"name": "Career"}
+
+    response = client.post("/api/life-areas/", json=life_area_data)
+
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == "Career"
@@ -46,29 +40,23 @@ def test_create_life_area_minimal(client):
 
 def test_create_life_area_duplicate_name(client):
     """Test creating a life area with duplicate name fails"""
-    life_area_data = {
-        "name": "Health",
-        "weight": 20
-    }
-    
+    life_area_data = {"name": "Health", "weight": 20}
+
     # Create first life area
-    response1 = client.post("/api/life-areas", json=life_area_data)
+    response1 = client.post("/api/life-areas/", json=life_area_data)
     assert response1.status_code in [200, 201]  # Accept both OK and Created
-    
+
     # Try to create duplicate
-    response2 = client.post("/api/life-areas", json=life_area_data)
+    response2 = client.post("/api/life-areas/", json=life_area_data)
     assert response2.status_code == 400
     assert "already exists" in response2.json()["detail"]
 
 
 def test_create_life_area_invalid_weight(client):
     """Test creating a life area with invalid weight fails"""
-    life_area_data = {
-        "name": "Invalid Weight",
-        "weight": 150  # Over 100
-    }
-    
-    response = client.post("/api/life-areas", json=life_area_data)
+    life_area_data = {"name": "Invalid Weight", "weight": 150}  # Over 100
+
+    response = client.post("/api/life-areas/", json=life_area_data)
     assert response.status_code == 422
 
 
@@ -78,19 +66,19 @@ def test_list_life_areas(client):
     life_areas = [
         {"name": "Health", "weight": 30},
         {"name": "Career", "weight": 25},
-        {"name": "Relationships", "weight": 20}
+        {"name": "Relationships", "weight": 20},
     ]
-    
+
     for area_data in life_areas:
-        client.post("/api/life-areas", json=area_data)
-    
-    response = client.get("/api/life-areas")
-    
+        client.post("/api/life-areas/", json=area_data)
+
+    response = client.get("/api/life-areas/")
+
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
     assert len(data) == 3
-    
+
     # Should be ordered by weight descending
     assert data[0]["name"] == "Health"
     assert data[0]["weight"] == 30
@@ -98,7 +86,7 @@ def test_list_life_areas(client):
     assert data[1]["weight"] == 25
     assert data[2]["name"] == "Relationships"
     assert data[2]["weight"] == 20
-    
+
     # All should belong to test user
     for area in data:
         assert area["user_id"] == "test_user_123"
@@ -106,8 +94,8 @@ def test_list_life_areas(client):
 
 def test_list_life_areas_empty(client):
     """Test listing life areas when none exist"""
-    response = client.get("/api/life-areas")
-    
+    response = client.get("/api/life-areas/")
+
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
@@ -118,11 +106,11 @@ def test_get_life_area(client):
     """Test getting a specific life area"""
     # Create a life area first
     life_area_data = {"name": "Personal Growth", "weight": 15}
-    create_response = client.post("/api/life-areas", json=life_area_data)
+    create_response = client.post("/api/life-areas/", json=life_area_data)
     life_area_id = create_response.json()["id"]
-    
+
     response = client.get(f"/api/life-areas/{life_area_id}")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == life_area_id
@@ -133,8 +121,8 @@ def test_get_life_area(client):
 
 def test_get_life_area_not_found(client):
     """Test getting a non-existent life area"""
-    response = client.get("/api/life-areas/99999")
-    
+    response = client.get("/api/life-areas/99999/")
+
     assert response.status_code == 404
     assert "Life area not found" in response.json()["detail"]
 
@@ -143,20 +131,20 @@ def test_update_life_area(client):
     """Test updating an existing life area"""
     # Create a life area first
     life_area_data = {"name": "Original Area", "weight": 10}
-    create_response = client.post("/api/life-areas", json=life_area_data)
+    create_response = client.post("/api/life-areas/", json=life_area_data)
     life_area_id = create_response.json()["id"]
-    
+
     # Update the life area
     update_data = {
         "name": "Updated Area",
         "weight": 35,
         "icon": "update_icon",
         "color": "#FF5722",
-        "description": "Updated description"
+        "description": "Updated description",
     }
-    
+
     response = client.put(f"/api/life-areas/{life_area_id}", json=update_data)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == life_area_id
@@ -170,19 +158,15 @@ def test_update_life_area(client):
 def test_update_life_area_partial(client):
     """Test partial update of a life area"""
     # Create a life area first
-    life_area_data = {
-        "name": "Original Area", 
-        "weight": 10,
-        "icon": "original_icon"
-    }
-    create_response = client.post("/api/life-areas", json=life_area_data)
+    life_area_data = {"name": "Original Area", "weight": 10, "icon": "original_icon"}
+    create_response = client.post("/api/life-areas/", json=life_area_data)
     life_area_id = create_response.json()["id"]
-    
+
     # Update only weight
     update_data = {"weight": 50}
-    
+
     response = client.put(f"/api/life-areas/{life_area_id}", json=update_data)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == life_area_id
@@ -196,15 +180,15 @@ def test_update_life_area_duplicate_name(client):
     # Create two life areas
     area1_data = {"name": "Area 1"}
     area2_data = {"name": "Area 2"}
-    
-    client.post("/api/life-areas", json=area1_data)
-    create_response2 = client.post("/api/life-areas", json=area2_data)
+
+    client.post("/api/life-areas/", json=area1_data)
+    create_response2 = client.post("/api/life-areas/", json=area2_data)
     area2_id = create_response2.json()["id"]
-    
+
     # Try to update area2 to have same name as area1
     update_data = {"name": "Area 1"}
     response = client.put(f"/api/life-areas/{area2_id}", json=update_data)
-    
+
     assert response.status_code == 400
     assert "already exists" in response.json()["detail"]
 
@@ -212,8 +196,8 @@ def test_update_life_area_duplicate_name(client):
 def test_update_life_area_not_found(client):
     """Test updating a non-existent life area"""
     update_data = {"name": "Updated Area"}
-    response = client.put("/api/life-areas/99999", json=update_data)
-    
+    response = client.put("/api/life-areas/99999/", json=update_data)
+
     assert response.status_code == 404
     assert "Life area not found" in response.json()["detail"]
 
@@ -222,14 +206,14 @@ def test_delete_life_area(client):
     """Test deleting an existing life area"""
     # Create a life area first
     life_area_data = {"name": "Area to Delete"}
-    create_response = client.post("/api/life-areas", json=life_area_data)
+    create_response = client.post("/api/life-areas/", json=life_area_data)
     life_area_id = create_response.json()["id"]
-    
+
     # Delete the life area
     response = client.delete(f"/api/life-areas/{life_area_id}")
-    
+
     assert response.status_code == 204
-    
+
     # Verify it's deleted
     get_response = client.get(f"/api/life-areas/{life_area_id}")
     assert get_response.status_code == 404
@@ -237,8 +221,8 @@ def test_delete_life_area(client):
 
 def test_delete_life_area_not_found(client):
     """Test deleting a non-existent life area"""
-    response = client.delete("/api/life-areas/99999")
-    
+    response = client.delete("/api/life-areas/99999/")
+
     assert response.status_code == 404
     assert "Life area not found" in response.json()["detail"]
 
@@ -250,21 +234,21 @@ def test_get_life_areas_summary(client):
         {"name": "Health", "weight": 40},
         {"name": "Career", "weight": 30},
         {"name": "Relationships", "weight": 20},
-        {"name": "Hobbies", "weight": 10}
+        {"name": "Hobbies", "weight": 10},
     ]
-    
+
     for area_data in life_areas:
-        client.post("/api/life-areas", json=area_data)
-    
-    response = client.get("/api/life-areas/stats/summary")
-    
+        client.post("/api/life-areas/", json=area_data)
+
+    response = client.get("/api/life-areas/stats/summary/")
+
     assert response.status_code == 200
     data = response.json()
-    
+
     assert data["total_areas"] == 4
     assert data["total_weight"] == 100
     assert data["average_weight"] == 25.0
-    
+
     # Check areas_by_weight is ordered correctly
     areas_by_weight = data["areas_by_weight"]
     assert len(areas_by_weight) == 4
@@ -277,11 +261,11 @@ def test_get_life_areas_summary(client):
 
 def test_get_life_areas_summary_empty(client):
     """Test getting summary when no life areas exist"""
-    response = client.get("/api/life-areas/stats/summary")
-    
+    response = client.get("/api/life-areas/stats/summary/")
+
     assert response.status_code == 200
     data = response.json()
-    
+
     assert data["total_areas"] == 0
     assert data["total_weight"] == 0
     assert data["average_weight"] == 0
@@ -290,42 +274,35 @@ def test_get_life_areas_summary_empty(client):
 
 def test_life_area_validation(client):
     """Test various validation scenarios"""
-    
+
     # Test empty name
-    response = client.post("/api/life-areas", json={"name": ""})
+    response = client.post("/api/life-areas/", json={"name": ""})
     assert response.status_code == 422
-    
+
     # Test name too long
-    response = client.post("/api/life-areas", json={"name": "A" * 101})
+    response = client.post("/api/life-areas/", json={"name": "A" * 101})
     assert response.status_code == 422
-    
+
     # Test negative weight
-    response = client.post("/api/life-areas", json={"name": "Test", "weight": -5})
+    response = client.post("/api/life-areas/", json={"name": "Test", "weight": -5})
     assert response.status_code == 422
-    
+
     # Test weight over 100
-    response = client.post("/api/life-areas", json={"name": "Test", "weight": 101})
+    response = client.post("/api/life-areas/", json={"name": "Test", "weight": 101})
     assert response.status_code == 422
-    
+
     # Test icon too long
-    response = client.post("/api/life-areas", json={
-        "name": "Test", 
-        "icon": "A" * 51
-    })
+    response = client.post("/api/life-areas/", json={"name": "Test", "icon": "A" * 51})
     assert response.status_code == 422
-    
+
     # Test color too long
-    response = client.post("/api/life-areas", json={
-        "name": "Test", 
-        "color": "A" * 51
-    })
+    response = client.post("/api/life-areas/", json={"name": "Test", "color": "A" * 51})
     assert response.status_code == 422
-    
+
     # Test description too long
-    response = client.post("/api/life-areas", json={
-        "name": "Test", 
-        "description": "A" * 501
-    })
+    response = client.post(
+        "/api/life-areas/", json={"name": "Test", "description": "A" * 501}
+    )
     assert response.status_code == 422
 
 
@@ -333,18 +310,18 @@ def test_life_area_user_isolation(client):
     """Test that users can only access their own life areas"""
     # This test assumes the current mock user setup
     # In a real scenario, you'd override the user for this test
-    
+
     # Create a life area
     life_area_data = {"name": "User Isolation Test"}
-    create_response = client.post("/api/life-areas", json=life_area_data)
+    create_response = client.post("/api/life-areas/", json=life_area_data)
     life_area_id = create_response.json()["id"]
-    
+
     # Verify the life area belongs to the test user
     response = client.get(f"/api/life-areas/{life_area_id}")
     assert response.status_code == 200
     assert response.json()["user_id"] == "test_user_123"
-    
+
     # All life areas should belong to the test user
-    list_response = client.get("/api/life-areas")
+    list_response = client.get("/api/life-areas/")
     for area in list_response.json():
         assert area["user_id"] == "test_user_123"

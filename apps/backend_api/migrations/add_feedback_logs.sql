@@ -3,7 +3,7 @@
 
 -- Create feedback_type enum (PostgreSQL only)
 -- For SQLite, this is handled as a check constraint
-DO $$ 
+DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'feedback_type') THEN
         CREATE TYPE feedback_type AS ENUM ('positive', 'negative', 'neutral');
@@ -14,35 +14,35 @@ END $$;
 CREATE TABLE IF NOT EXISTS feedback_logs (
     id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id VARCHAR NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
-    
+
     -- Context information for the feedback
     context_type VARCHAR NOT NULL,
     context_id VARCHAR,
     context_data JSONB,
-    
+
     -- Feedback details
     feedback_type feedback_type NOT NULL,
     feedback_value DECIMAL(3,2),  -- For numeric feedback scores (-1.0 to 1.0)
     comment TEXT,
-    
+
     -- ML/RLHF specific fields
     action_taken JSONB,
     reward_signal DECIMAL(10,6),
     model_version VARCHAR,
-    
+
     -- Metadata
     session_id VARCHAR,
     device_info JSONB,
     feature_flags JSONB,
-    
+
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     processed_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Add constraints
-ALTER TABLE feedback_logs 
-ADD CONSTRAINT check_feedback_value_range 
+ALTER TABLE feedback_logs
+ADD CONSTRAINT check_feedback_value_range
 CHECK (feedback_value IS NULL OR (feedback_value >= -1.0 AND feedback_value <= 1.0));
 
 -- Create indexes for better query performance
@@ -57,27 +57,27 @@ CREATE INDEX IF NOT EXISTS idx_feedback_logs_processed_at ON feedback_logs(proce
 -- CREATE TABLE IF NOT EXISTS feedback_logs (
 --     id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(2))) || '-' || lower(hex(randomblob(6)))),
 --     user_id TEXT NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
---     
+--
 --     -- Context information for the feedback
 --     context_type TEXT NOT NULL,
 --     context_id TEXT,
 --     context_data TEXT,  -- JSON stored as TEXT
---     
+--
 --     -- Feedback details
 --     feedback_type TEXT NOT NULL CHECK (feedback_type IN ('positive', 'negative', 'neutral')),
 --     feedback_value REAL CHECK (feedback_value IS NULL OR (feedback_value >= -1.0 AND feedback_value <= 1.0)),
 --     comment TEXT,
---     
+--
 --     -- ML/RLHF specific fields
 --     action_taken TEXT,  -- JSON stored as TEXT
 --     reward_signal REAL,
 --     model_version TEXT,
---     
+--
 --     -- Metadata
 --     session_id TEXT,
 --     device_info TEXT,  -- JSON stored as TEXT
 --     feature_flags TEXT,  -- JSON stored as TEXT
---     
+--
 --     -- Timestamps
 --     created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
 --     processed_at DATETIME

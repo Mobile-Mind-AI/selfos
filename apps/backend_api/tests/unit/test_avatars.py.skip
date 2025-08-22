@@ -27,16 +27,16 @@ class TestAvatarUpload:
         img_bytes = io.BytesIO()
         img.save(img_bytes, format='JPEG')
         img_bytes.seek(0)
-        
+
         # Upload the avatar
         response = client.post(
             "/api/avatars/upload",
             files={"file": ("test_avatar.jpg", img_bytes, "image/jpeg")}
         )
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         # Verify response structure
         assert "avatar_id" in data
         assert "filename" in data
@@ -45,12 +45,12 @@ class TestAvatarUpload:
         assert "size_bytes" in data
         assert "content_type" in data
         assert "created_at" in data
-        
+
         # Verify database record
         avatar = db_session.query(AvatarImage).filter(
             AvatarImage.id == data["avatar_id"]
         ).first()
-        
+
         assert avatar is not None
         assert avatar.user_id == "test_user_123"
         assert avatar.filename == "test_avatar.jpg"
@@ -63,12 +63,12 @@ class TestAvatarUpload:
         """Test upload with invalid file type"""
         # Create a text file
         text_content = b"This is not an image"
-        
+
         response = client.post(
             "/api/avatars/upload",
             files={"file": ("test.txt", text_content, "text/plain")}
         )
-        
+
         assert response.status_code == 400
         assert "Unsupported file type" in response.json()["detail"]
 
@@ -79,12 +79,12 @@ class TestAvatarUpload:
         img_bytes = io.BytesIO()
         img.save(img_bytes, format='JPEG', quality=95)
         img_bytes.seek(0)
-        
+
         response = client.post(
             "/api/avatars/upload",
             files={"file": ("large_avatar.jpg", img_bytes, "image/jpeg")}
         )
-        
+
         # Should still succeed - our endpoint handles large images
         assert response.status_code == 200
         data = response.json()
@@ -119,22 +119,22 @@ class TestAvatarRetrieval:
             image_data=b"fake_image_data_2",
             is_active=False
         )
-        
+
         db_session.add_all([avatar1, avatar2])
         db_session.commit()
-        
+
         # Test listing active avatars only
         response = client.get("/api/avatars/list")
         assert response.status_code == 200
-        
+
         avatars = response.json()
         active_avatars = [a for a in avatars if a["filename"] in ["avatar1.jpg", "avatar2.png"]]
         assert len([a for a in active_avatars if a["is_active"]]) >= 1  # At least our active avatar
-        
+
         # Test listing all avatars including inactive
         response = client.get("/api/avatars/list?include_inactive=true")
         assert response.status_code == 200
-        
+
         avatars = response.json()
         test_avatars = [a for a in avatars if a["filename"] in ["avatar1.jpg", "avatar2.png"]]
         assert len(test_avatars) >= 2  # Should include both test avatars
@@ -154,17 +154,17 @@ class TestAvatarRetrieval:
             thumbnail_data=b"fake_thumbnail_data",
             is_active=True
         )
-        
+
         db_session.add(avatar)
         db_session.commit()
         db_session.refresh(avatar)
-        
+
         # Test getting full image
         response = client.get(f"/api/avatars/{avatar.id}/image")
         assert response.status_code == 200
         assert response.headers["content-type"] == "image/jpeg"
         assert response.content == b"fake_image_data"
-        
+
         # Test getting thumbnail
         response = client.get(f"/api/avatars/{avatar.id}/image?thumbnail=true")
         assert response.status_code == 200
@@ -184,14 +184,14 @@ class TestAvatarRetrieval:
             image_data=b"fake_image_data",
             is_active=True
         )
-        
+
         db_session.add(avatar)
         db_session.commit()
         db_session.refresh(avatar)
-        
+
         response = client.get(f"/api/avatars/{avatar.id}/base64")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "base64_data" in data
         assert "content_type" in data
@@ -220,11 +220,11 @@ class TestAvatarRetrieval:
             image_data=b"fake_image_data",
             is_active=True
         )
-        
+
         db_session.add(other_avatar)
         db_session.commit()
         db_session.refresh(other_avatar)
-        
+
         response = client.get(f"/api/avatars/{other_avatar.id}/image")
         assert response.status_code == 404  # Should not find avatar for different user
 
@@ -246,19 +246,19 @@ class TestAvatarManagement:
             image_data=b"fake_image_data",
             is_active=True
         )
-        
+
         db_session.add(avatar)
         db_session.commit()
         db_session.refresh(avatar)
-        
+
         # Delete avatar
         response = client.delete(f"/api/avatars/{avatar.id}")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "message" in data
         assert data["avatar_id"] == avatar.id
-        
+
         # Verify avatar is marked as inactive
         db_session.refresh(avatar)
         assert avatar.is_active is False
@@ -277,19 +277,19 @@ class TestAvatarManagement:
             image_data=b"fake_image_data",
             is_active=False
         )
-        
+
         db_session.add(avatar)
         db_session.commit()
         db_session.refresh(avatar)
-        
+
         # Restore avatar
         response = client.post(f"/api/avatars/{avatar.id}/restore")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "message" in data
         assert data["avatar_id"] == avatar.id
-        
+
         # Verify avatar is marked as active
         db_session.refresh(avatar)
         assert avatar.is_active is True
@@ -309,16 +309,16 @@ class TestAvatarManagement:
             usage_count=0,
             is_active=True
         )
-        
+
         db_session.add(avatar)
         db_session.commit()
         db_session.refresh(avatar)
-        
+
         initial_count = avatar.usage_count
-        
+
         # Access avatar image
         client.get(f"/api/avatars/{avatar.id}/image")
-        
+
         # Verify usage count increased
         db_session.refresh(avatar)
         assert avatar.usage_count == initial_count + 1
@@ -335,15 +335,15 @@ class TestImageProcessing:
         img_bytes = io.BytesIO()
         img.save(img_bytes, format='PNG')
         img_bytes.seek(0)
-        
+
         response = client.post(
             "/api/avatars/upload",
             files={"file": ("test_rgba.png", img_bytes, "image/png")}
         )
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         # Verify it was converted to JPEG (RGB)
         assert data["content_type"] == "image/jpeg"
 
@@ -354,19 +354,19 @@ class TestImageProcessing:
         img_bytes = io.BytesIO()
         img.save(img_bytes, format='JPEG')
         img_bytes.seek(0)
-        
+
         response = client.post(
             "/api/avatars/upload",
             files={"file": ("large_image.jpg", img_bytes, "image/jpeg")}
         )
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         # Verify database record has thumbnail
         avatar = db_session.query(AvatarImage).filter(
             AvatarImage.id == data["avatar_id"]
         ).first()
-        
+
         assert avatar.thumbnail_data is not None
         assert len(avatar.thumbnail_data) < len(avatar.image_data)  # Thumbnail should be smaller

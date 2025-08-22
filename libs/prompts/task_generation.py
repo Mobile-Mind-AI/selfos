@@ -5,51 +5,58 @@ This module contains prompt templates for generating and refining tasks,
 including smart suggestions and task optimization.
 """
 
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
 class TaskContext:
     """Context information for task generation."""
+
     goal_id: int
     goal_title: str
-    goal_description: Optional[str]
-    existing_tasks: List[Dict[str, Any]]
-    life_area: Optional[Dict[str, Any]] = None
-    user_preferences: Optional[Dict[str, Any]] = None
+    goal_description: str | None
+    existing_tasks: list[dict[str, Any]]
+    life_area: dict[str, Any] | None = None
+    user_preferences: dict[str, Any] | None = None
 
 
 class TaskGenerationPrompts:
     """Prompt templates for AI-powered task generation and management."""
-    
+
     @staticmethod
     def suggest_next_tasks_prompt(
         context: TaskContext,
-        completed_tasks: List[Dict[str, Any]],
-        max_suggestions: int = 3
+        completed_tasks: list[dict[str, Any]],
+        max_suggestions: int = 3,
     ) -> str:
         """Generate prompt for suggesting next logical tasks."""
-        
+
         completed_text = ""
         if completed_tasks:
-            completed_text = "Recently completed tasks:\n" + "\n".join([
-                f"- {task.get('title', 'Untitled')}: {task.get('description', 'No description')}"
-                for task in completed_tasks[-5:]  # Last 5 completed tasks
-            ])
-        
+            completed_text = "Recently completed tasks:\n" + "\n".join(
+                [
+                    f"- {task.get('title', 'Untitled')}: {task.get('description', 'No description')}"
+                    for task in completed_tasks[-5:]  # Last 5 completed tasks
+                ]
+            )
+
         pending_text = ""
-        pending_tasks = [t for t in context.existing_tasks if t.get('status') != 'completed']
+        pending_tasks = [
+            t for t in context.existing_tasks if t.get("status") != "completed"
+        ]
         if pending_tasks:
-            pending_text = "\n\nCurrent pending tasks:\n" + "\n".join([
-                f"- {task.get('title', 'Untitled')}: {task.get('status', 'unknown')} status"
-                for task in pending_tasks[:5]  # Limit for context
-            ])
-        
+            pending_text = "\n\nCurrent pending tasks:\n" + "\n".join(
+                [
+                    f"- {task.get('title', 'Untitled')}: {task.get('status', 'unknown')} status"
+                    for task in pending_tasks[:5]  # Limit for context
+                ]
+            )
+
         life_area_text = ""
         if context.life_area:
             life_area_text = f"\n\nLife area: {context.life_area['name']}"
-        
+
         return f"""Goal: {context.goal_title}
 {context.goal_description or "No description provided"}
 {life_area_text}
@@ -57,7 +64,7 @@ class TaskGenerationPrompts:
 {completed_text}
 {pending_text}
 
-Based on my progress and current situation, please suggest {max_suggestions} specific next tasks that would help me advance toward this goal. 
+Based on my progress and current situation, please suggest {max_suggestions} specific next tasks that would help me advance toward this goal.
 
 For each suggestion, provide:
 1. **Task title** (clear and actionable)
@@ -71,24 +78,29 @@ Focus on tasks that:
 - Can be started with current resources
 - Have clear success criteria
 - Move the goal forward meaningfully"""
-    
+
     @staticmethod
     def optimize_task_sequence_prompt(
-        tasks: List[Dict[str, Any]],
-        constraints: Optional[str] = None
+        tasks: list[dict[str, Any]], constraints: str | None = None
     ) -> str:
         """Generate prompt for optimizing task order and dependencies."""
-        
+
         tasks_text = ""
         for i, task in enumerate(tasks, 1):
-            dependencies = task.get('dependencies', [])
-            dep_text = f" (depends on: {', '.join(map(str, dependencies))})" if dependencies else ""
+            dependencies = task.get("dependencies", [])
+            dep_text = (
+                f" (depends on: {', '.join(map(str, dependencies))})"
+                if dependencies
+                else ""
+            )
             tasks_text += f"{i}. {task.get('title', 'Untitled')}{dep_text}\n"
             tasks_text += f"   Duration: {task.get('duration', 'unknown')}\n"
-            tasks_text += f"   Description: {task.get('description', 'No description')}\n\n"
-        
+            tasks_text += (
+                f"   Description: {task.get('description', 'No description')}\n\n"
+            )
+
         constraints_text = f"\n\nConstraints: {constraints}" if constraints else ""
-        
+
         return f"""I have these tasks to complete:
 
 {tasks_text}
@@ -107,17 +119,15 @@ Consider:
 - Logical groupings and context switching
 - Momentum and motivation factors
 - Resource requirements and availability"""
-    
+
     @staticmethod
     def break_down_complex_task_prompt(
-        task_title: str,
-        task_description: str,
-        available_time: Optional[str] = None
+        task_title: str, task_description: str, available_time: str | None = None
     ) -> str:
         """Generate prompt for breaking down a complex task into subtasks."""
-        
+
         time_text = f"\n\nAvailable time: {available_time}" if available_time else ""
-        
+
         return f"""I have this task that feels overwhelming or complex:
 
 **Task**: {task_title}
@@ -142,25 +152,29 @@ Also suggest:
 - **Starting point**: Which subtask to tackle first
 - **Quick wins**: Subtasks that will build momentum
 - **Preparation**: Any setup needed before starting"""
-    
+
     @staticmethod
     def estimate_task_duration_prompt(
         task_title: str,
         task_description: str,
-        user_experience: Optional[str] = None,
-        similar_tasks: List[Dict[str, Any]] = None
+        user_experience: str | None = None,
+        similar_tasks: list[dict[str, Any]] = None,
     ) -> str:
         """Generate prompt for estimating realistic task duration."""
-        
-        experience_text = f"\n\nMy experience level: {user_experience}" if user_experience else ""
-        
+
+        experience_text = (
+            f"\n\nMy experience level: {user_experience}" if user_experience else ""
+        )
+
         similar_text = ""
         if similar_tasks:
-            similar_text = "\n\nSimilar tasks I've completed:\n" + "\n".join([
-                f"- {task.get('title', 'Untitled')}: took {task.get('actual_duration', 'unknown')} hours"
-                for task in similar_tasks[-3:]  # Last 3 similar tasks
-            ])
-        
+            similar_text = "\n\nSimilar tasks I've completed:\n" + "\n".join(
+                [
+                    f"- {task.get('title', 'Untitled')}: took {task.get('actual_duration', 'unknown')} hours"
+                    for task in similar_tasks[-3:]  # Last 3 similar tasks
+                ]
+            )
+
         return f"""I need to estimate how long this task will take:
 
 **Task**: {task_title}
@@ -184,19 +198,21 @@ Consider:
 - Dependencies on other people or systems
 
 Be realistic rather than optimistic - it's better to overestimate and finish early."""
-    
+
     @staticmethod
     def suggest_task_improvements_prompt(
         task_title: str,
         task_description: str,
-        current_progress: Optional[str] = None,
-        challenges: Optional[str] = None
+        current_progress: str | None = None,
+        challenges: str | None = None,
     ) -> str:
         """Generate prompt for improving task definition and approach."""
-        
-        progress_text = f"\n\nCurrent progress: {current_progress}" if current_progress else ""
+
+        progress_text = (
+            f"\n\nCurrent progress: {current_progress}" if current_progress else ""
+        )
         challenges_text = f"\n\nChallenges faced: {challenges}" if challenges else ""
-        
+
         return f"""I'm working on this task and want to improve my approach:
 
 **Task**: {task_title}
@@ -217,15 +233,13 @@ Also provide:
 - **Process optimization**: Better workflows or sequences
 - **Quality enhancement**: Ways to improve the outcome
 - **Sustainability**: How to make progress more consistent"""
-    
+
     @staticmethod
     def generate_task_checklist_prompt(
-        task_title: str,
-        task_description: str,
-        complexity_level: str = "medium"
+        task_title: str, task_description: str, complexity_level: str = "medium"
     ) -> str:
         """Generate prompt for creating detailed task checklists."""
-        
+
         return f"""I need a detailed checklist for this task:
 
 **Task**: {task_title}
@@ -260,71 +274,75 @@ The checklist should be detailed enough that someone else could follow it to com
 
 class TaskPromptUtils:
     """Utility functions for task-related prompts."""
-    
+
     @staticmethod
-    def format_task_list(tasks: List[Dict[str, Any]], include_details: bool = True) -> str:
+    def format_task_list(
+        tasks: list[dict[str, Any]], include_details: bool = True
+    ) -> str:
         """Format a list of tasks for inclusion in prompts."""
         if not tasks:
             return "No tasks provided."
-        
+
         formatted = []
         for i, task in enumerate(tasks, 1):
-            title = task.get('title', 'Untitled Task')
-            status = task.get('status', 'unknown')
-            
+            title = task.get("title", "Untitled Task")
+            status = task.get("status", "unknown")
+
             if include_details:
-                description = task.get('description', 'No description')
-                duration = task.get('duration', 'Not specified')
-                formatted.append(f"{i}. **{title}** ({status})\n   {description}\n   Duration: {duration}")
+                description = task.get("description", "No description")
+                duration = task.get("duration", "Not specified")
+                formatted.append(
+                    f"{i}. **{title}** ({status})\n   {description}\n   Duration: {duration}"
+                )
             else:
                 formatted.append(f"{i}. {title} ({status})")
-        
+
         return "\n\n".join(formatted) if include_details else "\n".join(formatted)
-    
+
     @staticmethod
-    def extract_time_estimates(text: str) -> Dict[str, Any]:
+    def extract_time_estimates(text: str) -> dict[str, Any]:
         """Extract time estimates from AI responses."""
         # This is a placeholder for parsing logic
         # In practice, you'd implement proper parsing of time expressions
         import re
-        
+
         patterns = {
-            'hours': r'(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)',
-            'minutes': r'(\d+)\s*(?:minutes?|mins?|m)',
-            'days': r'(\d+)\s*(?:days?|d)',
-            'weeks': r'(\d+)\s*(?:weeks?|w)'
+            "hours": r"(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)",
+            "minutes": r"(\d+)\s*(?:minutes?|mins?|m)",
+            "days": r"(\d+)\s*(?:days?|d)",
+            "weeks": r"(\d+)\s*(?:weeks?|w)",
         }
-        
+
         estimates = {}
         for unit, pattern in patterns.items():
             matches = re.findall(pattern, text.lower())
             if matches:
                 estimates[unit] = [float(m) for m in matches]
-        
+
         return estimates
-    
+
     @staticmethod
-    def validate_task_structure(task_data: Dict[str, Any]) -> List[str]:
+    def validate_task_structure(task_data: dict[str, Any]) -> list[str]:
         """Validate that a task has required structure."""
         errors = []
-        
-        required_fields = ['title', 'description']
+
+        required_fields = ["title", "description"]
         for field in required_fields:
             if not task_data.get(field):
                 errors.append(f"Missing required field: {field}")
-        
+
         # Check title length
-        title = task_data.get('title', '')
+        title = task_data.get("title", "")
         if len(title) > 200:
             errors.append("Title too long (max 200 characters)")
-        
+
         # Check description length
-        description = task_data.get('description', '')
+        description = task_data.get("description", "")
         if len(description) > 2000:
             errors.append("Description too long (max 2000 characters)")
-        
+
         # Validate duration if provided
-        duration = task_data.get('duration')
+        duration = task_data.get("duration")
         if duration is not None:
             try:
                 duration_int = int(duration)
@@ -332,5 +350,5 @@ class TaskPromptUtils:
                     errors.append("Duration must be between 1 and 1440 minutes")
             except (ValueError, TypeError):
                 errors.append("Duration must be a valid number")
-        
+
         return errors

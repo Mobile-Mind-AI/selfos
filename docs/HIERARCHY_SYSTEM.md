@@ -155,19 +155,19 @@ Projects support identical endpoints with `/api/projects/` prefix:
 class GoalService:
     def get_roots(self, user_id: str) -> List[Goal]:
         """Get all root-level goals for user"""
-        
+
     def get_children(self, user_id: str, parent_id: int) -> List[Goal]:
         """Get direct children of a goal"""
-        
+
     def get_descendants(self, user_id: str, goal_id: int) -> List[Goal]:
         """Get all descendants (recursive children)"""
-        
+
     def get_tree(self, user_id: str) -> List[HierarchyTreeNode]:
         """Get complete hierarchy as tree structure"""
-        
+
     def move_goal(self, user_id: str, goal_id: int, new_parent_id: Optional[int]) -> Goal:
         """Move goal to new parent with cycle prevention"""
-        
+
     def _would_create_cycle(self, user_id: str, goal_id: int, new_parent_id: int) -> bool:
         """Check if move would create circular reference"""
 ```
@@ -186,10 +186,10 @@ class HierarchyTreeNode(BaseModel):
     title: str
     description: Optional[str] = None
     children: List['HierarchyTreeNode'] = []
-    
+
     class Config:
         orm_mode = True
-        
+
 # Enable recursive references
 HierarchyTreeNode.model_rebuild()
 ```
@@ -199,7 +199,7 @@ HierarchyTreeNode.model_rebuild()
 ```python
 class HierarchyMoveRequest(BaseModel):
     new_parent_id: Optional[int] = None
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -224,7 +224,7 @@ parent_goal = goal_service.create_goal(
 
 # Create child goal
 child_goal = goal_service.create_goal(
-    user_id="user123", 
+    user_id="user123",
     goal_data=GoalCreate(
         title="Learn Python",
         description="Master Python programming",
@@ -257,7 +257,7 @@ root_goal = goal_service.move_goal(
 # Get all root goals
 roots = goal_service.get_roots(user_id="user123")
 
-# Get children of specific goal  
+# Get children of specific goal
 children = goal_service.get_children(user_id="user123", parent_id=1)
 
 # Get complete tree structure
@@ -283,21 +283,21 @@ def _would_create_cycle(self, user_id: str, goal_id: int, new_parent_id: int) ->
     """
     if new_parent_id is None:
         return False
-        
+
     current_id = new_parent_id
     visited = set()
-    
+
     while current_id is not None:
         if current_id == goal_id:
             return True
-            
+
         if current_id in visited:
             break
-            
+
         visited.add(current_id)
         parent = self.get_by_id(user_id, current_id)
         current_id = parent.parent_id if parent else None
-        
+
     return False
 ```
 
@@ -313,7 +313,7 @@ def _would_create_cycle(self, user_id: str, goal_id: int, new_parent_id: int) ->
 -- Optimize hierarchy queries
 CREATE INDEX idx_goals_parent_id ON goals(parent_id);
 CREATE INDEX idx_goals_user_parent ON goals(user_id, parent_id);
-CREATE INDEX idx_projects_parent_id ON projects(parent_id);  
+CREATE INDEX idx_projects_parent_id ON projects(parent_id);
 CREATE INDEX idx_projects_user_parent ON projects(user_id, parent_id);
 ```
 
@@ -363,12 +363,12 @@ ALTER TABLE goals ADD COLUMN parent_id INTEGER;
 ALTER TABLE projects ADD COLUMN parent_id INTEGER;
 
 -- Add foreign key constraints
-ALTER TABLE goals 
-ADD CONSTRAINT fk_goals_parent 
+ALTER TABLE goals
+ADD CONSTRAINT fk_goals_parent
 FOREIGN KEY (parent_id) REFERENCES goals(id) ON DELETE CASCADE;
 
-ALTER TABLE projects 
-ADD CONSTRAINT fk_projects_parent 
+ALTER TABLE projects
+ADD CONSTRAINT fk_projects_parent
 FOREIGN KEY (parent_id) REFERENCES projects(id) ON DELETE CASCADE;
 
 -- Add performance indexes
@@ -382,7 +382,7 @@ CREATE INDEX idx_projects_user_parent ON projects(user_id, parent_id);
 
 ### Planned Features
 1. **Task Hierarchy**: Extend hierarchy support to Task model
-2. **Drag & Drop**: Frontend interface for visual hierarchy management  
+2. **Drag & Drop**: Frontend interface for visual hierarchy management
 3. **Bulk Operations**: Move multiple items simultaneously
 4. **Path Queries**: Find path from root to specific node
 5. **Depth Limits**: Configurable maximum hierarchy depth
@@ -402,7 +402,7 @@ CREATE INDEX idx_projects_user_parent ON projects(user_id, parent_id);
 **Problem**: Move operation fails with cycle error
 **Solution**: Use API to check hierarchy before attempting moves
 
-#### Orphaned Records  
+#### Orphaned Records
 **Problem**: Records with invalid parent_id values
 **Solution**: Foreign key constraints prevent this; check data integrity
 
@@ -428,14 +428,14 @@ Monitor database performance:
 -- Check index usage
 EXPLAIN ANALYZE SELECT * FROM goals WHERE user_id = 'user123' AND parent_id IS NULL;
 
--- Monitor hierarchy query performance  
+-- Monitor hierarchy query performance
 EXPLAIN ANALYZE WITH RECURSIVE goal_tree AS (
   SELECT id, title, parent_id, 1 as level
-  FROM goals 
+  FROM goals
   WHERE user_id = 'user123' AND parent_id IS NULL
-  
+
   UNION ALL
-  
+
   SELECT g.id, g.title, g.parent_id, gt.level + 1
   FROM goals g
   JOIN goal_tree gt ON g.parent_id = gt.id
