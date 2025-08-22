@@ -413,7 +413,7 @@ class InMemoryVectorStore(VectorStore):
 
             return {
                 "total_entries": len(user_entries),
-                "content_types": list(set(e.content_type for e in user_entries)),
+                "content_types": list({e.content_type for e in user_entries}),
                 "oldest_entry": (
                     min(e.created_at for e in user_entries) if user_entries else None
                 ),
@@ -676,7 +676,7 @@ class EnhancedMemoryService:
             health["embedding_dimension"] = len(test_embedding)
 
             # Test vector store (if possible)
-            stats = await self.vector_store.get_stats("health_check")
+            await self.vector_store.get_stats("health_check")
             health["vector_store_accessible"] = True
 
         except Exception as e:

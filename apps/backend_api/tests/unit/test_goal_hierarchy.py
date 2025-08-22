@@ -297,7 +297,7 @@ class TestGoalHierarchy:
     def test_cycle_detection_direct_cycle(self, mock_get_goal_descendants):
         """Test cycle detection for direct parent-child cycle."""
         # Goal 1 -> Goal 2, trying to set Goal 2 as parent of Goal 1 (would create cycle)
-        goal1 = self.create_mock_goal(1, "Goal 1")
+        self.create_mock_goal(1, "Goal 1")
         goal2 = self.create_mock_goal(2, "Goal 2", 1)
 
         # Mock get_goal_descendants to return goal2 as descendant of goal1
@@ -313,7 +313,7 @@ class TestGoalHierarchy:
     def test_cycle_detection_indirect_cycle(self, mock_get_goal_descendants):
         """Test cycle detection for indirect cycles."""
         # Goal 1 -> Goal 2 -> Goal 3, trying to set Goal 3 as parent of Goal 1 (would create cycle)
-        goal1 = self.create_mock_goal(1, "Goal 1")
+        self.create_mock_goal(1, "Goal 1")
         goal2 = self.create_mock_goal(2, "Goal 2", 1)
         goal3 = self.create_mock_goal(3, "Goal 3", 2)
 
@@ -352,7 +352,6 @@ class TestGoalHierarchy:
     def test_user_isolation_in_hierarchy(self, mock_get_root_goals):
         """Test that hierarchy operations respect user isolation."""
         user1_id = "user1"
-        user2_id = "user2"
 
         # Mock goals for different users
         user1_goal = self.create_mock_goal(1, "User1 Goal")

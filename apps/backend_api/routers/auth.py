@@ -101,10 +101,10 @@ async def login(req: LoginRequest, db: Session = Depends(get_db)):
 
                 # Try to get existing user, or create new one
                 try:
-                    firebase_user = firebase_auth.get_user(uid)
+                    firebase_auth.get_user(uid)
                 except firebase_auth.UserNotFoundError:
                     # Create new Firebase user for Google login
-                    firebase_user = firebase_auth.create_user(
+                    firebase_auth.create_user(
                         uid=uid,
                         email=email,
                         email_verified=True,  # Google emails are pre-verified
@@ -134,10 +134,10 @@ async def login(req: LoginRequest, db: Session = Depends(get_db)):
 
                 # Try to get existing user, or create new one
                 try:
-                    firebase_user = firebase_auth.get_user(uid)
+                    firebase_auth.get_user(uid)
                 except firebase_auth.UserNotFoundError:
                     # Create new Firebase user for Apple login
-                    firebase_user = firebase_auth.create_user(
+                    firebase_auth.create_user(
                         uid=uid,
                         email=email,
                         email_verified=True,  # Apple emails are pre-verified
@@ -237,7 +237,6 @@ async def forgot_password(request: dict):
     try:
         # Check if user exists in Firebase
         user = firebase_auth.get_user_by_email(email)
-        user_exists = True
         print(f"🔥 FIREBASE: User found for email: {email} (UID: {user.uid})")
 
     except firebase_auth.UserNotFoundError:

@@ -1,7 +1,7 @@
 """Add entity knowledge graph tables
 
 Revision ID: 001_add_entity_knowledge_graph
-Revises: 
+Revises:
 Create Date: 2025-01-12 18:00:00.000000
 
 """
@@ -118,7 +118,7 @@ def upgrade() -> None:
     # Insert some default entity types
     op.execute("""
         INSERT INTO entity_types (user_id, name, description, icon, color, is_system, created_at, updated_at)
-        VALUES 
+        VALUES
         ('SYSTEM', 'Person', 'An individual person', 'person', '#4A90E2', true, NOW(), NOW()),
         ('SYSTEM', 'Organization', 'A company, institution, or group', 'business', '#50E3C2', true, NOW(), NOW()),
         ('SYSTEM', 'Place', 'A physical or virtual location', 'place', '#F5A623', true, NOW(), NOW()),

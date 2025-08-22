@@ -21,7 +21,7 @@ def upgrade():
 
     # Check and add version field to projects table
     result = connection.execute(sa.text("""
-        SELECT column_name FROM information_schema.columns 
+        SELECT column_name FROM information_schema.columns
         WHERE table_name = 'projects' AND column_name = 'version' AND table_schema = current_schema()
     """))
     if not result.fetchone():
@@ -29,7 +29,7 @@ def upgrade():
 
     # Check and add version field to tasks table
     result = connection.execute(sa.text("""
-        SELECT column_name FROM information_schema.columns 
+        SELECT column_name FROM information_schema.columns
         WHERE table_name = 'tasks' AND column_name = 'version' AND table_schema = current_schema()
     """))
     if not result.fetchone():
@@ -37,7 +37,7 @@ def upgrade():
 
     # Check and add version field to life_areas table
     result = connection.execute(sa.text("""
-        SELECT column_name FROM information_schema.columns 
+        SELECT column_name FROM information_schema.columns
         WHERE table_name = 'life_areas' AND column_name = 'version' AND table_schema = current_schema()
     """))
     if not result.fetchone():
@@ -45,7 +45,7 @@ def upgrade():
 
     # Check and add updated_at field to life_areas table
     result = connection.execute(sa.text("""
-        SELECT column_name FROM information_schema.columns 
+        SELECT column_name FROM information_schema.columns
         WHERE table_name = 'life_areas' AND column_name = 'updated_at' AND table_schema = current_schema()
     """))
     if not result.fetchone():
@@ -55,7 +55,7 @@ def upgrade():
 
     # Check and add version field to media_attachments table
     result = connection.execute(sa.text("""
-        SELECT column_name FROM information_schema.columns 
+        SELECT column_name FROM information_schema.columns
         WHERE table_name = 'media_attachments' AND column_name = 'version' AND table_schema = current_schema()
     """))
     if not result.fetchone():

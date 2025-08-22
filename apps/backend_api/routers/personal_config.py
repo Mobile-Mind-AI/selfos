@@ -11,7 +11,6 @@ Handles personal configuration endpoints for enhanced onboarding:
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -95,7 +94,7 @@ async def create_personal_profile(
         )
 
 
-@router.get("/profile", response_model=Optional[PersonalProfileOut])
+@router.get("/profile", response_model=PersonalProfileOut | None)
 async def get_personal_profile(
     current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):

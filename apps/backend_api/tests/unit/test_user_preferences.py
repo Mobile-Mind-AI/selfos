@@ -114,13 +114,13 @@ def test_get_user_preferences_creates_default():
     data = response.json()
     assert data["user_id"] == "test_user_123"
     assert data["tone"] == "friendly"
-    assert data["notifications_enabled"] == True
+    assert data["notifications_enabled"]
     assert data["default_view"] == "card"
-    assert data["mood_tracking_enabled"] == False
-    assert data["progress_charts_enabled"] == True
-    assert data["ai_suggestions_enabled"] == True
-    assert data["data_sharing_enabled"] == False
-    assert data["analytics_enabled"] == True
+    assert not data["mood_tracking_enabled"]
+    assert data["progress_charts_enabled"]
+    assert data["ai_suggestions_enabled"]
+    assert not data["data_sharing_enabled"]
+    assert data["analytics_enabled"]
 
 
 def test_create_user_preferences():
@@ -147,8 +147,8 @@ def test_create_user_preferences():
     assert data["user_id"] == "test_user_123"
     assert data["tone"] == "coach"
     assert data["default_view"] == "timeline"
-    assert data["mood_tracking_enabled"] == True
-    assert data["ai_suggestions_enabled"] == False
+    assert data["mood_tracking_enabled"]
+    assert not data["ai_suggestions_enabled"]
 
 
 def test_create_preferences_fails_if_already_exist():
@@ -182,8 +182,8 @@ def test_update_user_preferences():
     assert response.status_code == 200
     data = response.json()
     assert data["tone"] == "professional"
-    assert data["mood_tracking_enabled"] == True
-    assert data["notifications_enabled"] == False
+    assert data["mood_tracking_enabled"]
+    assert not data["notifications_enabled"]
     assert data["default_view"] == "card"  # Should remain unchanged
 
 
@@ -197,7 +197,7 @@ def test_update_preferences_creates_if_not_exist():
     data = response.json()
     assert data["tone"] == "coach"
     assert data["default_view"] == "list"
-    assert data["notifications_enabled"] == True  # Default value
+    assert data["notifications_enabled"]  # Default value
 
 
 def test_update_preferences_with_default_life_area():
@@ -304,7 +304,7 @@ def test_quick_setup_preferences():
     assert response.status_code == 201
     data = response.json()
     assert data["tone"] == "coach"
-    assert data["notifications_enabled"] == False
+    assert not data["notifications_enabled"]
     assert data["default_view"] == "timeline"
 
 
@@ -344,9 +344,9 @@ def test_quick_setup_updates_existing():
     assert response.status_code == 201
     data = response.json()
     assert data["tone"] == "professional"
-    assert data["notifications_enabled"] == False
+    assert not data["notifications_enabled"]
     assert data["default_view"] == "list"
-    assert data["mood_tracking_enabled"] == True  # Should remain unchanged
+    assert data["mood_tracking_enabled"]  # Should remain unchanged
 
 
 def test_preferences_validation():
@@ -375,7 +375,7 @@ def test_notification_time_handling():
     assert response.status_code == 201
     data = response.json()
     assert "14:30:00" in data["notification_time"]
-    assert data["notifications_enabled"] == True
+    assert data["notifications_enabled"]
 
 
 def test_preferences_timestamps():

@@ -556,7 +556,7 @@ Be conservative with confidence scores. Use confidence < 0.85 for ambiguous mess
         self, message: str, result: IntentResult, processing_time: float
     ):
         """Log conversation for debugging and tuning."""
-        log_entry = ConversationLog(
+        ConversationLog(
             timestamp=datetime.now(),
             user_message=message,
             intent=result.intent,

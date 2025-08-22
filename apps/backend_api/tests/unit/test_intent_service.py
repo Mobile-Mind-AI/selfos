@@ -150,7 +150,7 @@ class TestIntentClassifier:
             ("Submit report next week", "next week"),
         ]
 
-        for message, expected_date_text in test_cases:
+        for message, _expected_date_text in test_cases:
             entities = self.classifier._extract_entities(message, "create_task")
             if "due_date" in entities:
                 # Just verify that some date processing occurred
@@ -236,7 +236,7 @@ class TestIntentClassifier:
         with patch.object(
             self.classifier, "_log_conversation", new_callable=AsyncMock
         ) as mock_log:
-            result = await self.classifier.classify_intent(
+            await self.classifier.classify_intent(
                 "Create a task to test logging"
             )
 

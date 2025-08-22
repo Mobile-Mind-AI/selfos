@@ -23,9 +23,9 @@ def upgrade() -> None:
 
     # Check if column already exists
     result = connection.execute(sa.text("""
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = 'personal_profiles' 
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'personal_profiles'
         AND column_name = 'preferred_name'
         AND table_schema = current_schema()
     """))
@@ -38,9 +38,9 @@ def upgrade() -> None:
 
     # Check if avatar_id column exists
     result = connection.execute(sa.text("""
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = 'personal_profiles' 
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'personal_profiles'
         AND column_name = 'avatar_id'
         AND table_schema = current_schema()
     """))
@@ -53,9 +53,9 @@ def upgrade() -> None:
 
     # Check if selected_life_areas column exists
     result = connection.execute(sa.text("""
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = 'personal_profiles' 
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'personal_profiles'
         AND column_name = 'selected_life_areas'
         AND table_schema = current_schema()
     """))
@@ -75,9 +75,9 @@ def downgrade() -> None:
 
     # Check and drop selected_life_areas column
     result = connection.execute(sa.text("""
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = 'personal_profiles' 
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'personal_profiles'
         AND column_name = 'selected_life_areas'
         AND table_schema = current_schema()
     """))
@@ -87,9 +87,9 @@ def downgrade() -> None:
 
     # Check and drop avatar_id column
     result = connection.execute(sa.text("""
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = 'personal_profiles' 
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'personal_profiles'
         AND column_name = 'avatar_id'
         AND table_schema = current_schema()
     """))
@@ -99,9 +99,9 @@ def downgrade() -> None:
 
     # Check and drop preferred_name column
     result = connection.execute(sa.text("""
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = 'personal_profiles' 
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'personal_profiles'
         AND column_name = 'preferred_name'
         AND table_schema = current_schema()
     """))

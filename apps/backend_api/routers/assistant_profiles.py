@@ -129,7 +129,7 @@ async def complete_onboarding(
     if existing_count > 0:
         db.query(AssistantProfile).filter(
             and_(
-                AssistantProfile.user_id == user_id, AssistantProfile.is_default == True
+                AssistantProfile.user_id == user_id, AssistantProfile.is_default
             )
         ).update({"is_default": False})
 
@@ -176,7 +176,7 @@ async def create_assistant_profile(
     if profile_data.is_default:
         db.query(AssistantProfile).filter(
             and_(
-                AssistantProfile.user_id == user_id, AssistantProfile.is_default == True
+                AssistantProfile.user_id == user_id, AssistantProfile.is_default
             )
         ).update({"is_default": False})
 
@@ -219,7 +219,7 @@ async def get_default_assistant_profile(
         db.query(AssistantProfile)
         .filter(
             and_(
-                AssistantProfile.user_id == user_id, AssistantProfile.is_default == True
+                AssistantProfile.user_id == user_id, AssistantProfile.is_default
             )
         )
         .first()
@@ -290,7 +290,7 @@ async def update_assistant_profile(
         db.query(AssistantProfile).filter(
             and_(
                 AssistantProfile.user_id == user_id,
-                AssistantProfile.is_default == True,
+                AssistantProfile.is_default,
                 AssistantProfile.id != profile_id,
             )
         ).update({"is_default": False})

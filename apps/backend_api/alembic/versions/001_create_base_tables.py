@@ -1,7 +1,7 @@
 """Create base tables
 
 Revision ID: 001
-Revises: 
+Revises:
 Create Date: 2025-07-01 03:45:00.000000
 
 """

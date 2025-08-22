@@ -86,7 +86,7 @@ async def process_message(
                 .filter(
                     and_(
                         AssistantProfile.user_id == user_id,
-                        AssistantProfile.is_default == True,
+                        AssistantProfile.is_default,
                     )
                 )
                 .first()
@@ -429,7 +429,7 @@ async def get_intent_analytics(
                 and_(
                     ConversationLog.user_id == user_id,
                     ConversationLog.created_at >= since_date,
-                    ConversationLog.fallback_used == True,
+                    ConversationLog.fallback_used,
                 )
             )
             .count()

@@ -315,7 +315,7 @@ class HabitService:
             .filter(
                 and_(
                     models.HabitCompletion.habit_id == habit_id,
-                    models.HabitCompletion.completed == True,
+                    models.HabitCompletion.completed,
                     func.date(models.HabitCompletion.completion_date) <= target_date,
                 )
             )

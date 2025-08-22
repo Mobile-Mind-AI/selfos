@@ -136,7 +136,7 @@ class TagService:
             }
 
             # Count usage by entity type
-            for entity_type, model_class, association_table in [
+            for entity_type, _model_class, association_table in [
                 ("projects", Project, "project_tags"),
                 ("goals", Goal, "goal_tags"),
                 ("tasks", Task, "task_tags"),
@@ -161,7 +161,7 @@ class TagService:
             # Get most used tags (top 5)
             most_used_query = text(
                 """
-                SELECT t.id, t.name, 
+                SELECT t.id, t.name,
                        (SELECT COUNT(*) FROM project_tags WHERE tag_id = t.id) +
                        (SELECT COUNT(*) FROM goal_tags WHERE tag_id = t.id) +
                        (SELECT COUNT(*) FROM task_tags WHERE tag_id = t.id) +
@@ -422,7 +422,7 @@ class TagService:
         try:
             usage_query = text(
                 """
-                SELECT 
+                SELECT
                     (SELECT COUNT(*) FROM project_tags WHERE tag_id = :tag_id) +
                     (SELECT COUNT(*) FROM goal_tags WHERE tag_id = :tag_id) +
                     (SELECT COUNT(*) FROM task_tags WHERE tag_id = :tag_id) +

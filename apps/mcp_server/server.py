@@ -214,10 +214,10 @@ class SelfOSMcpServer:
                 context = arguments.get("context", "")
                 return f"""
                 Please help decompose this goal into actionable tasks:
-                
+
                 Goal: {goal}
                 Context: {context}
-                
+
                 Break this down into specific, measurable tasks that can be completed within reasonable timeframes.
                 Consider dependencies between tasks and suggest a logical order.
                 """
@@ -227,10 +227,10 @@ class SelfOSMcpServer:
                 preferences = arguments.get("user_preferences", "")
                 return f"""
                 Please suggest an optimal project structure for:
-                
+
                 Project: {project}
                 User Preferences: {preferences}
-                
+
                 Organize this into phases, milestones, and actionable components.
                 Consider the user's working style and preferences.
                 """
@@ -240,13 +240,13 @@ class SelfOSMcpServer:
                 date = arguments.get("date", datetime.now().strftime("%Y-%m-%d"))
                 return f"""
                 Create a daily plan for user {user_id} on {date}.
-                
+
                 Consider:
                 - Current pending tasks and their priorities
                 - Goal deadlines and milestones
                 - User's energy levels and working patterns
                 - Time estimates for tasks
-                
+
                 Provide a structured daily schedule with time blocks and priorities.
                 """
 

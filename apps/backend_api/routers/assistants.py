@@ -33,7 +33,7 @@ def get_user_assistants(
                 AssistantProfile.permissions.any(
                     AssistantPermission.user_id == current_user["uid"]
                 ),
-                AssistantProfile.is_public == True,
+                AssistantProfile.is_public,
             )
         )
         .all()
@@ -126,7 +126,7 @@ def update_assistant(
             .filter(
                 AssistantPermission.assistant_id == assistant_id,
                 AssistantPermission.user_id == current_user["uid"],
-                AssistantPermission.can_edit == True,
+                AssistantPermission.can_edit,
             )
             .first()
         )
@@ -175,7 +175,7 @@ def share_assistant(
             .filter(
                 AssistantPermission.assistant_id == assistant_id,
                 AssistantPermission.user_id == current_user["uid"],
-                AssistantPermission.can_share == True,
+                AssistantPermission.can_share,
             )
             .first()
         )
@@ -549,11 +549,18 @@ def get_assistant_versions(
     if not assistant:
         raise HTTPException(status_code=404, detail="Assistant not found")
 
-    # Check permissions
-    if not _check_assistant_permission(
-        db, assistant_id, current_user["uid"], PermissionLevel.VIEWER
-    ):
-        raise HTTPException(status_code=403, detail="No permission to view assistant")
+    # Check permissions - user must be owner or have permission
+    if assistant.owner_id != current_user["uid"]:
+        permission = (
+            db.query(AssistantPermission)
+            .filter(
+                AssistantPermission.assistant_id == assistant_id,
+                AssistantPermission.user_id == current_user["uid"],
+            )
+            .first()
+        )
+        if not permission:
+            raise HTTPException(status_code=403, detail="No permission to view assistant")
 
     # For now, return current version as the only version
     return [
@@ -639,7 +646,7 @@ def cleanup_expired_permissions(
     expired_count = (
         db.query(AssistantPermission)
         .filter(
-            AssistantPermission.expires_at != None,
+            AssistantPermission.expires_at is not None,
             AssistantPermission.expires_at < datetime.utcnow(),
         )
         .delete()

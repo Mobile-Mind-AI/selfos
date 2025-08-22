@@ -35,7 +35,7 @@ class TestHabitsAPI:
         created_habit = response.json()
         assert created_habit["title"] == habit_data["title"]
         assert created_habit["description"] == habit_data["description"]
-        assert created_habit["is_active"] == True
+        assert created_habit["is_active"]
         assert created_habit["current_streak"] == 0
         assert created_habit["total_completions"] == 0
         assert "id" in created_habit
@@ -131,7 +131,7 @@ class TestHabitsAPI:
         habits = response.json()
         assert len(habits) == 1
         assert habits[0]["title"] == "Active Habit"
-        assert habits[0]["is_active"] == True
+        assert habits[0]["is_active"]
 
     def test_get_habit_success(self, client: TestClient, isolated_test_setup):
         """Test getting a specific habit"""
@@ -374,7 +374,7 @@ class TestHabitsAPI:
         assert progress["target_count"] == 3
         assert progress["actual_count"] == 0  # No completions yet
         assert progress["completion_rate"] == 0.0
-        assert progress["is_completed"] == False
+        assert not progress["is_completed"]
         assert "period_start" in progress
         assert "period_end" in progress
 
@@ -427,7 +427,7 @@ class TestHabitsAPI:
         assert progress["actual_count"] == 1
         assert progress["target_count"] == 3
         assert progress["completion_rate"] == 1.0 / 3.0
-        assert progress["is_completed"] == False
+        assert not progress["is_completed"]
 
         # Step 4: Check habit details (should include recent completions)
         habit_response = client.get(f"/api/habits/{habit_id}")

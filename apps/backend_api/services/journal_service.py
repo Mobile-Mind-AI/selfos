@@ -252,7 +252,7 @@ class JournalService:
             .filter(
                 and_(
                     models.JournalEntry.user_id == user_id,
-                    models.JournalEntry.project_id != None,
+                    models.JournalEntry.project_id is not None,
                 )
             )
             .scalar()
@@ -264,7 +264,7 @@ class JournalService:
             .filter(
                 and_(
                     models.JournalEntry.user_id == user_id,
-                    models.JournalEntry.goal_id != None,
+                    models.JournalEntry.goal_id is not None,
                 )
             )
             .scalar()
@@ -276,7 +276,7 @@ class JournalService:
             .filter(
                 and_(
                     models.JournalEntry.user_id == user_id,
-                    models.JournalEntry.task_id != None,
+                    models.JournalEntry.task_id is not None,
                 )
             )
             .scalar()
@@ -289,9 +289,9 @@ class JournalService:
             .filter(
                 and_(
                     models.JournalEntry.user_id == user_id,
-                    models.JournalEntry.project_id == None,
-                    models.JournalEntry.goal_id == None,
-                    models.JournalEntry.task_id == None,
+                    models.JournalEntry.project_id is None,
+                    models.JournalEntry.goal_id is None,
+                    models.JournalEntry.task_id is None,
                 )
             )
             .scalar()
@@ -309,9 +309,7 @@ class JournalService:
         return {
             "total_entries": total_entries,
             "entries_this_month": this_month,
-            "entries_by_type": {
-                entry_type: count for entry_type, count in entries_by_type
-            },
+            "entries_by_type": dict(entries_by_type),
             "average_per_week": (
                 round(recent_entries / 4, 1) if recent_entries > 0 else 0
             ),

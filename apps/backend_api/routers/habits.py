@@ -323,7 +323,6 @@ def delete_completion(
         raise HTTPException(status_code=404, detail="Completion not found")
 
     # Store completion date for stats recalculation
-    completion_date = completion.completion_date
 
     # Delete completion
     db.delete(completion)

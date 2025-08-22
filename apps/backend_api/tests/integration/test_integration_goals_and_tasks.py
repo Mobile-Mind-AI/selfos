@@ -339,7 +339,7 @@ class TestGoalsAndTasksIntegration:
         initial_goal = client.get(f"/api/goals/{goal_id}").json()
         initial_task = client.get(f"/api/tasks/{task_id}").json()
 
-        created_at_goal = initial_goal["created_at"]
+        initial_goal["created_at"]
         created_at_task = initial_task["created_at"]
 
         # Update task

@@ -195,7 +195,7 @@ def cmd_indexes(args):
 
         # Query to get index information
         index_query = """
-        SELECT 
+        SELECT
             schemaname,
             tablename,
             indexname,
@@ -203,7 +203,7 @@ def cmd_indexes(args):
             idx_tup_read as tuples_read,
             idx_tup_fetch as tuples_fetched,
             pg_size_pretty(pg_relation_size(indexrelid)) as size
-        FROM pg_stat_user_indexes 
+        FROM pg_stat_user_indexes
         WHERE schemaname = 'public'
         ORDER BY idx_scan DESC;
         """

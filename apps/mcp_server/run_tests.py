@@ -47,7 +47,7 @@ def run_tests(test_type="all", verbose=True, coverage=False):
     print(f"Running command: {' '.join(cmd)}")
 
     try:
-        result = subprocess.run(cmd, check=True)
+        subprocess.run(cmd, check=True)
         print("\n✅ All tests passed!")
         return True
     except subprocess.CalledProcessError as e:

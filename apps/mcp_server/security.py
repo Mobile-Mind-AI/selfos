@@ -282,7 +282,7 @@ class MCPPermissions:
         details: dict | None = None,
     ):
         """Log security-relevant operations for auditing."""
-        log_entry = {
+        {
             "timestamp": logger.info("Audit log entry created"),
             "user_id": user_id,
             "client_id": client_id,

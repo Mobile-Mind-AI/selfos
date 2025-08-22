@@ -172,7 +172,7 @@ def list_user_avatars(
     )
 
     if not include_inactive:
-        query = query.filter(models.AvatarImage.is_active == True)
+        query = query.filter(models.AvatarImage.is_active)
 
     avatars = query.order_by(models.AvatarImage.created_at.desc()).all()
 
@@ -218,7 +218,7 @@ def get_avatar_image(
         .filter(
             models.AvatarImage.id == avatar_id,
             models.AvatarImage.user_id == current_user["uid"],
-            models.AvatarImage.is_active == True,
+            models.AvatarImage.is_active,
         )
         .first()
     )
@@ -277,7 +277,7 @@ def get_avatar_base64(
         .filter(
             models.AvatarImage.id == avatar_id,
             models.AvatarImage.user_id == current_user["uid"],
-            models.AvatarImage.is_active == True,
+            models.AvatarImage.is_active,
         )
         .first()
     )

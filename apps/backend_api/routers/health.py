@@ -104,7 +104,7 @@ async def _check_ai_services(db: Session) -> dict[str, Any]:
     # Test Progress Service
     try:
         # Mock test data
-        test_result = await progress.get_user_progress_insights(db, "health_check_user")
+        await progress.get_user_progress_insights(db, "health_check_user")
         services_status["services"]["progress"] = {
             "status": "healthy",
             "details": "Progress analysis service operational",
@@ -138,7 +138,7 @@ async def _check_ai_services(db: Session) -> dict[str, Any]:
 
     # Test Notifications Service
     try:
-        test_result = await notifications.send_completion_notification(
+        await notifications.send_completion_notification(
             "health_check_user", "Health Check Task", {"test": True}
         )
         services_status["services"]["notifications"] = {
@@ -160,7 +160,7 @@ async def _check_ai_services(db: Session) -> dict[str, Any]:
             "title": "Health Check Task",
             "description": "Testing memory service",
         }
-        test_result = await memory.index_task(test_data)
+        await memory.index_task(test_data)
         services_status["services"]["memory"] = {
             "status": "healthy",
             "details": "Vector memory service operational",

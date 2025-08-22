@@ -212,7 +212,7 @@ def get_feedback_summary(
         .all()
     )
 
-    context_breakdown = {context_type: count for context_type, count in context_counts}
+    context_breakdown = dict(context_counts)
 
     # Get recent feedback (last 5 entries)
     recent_feedback = base_query.order_by(desc(FeedbackLog.created_at)).limit(5).all()

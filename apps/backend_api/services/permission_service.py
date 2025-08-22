@@ -133,7 +133,7 @@ class PermissionService:
         public = (
             db.query(AssistantProfile)
             .filter(
-                AssistantProfile.is_public == True, AssistantProfile.owner_id != user_id
+                AssistantProfile.is_public, AssistantProfile.owner_id != user_id
             )
             .all()
         )

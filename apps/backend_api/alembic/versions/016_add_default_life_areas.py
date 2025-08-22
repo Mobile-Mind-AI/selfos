@@ -27,7 +27,7 @@ def upgrade():
     result = connection.execute(sa.text("SELECT COUNT(*) FROM users WHERE uid = 'system'"))
     if result.scalar() == 0:
         connection.execute(sa.text("""
-            INSERT INTO users (uid, email) 
+            INSERT INTO users (uid, email)
             VALUES ('system', 'system@selfos.local')
         """))
         print("✅ Created system user")
@@ -84,14 +84,14 @@ def downgrade():
     """Remove default life areas."""
     # Delete only the system life areas
     op.execute("""
-        DELETE FROM life_areas 
+        DELETE FROM life_areas
         WHERE user_id = 'system' AND is_custom = false
     """)
 
     # Optionally remove the system user if no other data depends on it
     op.execute("""
-        DELETE FROM users 
-        WHERE uid = 'system' 
+        DELETE FROM users
+        WHERE uid = 'system'
         AND NOT EXISTS (
             SELECT 1 FROM life_areas WHERE user_id = 'system'
         )

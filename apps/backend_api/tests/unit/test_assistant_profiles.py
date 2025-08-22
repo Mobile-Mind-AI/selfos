@@ -265,7 +265,7 @@ class TestAssistantProfilesCRUD:
         create_response_1 = client.post(
             "/api/assistant_profiles/", json=SAMPLE_PROFILE_DATA
         )
-        profile_id_1 = create_response_1.json()["id"]
+        create_response_1.json()["id"]
 
         profile_2 = SAMPLE_PROFILE_DATA.copy()
         profile_2["name"] = "Assistant 2"

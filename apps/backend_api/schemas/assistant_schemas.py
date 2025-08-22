@@ -54,7 +54,7 @@ class PersonalityStyle(BaseModel):
     @validator("*")
     def validate_range(cls, v):
         """Ensure all values are within 0-100 range."""
-        if isinstance(v, (int, float)):
+        if isinstance(v, int | float):
             if v < 0 or v > 100:
                 raise ValueError("Value must be between 0 and 100")
             return int(v)

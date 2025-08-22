@@ -113,19 +113,19 @@ def upgrade() -> None:
     for name, icon, color in default_life_areas:
         op.execute(f"""
             INSERT INTO custom_life_areas (user_id, name, icon, color, is_custom, priority_order, created_at, updated_at)
-            SELECT 
-                os.user_id, 
-                '{name}', 
-                '{icon}', 
-                '{color}', 
+            SELECT
+                os.user_id,
+                '{name}',
+                '{icon}',
+                '{color}',
                 false,
                 (SELECT COUNT(*) FROM custom_life_areas cla2 WHERE cla2.user_id = os.user_id) + 1,
                 CURRENT_TIMESTAMP,
                 CURRENT_TIMESTAMP
-            FROM onboarding_states os 
+            FROM onboarding_states os
             WHERE os.onboarding_completed = true
             AND NOT EXISTS (
-                SELECT 1 FROM custom_life_areas cla 
+                SELECT 1 FROM custom_life_areas cla
                 WHERE cla.user_id = os.user_id AND cla.name = '{name}'
             )
         """)

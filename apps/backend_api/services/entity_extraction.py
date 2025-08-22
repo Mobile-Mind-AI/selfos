@@ -37,7 +37,7 @@ class EntityExtractor:
         types = (
             self.db.query(EntityType)
             .filter(
-                or_(EntityType.user_id == self.user_id, EntityType.is_system == True)
+                or_(EntityType.user_id == self.user_id, EntityType.is_system)
             )
             .all()
         )
@@ -50,7 +50,7 @@ class EntityExtractor:
         self.existing_entities = {}
         entities = (
             self.db.query(Entity)
-            .filter(Entity.user_id == self.user_id, Entity.is_active == True)
+            .filter(Entity.user_id == self.user_id, Entity.is_active)
             .all()
         )
 

@@ -24,8 +24,8 @@ def upgrade():
 
     # Check if table exists
     result = connection.execute(sa.text("""
-        SELECT table_name 
-        FROM information_schema.tables 
+        SELECT table_name
+        FROM information_schema.tables
         WHERE table_name = 'assistant_permissions'
         AND table_schema = current_schema()
     """))
@@ -34,9 +34,9 @@ def upgrade():
         # Add columns to assistant_profiles if they don't exist
         # Check for version column
         version_result = connection.execute(sa.text("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'assistant_profiles' 
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'assistant_profiles'
             AND column_name = 'version'
             AND table_schema = current_schema()
         """))
@@ -45,9 +45,9 @@ def upgrade():
 
         # Check for owner_id column
         owner_result = connection.execute(sa.text("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'assistant_profiles' 
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'assistant_profiles'
             AND column_name = 'owner_id'
             AND table_schema = current_schema()
         """))
@@ -59,9 +59,9 @@ def upgrade():
 
         # Check for is_public column
         public_result = connection.execute(sa.text("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'assistant_profiles' 
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'assistant_profiles'
             AND column_name = 'is_public'
             AND table_schema = current_schema()
         """))

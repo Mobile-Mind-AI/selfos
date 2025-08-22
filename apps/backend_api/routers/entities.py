@@ -34,7 +34,7 @@ def get_entity_types(
     types = (
         db.query(EntityType)
         .filter(
-            or_(EntityType.user_id == current_user["uid"], EntityType.is_system == True)
+            or_(EntityType.user_id == current_user["uid"], EntityType.is_system)
         )
         .all()
     )
@@ -149,7 +149,7 @@ def create_entity(
         .filter(
             EntityType.id == entity.type_id,
             or_(
-                EntityType.user_id == current_user["uid"], EntityType.is_system == True
+                EntityType.user_id == current_user["uid"], EntityType.is_system
             ),
         )
         .first()
@@ -641,7 +641,7 @@ def get_important_entities(
     """Get the most important entities for the user."""
     entities = (
         db.query(Entity)
-        .filter(Entity.user_id == current_user["uid"], Entity.is_active == True)
+        .filter(Entity.user_id == current_user["uid"], Entity.is_active)
         .order_by(Entity.importance.desc(), Entity.last_interaction.desc().nullslast())
         .limit(limit)
         .all()

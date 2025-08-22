@@ -33,7 +33,7 @@ def get_current_assistant_profile(
         db.query(models.AssistantProfile)
         .filter(
             models.AssistantProfile.user_id == current_user["uid"],
-            models.AssistantProfile.is_default == True,
+            models.AssistantProfile.is_default,
         )
         .first()
     )
@@ -81,7 +81,7 @@ def update_assistant_profile(
         db.query(models.AssistantProfile)
         .filter(
             models.AssistantProfile.user_id == current_user["uid"],
-            models.AssistantProfile.is_default == True,
+            models.AssistantProfile.is_default,
         )
         .first()
     )
@@ -123,7 +123,7 @@ def create_assistant_profile(
     if profile_data.is_default:
         db.query(models.AssistantProfile).filter(
             models.AssistantProfile.user_id == current_user["uid"],
-            models.AssistantProfile.is_default == True,
+            models.AssistantProfile.is_default,
         ).update({"is_default": False})
 
     # Create new profile
@@ -228,7 +228,7 @@ def update_specific_assistant_profile(
     if update_data.is_default:
         db.query(models.AssistantProfile).filter(
             models.AssistantProfile.user_id == current_user["uid"],
-            models.AssistantProfile.is_default == True,
+            models.AssistantProfile.is_default,
             models.AssistantProfile.id != profile_id,
         ).update({"is_default": False})
 
@@ -342,7 +342,7 @@ def set_default_assistant_profile(
     # Unset all other defaults
     db.query(models.AssistantProfile).filter(
         models.AssistantProfile.user_id == current_user["uid"],
-        models.AssistantProfile.is_default == True,
+        models.AssistantProfile.is_default,
     ).update({"is_default": False})
 
     # Set this as default

@@ -343,7 +343,7 @@ class TaskBase(BaseModel):
         if v is not None:
             # Remove duplicates and ensure all are positive integers
             unique_deps = list(
-                set([dep for dep in v if isinstance(dep, int) and dep > 0])
+                {dep for dep in v if isinstance(dep, int) and dep > 0}
             )
             return unique_deps
         return []
@@ -560,7 +560,7 @@ class RecurrenceRule(BaseModel):
         if v is not None:
             if not all(0 <= day <= 6 for day in v):
                 raise ValueError("Days of week must be 0-6 (Monday-Sunday)")
-            return sorted(list(set(v)))  # Remove duplicates and sort
+            return sorted(set(v))  # Remove duplicates and sort
         return v
 
     @validator("days_of_month")
@@ -568,7 +568,7 @@ class RecurrenceRule(BaseModel):
         if v is not None:
             if not all(1 <= day <= 31 for day in v):
                 raise ValueError("Days of month must be 1-31")
-            return sorted(list(set(v)))  # Remove duplicates and sort
+            return sorted(set(v))  # Remove duplicates and sort
         return v
 
 
@@ -861,7 +861,7 @@ class MediaAttachmentBase(BaseModel):
         }
 
         # Check if mime type is in any allowed category
-        for category, mime_types in allowed_mime_types.items():
+        for _category, mime_types in allowed_mime_types.items():
             if v in mime_types:
                 return v
 

@@ -147,18 +147,18 @@ class EmailService:
                 <div class="header">
                     <h1>🔐 Password Reset Request</h1>
                 </div>
-                
+
                 <div class="content">
                     <p>{greeting}</p>
-                    
+
                     <p>We received a request to reset the password for your SelfOS account associated with <strong>{email}</strong>.</p>
-                    
+
                     <p>Click the button below to reset your password:</p>
-                    
+
                     <div style="text-align: center;">
                         <a href="{reset_link}" class="button">Reset My Password</a>
                     </div>
-                    
+
                     <div class="warning">
                         <strong>⚠️ Important Security Information:</strong>
                         <ul>
@@ -167,15 +167,15 @@ class EmailService:
                             <li>Never share this link with anyone</li>
                         </ul>
                     </div>
-                    
+
                     <p>If the button doesn't work, copy and paste this link into your browser:</p>
                     <p style="word-break: break-all; background-color: #e5e7eb; padding: 10px; border-radius: 3px; font-family: monospace;">
                         {reset_link}
                     </p>
-                    
+
                     <p>If you're having trouble, contact our support team.</p>
                 </div>
-                
+
                 <div class="footer">
                     <p>© 2025 SelfOS. All rights reserved.</p>
                     <p>This is an automated email. Please do not reply to this message.</p>

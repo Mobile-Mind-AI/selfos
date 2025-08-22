@@ -79,8 +79,8 @@ class TestHierarchyAPI:
         db.commit()
 
         # Create real test data
-        goal1 = self.create_test_goal(db, "Career Growth")
-        goal2 = self.create_test_goal(db, "Health Improvement")
+        self.create_test_goal(db, "Career Growth")
+        self.create_test_goal(db, "Health Improvement")
 
         # Make API request
         response = client.get("/api/goals/roots/")
@@ -104,8 +104,8 @@ class TestHierarchyAPI:
         parent_goal = self.create_test_goal(db, "Parent Goal")
 
         # Create child goals
-        child1 = self.create_test_goal(db, "Child Goal 1", parent_goal.id)
-        child2 = self.create_test_goal(db, "Child Goal 2", parent_goal.id)
+        self.create_test_goal(db, "Child Goal 1", parent_goal.id)
+        self.create_test_goal(db, "Child Goal 2", parent_goal.id)
 
         # Make API request
         response = client.get(f"/api/goals/{parent_goal.id}/children")
@@ -138,9 +138,9 @@ class TestHierarchyAPI:
 
         # Create hierarchical structure
         root_goal = self.create_test_goal(db, "Career")
-        child_goal = self.create_test_goal(db, "Learn Python", root_goal.id)
+        self.create_test_goal(db, "Learn Python", root_goal.id)
 
-        another_root = self.create_test_goal(db, "Health")
+        self.create_test_goal(db, "Health")
 
         # Make API request
         response = client.get("/api/goals/tree/")
@@ -228,8 +228,8 @@ class TestHierarchyAPI:
         db.commit()
 
         # Create real test data
-        project1 = self.create_test_project(db, "Work Projects")
-        project2 = self.create_test_project(db, "Personal Projects")
+        self.create_test_project(db, "Work Projects")
+        self.create_test_project(db, "Personal Projects")
 
         # Make API request
         response = client.get("/api/projects/roots/")
@@ -251,7 +251,7 @@ class TestHierarchyAPI:
 
         # Create hierarchical structure
         root_project = self.create_test_project(db, "Work")
-        child_project = self.create_test_project(db, "New Website", root_project.id)
+        self.create_test_project(db, "New Website", root_project.id)
 
         # Make API request
         response = client.get("/api/projects/tree/")
@@ -384,7 +384,7 @@ class TestHierarchyAPI:
 
         # Step 2: Add sub-goals
         python_goal = self.create_test_goal(db, "Learn Python", career_goal.id)
-        exercise_goal = self.create_test_goal(db, "Regular Exercise", health_goal.id)
+        self.create_test_goal(db, "Regular Exercise", health_goal.id)
 
         # Step 3: Add sub-sub-goals
         django_goal = self.create_test_goal(db, "Learn Django", python_goal.id)
@@ -444,7 +444,7 @@ class TestHierarchyAPI:
 
         # Create project hierarchy
         work_project = self.create_test_project(db, "Work Projects")
-        website_project = self.create_test_project(
+        self.create_test_project(
             db, "Company Website", work_project.id
         )
 

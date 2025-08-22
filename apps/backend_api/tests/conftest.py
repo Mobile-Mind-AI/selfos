@@ -244,7 +244,7 @@ def live_server_auth_headers(live_server_url):
     import requests
 
     # Register test user on live server
-    register_response = requests.post(
+    requests.post(
         f"{live_server_url}/auth/register",
         json={
             "email": "livetest@example.com",

@@ -490,7 +490,7 @@ class TestChatStressTesting:
         total_time = time.time() - start_time
 
         # All should succeed
-        for response, timestamp in responses:
+        for response, _timestamp in responses:
             assert response.status_code == 200
             data = response.json()
             assert data["status"] == "success"
@@ -510,26 +510,26 @@ class TestChatStressTesting:
         # Create a very long message
         long_message = (
             """
-        I have a really complex situation and I need help figuring out my goals and priorities. 
-        Let me explain everything in detail. I'm 28 years old and I'm currently working as a software 
-        engineer at a mid-size company. I've been there for 3 years and while I like the technical 
-        work, I'm not particularly passionate about the products we build. I've always been interested 
-        in environmental sustainability and climate change, and I've been thinking about transitioning 
-        to a career that's more aligned with my values. However, I also have student loans that I'm 
-        still paying off, and I need to maintain a certain income level. I've been considering going 
-        back to school for a graduate degree in environmental science or sustainable engineering, but 
-        that would mean taking on more debt and potentially reducing my income for a few years. 
-        Alternatively, I could try to transition within the tech industry to companies that focus on 
-        clean technology or environmental solutions. I'm also interested in starting a side project 
-        or even eventually my own company focused on sustainability, but I don't have much business 
-        experience. On the personal side, I want to buy a house in the next few years, and I'm in a 
-        long-term relationship where we're thinking about getting married and maybe having kids 
-        eventually. I also want to travel more and spend time with family, but I feel like I'm always 
-        too busy with work. I try to exercise regularly but I'm not very consistent, and I want to 
-        get better at cooking healthy meals instead of ordering takeout all the time. I feel like I 
-        have so many different goals and priorities that I don't know where to start or how to balance 
-        everything. Some days I feel motivated and ready to make big changes, and other days I feel 
-        overwhelmed and just want to stick with the status quo. Can you help me figure out how to 
+        I have a really complex situation and I need help figuring out my goals and priorities.
+        Let me explain everything in detail. I'm 28 years old and I'm currently working as a software
+        engineer at a mid-size company. I've been there for 3 years and while I like the technical
+        work, I'm not particularly passionate about the products we build. I've always been interested
+        in environmental sustainability and climate change, and I've been thinking about transitioning
+        to a career that's more aligned with my values. However, I also have student loans that I'm
+        still paying off, and I need to maintain a certain income level. I've been considering going
+        back to school for a graduate degree in environmental science or sustainable engineering, but
+        that would mean taking on more debt and potentially reducing my income for a few years.
+        Alternatively, I could try to transition within the tech industry to companies that focus on
+        clean technology or environmental solutions. I'm also interested in starting a side project
+        or even eventually my own company focused on sustainability, but I don't have much business
+        experience. On the personal side, I want to buy a house in the next few years, and I'm in a
+        long-term relationship where we're thinking about getting married and maybe having kids
+        eventually. I also want to travel more and spend time with family, but I feel like I'm always
+        too busy with work. I try to exercise regularly but I'm not very consistent, and I want to
+        get better at cooking healthy meals instead of ordering takeout all the time. I feel like I
+        have so many different goals and priorities that I don't know where to start or how to balance
+        everything. Some days I feel motivated and ready to make big changes, and other days I feel
+        overwhelmed and just want to stick with the status quo. Can you help me figure out how to
         approach this situation and what my first steps should be?
         """
             * 2

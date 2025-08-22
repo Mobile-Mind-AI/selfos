@@ -273,9 +273,7 @@ def get_story_sessions_summary(
         .all()
     )
 
-    by_content_type = {
-        content_type: count for content_type, count in content_type_counts
-    }
+    by_content_type = dict(content_type_counts)
 
     # Get breakdown by posting status
     posting_status_counts = (
@@ -287,9 +285,7 @@ def get_story_sessions_summary(
         .all()
     )
 
-    by_posting_status = {
-        posting_status: count for posting_status, count in posting_status_counts
-    }
+    by_posting_status = dict(posting_status_counts)
 
     # Get breakdown by processing status
     processing_status_counts = (
@@ -301,10 +297,7 @@ def get_story_sessions_summary(
         .all()
     )
 
-    by_processing_status = {
-        processing_status: count
-        for processing_status, count in processing_status_counts
-    }
+    by_processing_status = dict(processing_status_counts)
 
     # Calculate total word count
     total_word_count_result = (

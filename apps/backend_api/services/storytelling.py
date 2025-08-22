@@ -121,7 +121,7 @@ async def _generate_task_story(task, media_attachments: list) -> dict[str, str]:
     media_text = ""
     if media_attachments:
         media_count = len(media_attachments)
-        media_types = list(set([m.file_type for m in media_attachments]))
+        media_types = list({m.file_type for m in media_attachments})
 
         if media_count == 1:
             media_text = f" Along the way, a {media_types[0]} was captured to document the progress."
@@ -204,7 +204,7 @@ async def generate_weekly_summary(db: Session, user_id: str) -> dict[str, Any]:
             f"This week brought {len(completed_tasks)} accomplishments across different areas of focus."
         ]
 
-        for area_key, tasks in areas.items():
+        for _area_key, tasks in areas.items():
             task_titles = [t.title for t in tasks]
             if len(tasks) == 1:
                 story_parts.append(

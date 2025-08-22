@@ -445,7 +445,7 @@ def _handle_assistant_creation(
         db.query(AssistantProfile)
         .filter(
             AssistantProfile.user_id == state.user_id,
-            AssistantProfile.is_default == True,
+            AssistantProfile.is_default,
         )
         .first()
     )
@@ -521,7 +521,7 @@ def _handle_language_preferences(
 ) -> dict[str, Any]:
     """Handle language preferences step."""
     try:
-        prefs_data = LanguagePreferencesData(**data)
+        LanguagePreferencesData(**data)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -710,7 +710,7 @@ def _handle_personal_config(
                 icon_name = "category"  # default
                 if "icon_codepoint" in area_data:
                     # Map common icon codepoints to names (simplified mapping)
-                    codepoint = area_data.get("icon_codepoint")
+                    area_data.get("icon_codepoint")
                     icon_family = area_data.get("icon_font_family", "")
                     if icon_family == "MaterialIcons":
                         # You could build a mapping here, for now use category

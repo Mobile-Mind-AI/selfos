@@ -94,7 +94,7 @@ class TestAIIntegration:
 
         # Check for processing metrics
         assert "processing_time" in data
-        assert isinstance(data["processing_time"], (int, float))
+        assert isinstance(data["processing_time"], int | float)
 
     def test_chat_basic(self, get_test_user_headers):
         """Test basic chat functionality."""

@@ -22,8 +22,8 @@ def upgrade() -> None:
     # Get current columns
     conn = op.get_bind()
     result = conn.execute(sa.text("""
-        SELECT column_name 
-        FROM information_schema.columns 
+        SELECT column_name
+        FROM information_schema.columns
         WHERE table_name = 'life_areas'
     """))
     existing_columns = [row[0] for row in result]

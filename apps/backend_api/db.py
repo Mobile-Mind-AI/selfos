@@ -66,13 +66,13 @@ def create_archive_tables(db: Session) -> None:
     CREATE TABLE IF NOT EXISTS story_sessions_archive (
         LIKE story_sessions INCLUDING ALL
     );
-    
+
     -- Add archival metadata
-    ALTER TABLE story_sessions_archive 
+    ALTER TABLE story_sessions_archive
     ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-    
+
     -- Index for archival queries
-    CREATE INDEX IF NOT EXISTS ix_story_archive_archived_at 
+    CREATE INDEX IF NOT EXISTS ix_story_archive_archived_at
     ON story_sessions_archive(archived_at);
     """
 
@@ -81,13 +81,13 @@ def create_archive_tables(db: Session) -> None:
     CREATE TABLE IF NOT EXISTS feedback_logs_archive (
         LIKE feedback_logs INCLUDING ALL
     );
-    
+
     -- Add archival metadata
-    ALTER TABLE feedback_logs_archive 
+    ALTER TABLE feedback_logs_archive
     ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-    
+
     -- Index for archival queries
-    CREATE INDEX IF NOT EXISTS ix_feedback_archive_archived_at 
+    CREATE INDEX IF NOT EXISTS ix_feedback_archive_archived_at
     ON feedback_logs_archive(archived_at);
     """
 
@@ -149,9 +149,9 @@ def archive_story_sessions(
             # Insert into archive table
             for record in records:
                 archive_sql = """
-                INSERT INTO story_sessions_archive 
-                SELECT *, CURRENT_TIMESTAMP as archived_at 
-                FROM story_sessions 
+                INSERT INTO story_sessions_archive
+                SELECT *, CURRENT_TIMESTAMP as archived_at
+                FROM story_sessions
                 WHERE id = :record_id
                 """
                 db.execute(text(archive_sql), {"record_id": record.id})
@@ -234,9 +234,9 @@ def archive_feedback_logs(
             # Insert into archive table
             for record in records:
                 archive_sql = """
-                INSERT INTO feedback_logs_archive 
-                SELECT *, CURRENT_TIMESTAMP as archived_at 
-                FROM feedback_logs 
+                INSERT INTO feedback_logs_archive
+                SELECT *, CURRENT_TIMESTAMP as archived_at
+                FROM feedback_logs
                 WHERE id = :record_id
                 """
                 db.execute(text(archive_sql), {"record_id": record.id})
@@ -314,7 +314,7 @@ def get_archival_stats(db: Session) -> dict[str, Any]:
                 text("SELECT COUNT(*) FROM story_sessions_archive")
             ).scalar()
             story_archive_count = story_archive_result if story_archive_result else 0
-        except:
+        except Exception:
             story_archive_count = 0
 
         try:
@@ -324,7 +324,7 @@ def get_archival_stats(db: Session) -> dict[str, Any]:
             feedback_archive_count = (
                 feedback_archive_result if feedback_archive_result else 0
             )
-        except:
+        except Exception:
             feedback_archive_count = 0
 
         stats = {

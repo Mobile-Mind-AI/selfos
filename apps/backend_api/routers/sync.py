@@ -423,7 +423,7 @@ async def get_delta_sync(
 
         # Exclude soft-deleted items if the model supports it
         if hasattr(model_class, "deleted_at"):
-            query = query.filter(model_class.deleted_at == None)
+            query = query.filter(model_class.deleted_at is None)
 
         # Apply limit across all types
         remaining_limit = limit - len(changes)
