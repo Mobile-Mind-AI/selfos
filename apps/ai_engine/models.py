@@ -7,7 +7,7 @@ Data structures for AI requests, responses, and processing results.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 
 class RequestType(Enum):
@@ -37,11 +37,11 @@ class AIRequest:
     request_type: RequestType
     user_id: str
     prompt: str
-    context: Dict[str, Any] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    max_tokens: Optional[int] = None
-    temperature: Optional[float] = None
-    timeout: Optional[int] = None
+    context: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    max_tokens: int | None = None
+    temperature: float | None = None
+    timeout: int | None = None
     created_at: datetime = field(default_factory=datetime.utcnow)
 
 
@@ -50,10 +50,10 @@ class GoalDecompositionRequest(AIRequest):
     """Request for goal decomposition."""
 
     goal_description: str = ""
-    life_areas: List[Dict[str, Any]] = field(default_factory=list)
-    existing_goals: List[Dict[str, Any]] = field(default_factory=list)
-    user_preferences: Optional[Dict[str, Any]] = None
-    additional_context: Optional[str] = None
+    life_areas: list[dict[str, Any]] = field(default_factory=list)
+    existing_goals: list[dict[str, Any]] = field(default_factory=list)
+    user_preferences: dict[str, Any] | None = None
+    additional_context: str | None = None
 
     def __post_init__(self):
         self.request_type = RequestType.GOAL_DECOMPOSITION
@@ -65,11 +65,11 @@ class TaskGenerationRequest(AIRequest):
 
     goal_id: int = 0
     goal_title: str = ""
-    goal_description: Optional[str] = None
-    existing_tasks: List[Dict[str, Any]] = field(default_factory=list)
-    completed_tasks: List[Dict[str, Any]] = field(default_factory=list)
+    goal_description: str | None = None
+    existing_tasks: list[dict[str, Any]] = field(default_factory=list)
+    completed_tasks: list[dict[str, Any]] = field(default_factory=list)
     generation_type: str = "next_tasks"  # next_tasks, optimize_sequence, break_down
-    constraints: Optional[str] = None
+    constraints: str | None = None
 
     def __post_init__(self):
         self.request_type = RequestType.TASK_GENERATION
@@ -80,9 +80,9 @@ class ConversationRequest(AIRequest):
     """Request for conversational AI."""
 
     message: str = ""
-    conversation_history: List[Dict[str, str]] = field(default_factory=list)
-    user_context: Optional[Dict[str, Any]] = None
-    intent: Optional[str] = None
+    conversation_history: list[dict[str, str]] = field(default_factory=list)
+    user_context: dict[str, Any] | None = None
+    intent: str | None = None
 
     def __post_init__(self):
         self.request_type = RequestType.CONVERSATION
@@ -95,12 +95,12 @@ class AIResponse:
     request_id: str
     status: ResponseStatus
     content: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    error_message: Optional[str] = None
-    token_usage: Optional[Dict[str, int]] = None
-    cost_estimate: Optional[float] = None
-    processing_time: Optional[float] = None
-    model_used: Optional[str] = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    error_message: str | None = None
+    token_usage: dict[str, int] | None = None
+    cost_estimate: float | None = None
+    processing_time: float | None = None
+    model_used: str | None = None
     created_at: datetime = field(default_factory=datetime.utcnow)
 
 
@@ -110,51 +110,51 @@ class ParsedTask:
 
     title: str
     description: str
-    estimated_duration: Optional[int] = None  # in minutes
-    dependencies: List[int] = field(default_factory=list)
-    life_area_id: Optional[int] = None
-    timeline: Optional[str] = None
-    success_criteria: Optional[str] = None
-    priority: Optional[str] = None
-    resources_needed: List[str] = field(default_factory=list)
+    estimated_duration: int | None = None  # in minutes
+    dependencies: list[int] = field(default_factory=list)
+    life_area_id: int | None = None
+    timeline: str | None = None
+    success_criteria: str | None = None
+    priority: str | None = None
+    resources_needed: list[str] = field(default_factory=list)
 
 
 @dataclass
 class GoalDecompositionResponse(AIResponse):
     """Response from goal decomposition."""
 
-    suggested_tasks: List[ParsedTask] = field(default_factory=list)
-    overall_timeline: Optional[str] = None
-    potential_challenges: List[str] = field(default_factory=list)
-    success_metrics: List[str] = field(default_factory=list)
-    next_steps: List[str] = field(default_factory=list)
-    suggested_life_area: Optional[Dict[str, str]] = None
-    confidence_score: Optional[float] = None
+    suggested_tasks: list[ParsedTask] = field(default_factory=list)
+    overall_timeline: str | None = None
+    potential_challenges: list[str] = field(default_factory=list)
+    success_metrics: list[str] = field(default_factory=list)
+    next_steps: list[str] = field(default_factory=list)
+    suggested_life_area: dict[str, str] | None = None
+    confidence_score: float | None = None
 
 
 @dataclass
 class TaskGenerationResponse(AIResponse):
     """Response from task generation."""
 
-    generated_tasks: List[ParsedTask] = field(default_factory=list)
-    optimized_sequence: List[int] = field(default_factory=list)  # Task IDs in order
-    parallel_opportunities: List[List[int]] = field(
+    generated_tasks: list[ParsedTask] = field(default_factory=list)
+    optimized_sequence: list[int] = field(default_factory=list)  # Task IDs in order
+    parallel_opportunities: list[list[int]] = field(
         default_factory=list
     )  # Groups of parallel tasks
-    critical_path: List[int] = field(default_factory=list)
-    time_estimate: Optional[str] = None
-    recommendations: List[str] = field(default_factory=list)
+    critical_path: list[int] = field(default_factory=list)
+    time_estimate: str | None = None
+    recommendations: list[str] = field(default_factory=list)
 
 
 @dataclass
 class ConversationResponse(AIResponse):
     """Response from conversational AI."""
 
-    intent_detected: Optional[str] = None
-    suggested_actions: List[Dict[str, Any]] = field(default_factory=list)
-    follow_up_questions: List[str] = field(default_factory=list)
-    extracted_goals: List[str] = field(default_factory=list)
-    sentiment: Optional[str] = None
+    intent_detected: str | None = None
+    suggested_actions: list[dict[str, Any]] = field(default_factory=list)
+    follow_up_questions: list[str] = field(default_factory=list)
+    extracted_goals: list[str] = field(default_factory=list)
+    sentiment: str | None = None
 
 
 @dataclass
@@ -237,7 +237,7 @@ class TokenUsage:
 class PromptTemplate:
     """Template for generating prompts with variable substitution."""
 
-    def __init__(self, template: str, required_vars: List[str] = None):
+    def __init__(self, template: str, required_vars: list[str] = None):
         self.template = template
         self.required_vars = required_vars or []
 
@@ -253,7 +253,7 @@ class PromptTemplate:
         except KeyError as e:
             raise ValueError(f"Template variable not provided: {e}")
 
-    def get_variables(self) -> List[str]:
+    def get_variables(self) -> list[str]:
         """Extract all variable names from template."""
         import re
 

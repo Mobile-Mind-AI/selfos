@@ -26,7 +26,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_users_uid'), 'users', ['uid'], unique=False)
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
-    
+
     # Create life_areas table
     op.create_table('life_areas',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -44,7 +44,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_life_areas_id'), 'life_areas', ['id'], unique=False)
     op.create_index('ix_life_areas_user_created', 'life_areas', ['user_id', sa.text('created_at DESC')], unique=False)
     op.create_index('ix_life_areas_user_name', 'life_areas', ['user_id', 'name'], unique=False)
-    
+
     # Create goals table
     op.create_table('goals',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -64,7 +64,7 @@ def upgrade() -> None:
     op.create_index('ix_goals_user_created', 'goals', ['user_id', sa.text('created_at DESC')], unique=False)
     op.create_index('ix_goals_user_status', 'goals', ['user_id', 'status'], unique=False)
     op.create_index('ix_goals_life_area_created', 'goals', ['life_area_id', sa.text('created_at DESC')], unique=False)
-    
+
     # Create media_attachments table
     op.create_table('media_attachments',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -83,7 +83,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_media_attachments_id'), 'media_attachments', ['id'], unique=False)
     op.create_index('ix_media_goal', 'media_attachments', ['goal_id', sa.text('created_at DESC')], unique=False)
     op.create_index('ix_media_user_created', 'media_attachments', ['user_id', sa.text('created_at DESC')], unique=False)
-    
+
     # Create tasks table
     op.create_table('tasks',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -109,7 +109,7 @@ def upgrade() -> None:
     op.create_index('ix_tasks_goal_created', 'tasks', ['goal_id', sa.text('created_at DESC')], unique=False)
     op.create_index('ix_tasks_due_date', 'tasks', ['user_id', 'due_date'], unique=False)
     op.create_index('ix_tasks_completed', 'tasks', ['user_id', sa.text('created_at DESC')], unique=False, postgresql_where=sa.text("status = 'completed'"))
-    
+
     # Create memory_items table
     op.create_table('memory_items',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -125,7 +125,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_memory_items_id'), 'memory_items', ['id'], unique=False)
     op.create_index('ix_memory_user_created', 'memory_items', ['user_id', sa.text('created_at DESC')], unique=False)
     op.create_index('ix_memory_user_type', 'memory_items', ['user_id', 'memory_type'], unique=False)
-    
+
     # Create user_preferences table
     op.create_table('user_preferences',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -144,7 +144,7 @@ def upgrade() -> None:
     sa.UniqueConstraint('user_id')
     )
     op.create_index(op.f('ix_user_preferences_id'), 'user_preferences', ['id'], unique=False)
-    
+
     # Create feedback_logs table
     op.create_table('feedback_logs',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -165,7 +165,7 @@ def upgrade() -> None:
     op.create_index('ix_feedback_user_created', 'feedback_logs', ['user_id', sa.text('created_at DESC')], unique=False)
     op.create_index('ix_feedback_session_created', 'feedback_logs', ['session_id', sa.text('created_at DESC')], unique=False)
     op.create_index('ix_feedback_context', 'feedback_logs', ['context_type', 'context_id'], unique=False)
-    
+
     # Create story_sessions table
     op.create_table('story_sessions',
     sa.Column('id', sa.Integer(), nullable=False),

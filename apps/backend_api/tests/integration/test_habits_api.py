@@ -4,8 +4,6 @@ Integration tests for Habits API
 Tests the full API endpoints for habit management.
 """
 
-import json
-from datetime import date, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient

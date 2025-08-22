@@ -501,7 +501,6 @@ def test_generate_story_request():
     goal_id = goal_response.json()["id"]
 
     # Use current date range to ensure goals are included
-    from datetime import datetime, timedelta
 
     now = datetime.utcnow()
     period_start = (now - timedelta(days=1)).isoformat()

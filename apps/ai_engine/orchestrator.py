@@ -12,8 +12,8 @@ import logging
 import os
 import sys
 import time
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Union
+from datetime import datetime
+from typing import Any
 
 # Import config from current directory (ai_engine)
 current_dir = os.path.dirname(__file__)
@@ -111,7 +111,7 @@ class ProviderClient:
 
     async def generate_completion(
         self, prompt: str, max_tokens: int, temperature: float, timeout: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate completion from AI provider."""
         raise NotImplementedError
 
@@ -143,7 +143,7 @@ class OpenAIClient(ProviderClient):
         temperature: float,
         timeout: int,
         model: str = "gpt-3.5-turbo",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate completion using OpenAI API."""
         client = self._get_client()
 
@@ -203,7 +203,7 @@ class AnthropicClient(ProviderClient):
         temperature: float,
         timeout: int,
         model: str = "claude-3-sonnet-20240229",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate completion using Anthropic API."""
         client = self._get_client()
 
@@ -247,7 +247,7 @@ class MockClient(ProviderClient):
         temperature: float,
         timeout: int,
         model: str = "mock-model",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate mock completion."""
         await asyncio.sleep(0.1)  # Simulate API delay
 
@@ -567,11 +567,11 @@ class ResponseCache:
     """Simple in-memory cache for AI responses."""
 
     def __init__(self, ttl: int = 3600):
-        self.cache: Dict[str, CacheEntry] = {}
+        self.cache: dict[str, CacheEntry] = {}
         self.ttl = ttl
         self._lock = asyncio.Lock()
 
-    def _generate_key(self, prompt: str, model_config: Dict[str, Any]) -> str:
+    def _generate_key(self, prompt: str, model_config: dict[str, Any]) -> str:
         """Generate cache key from prompt and config."""
         key_data = {
             "prompt": prompt,
@@ -583,8 +583,8 @@ class ResponseCache:
         return hashlib.md5(key_string.encode()).hexdigest()
 
     async def get(
-        self, prompt: str, model_config: Dict[str, Any]
-    ) -> Optional[AIResponse]:
+        self, prompt: str, model_config: dict[str, Any]
+    ) -> AIResponse | None:
         """Get cached response."""
         async with self._lock:
             key = self._generate_key(prompt, model_config)
@@ -602,7 +602,7 @@ class ResponseCache:
             return None
 
     async def set(
-        self, prompt: str, model_config: Dict[str, Any], response: AIResponse
+        self, prompt: str, model_config: dict[str, Any], response: AIResponse
     ):
         """Store response in cache."""
         async with self._lock:
@@ -627,9 +627,9 @@ class ResponseCache:
 class AIOrchestrator:
     """Main orchestrator for AI operations."""
 
-    def __init__(self, config: Optional[AIConfig] = None):
+    def __init__(self, config: AIConfig | None = None):
         self.config = config or AIConfig()
-        self.clients: Dict[str, ProviderClient] = (
+        self.clients: dict[str, ProviderClient] = (
             {}
         )  # Use string keys instead of enum objects
         self.cache = ResponseCache(ttl=self.config.settings["cache_ttl"])
@@ -910,7 +910,7 @@ class AIOrchestrator:
 
                 if context_parts:
                     context_guidance = (
-                        f"\n\nContext for this conversation:\n"
+                        "\n\nContext for this conversation:\n"
                         + "\n".join([f"- {part}" for part in context_parts])
                     )
 
@@ -968,7 +968,7 @@ class AIOrchestrator:
         prompt: str,
         use_case: str,
         request_id: str,
-        provider: Optional[AIProvider] = None,
+        provider: AIProvider | None = None,
     ) -> AIResponse:
         """Generate response from AI provider."""
 
@@ -1064,7 +1064,7 @@ class AIOrchestrator:
 
     def _parse_goal_decomposition_response(
         self, response: AIResponse
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Parse goal decomposition response into structured data."""
         # This is a simplified parser - in production, you'd use more sophisticated NLP
         content = response.content.lower()
@@ -1079,7 +1079,7 @@ class AIOrchestrator:
             "confidence_score": 0.8,
         }
 
-    def _parse_task_generation_response(self, response: AIResponse) -> Dict[str, Any]:
+    def _parse_task_generation_response(self, response: AIResponse) -> dict[str, Any]:
         """Parse task generation response into structured data."""
         # Simplified parser
         return {
@@ -1092,7 +1092,7 @@ class AIOrchestrator:
 
     def _parse_conversation_response(
         self, response: AIResponse, user_message: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Parse conversation response to extract intent and actions."""
         # Simplified intent detection
         message_lower = user_message.lower()
@@ -1137,7 +1137,7 @@ class AIOrchestrator:
         """Get current processing metrics."""
         return self.metrics
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Check health of AI orchestrator."""
         try:
             # Test each part separately to identify the issue

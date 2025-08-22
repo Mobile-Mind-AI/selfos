@@ -9,7 +9,6 @@ import fnmatch
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +35,11 @@ class ClientPermissions:
     """Permissions for a specific client."""
 
     level: PermissionLevel
-    allowed_tools: List[str] = field(default_factory=list)
-    allowed_resources: List[str] = field(default_factory=list)
-    denied_tools: List[str] = field(default_factory=list)
-    denied_resources: List[str] = field(default_factory=list)
-    custom_rules: List[PermissionRule] = field(default_factory=list)
+    allowed_tools: list[str] = field(default_factory=list)
+    allowed_resources: list[str] = field(default_factory=list)
+    denied_tools: list[str] = field(default_factory=list)
+    denied_resources: list[str] = field(default_factory=list)
+    custom_rules: list[PermissionRule] = field(default_factory=list)
 
 
 class MCPPermissions:
@@ -89,8 +88,8 @@ class MCPPermissions:
 
     def __init__(self):
         """Initialize the permissions system."""
-        self.client_permissions: Dict[str, ClientPermissions] = {}
-        self.rate_limits: Dict[str, Dict] = {}
+        self.client_permissions: dict[str, ClientPermissions] = {}
+        self.rate_limits: dict[str, dict] = {}
 
     def get_client_permissions(
         self,
@@ -110,7 +109,7 @@ class MCPPermissions:
         logger.info(f"Updated permissions for client {client_id}: {permissions.level}")
 
     async def check_tool_permission(
-        self, user_id: str, client_id: str, tool_name: str, arguments: Dict
+        self, user_id: str, client_id: str, tool_name: str, arguments: dict
     ) -> bool:
         """
         Check if client has permission to use a specific tool.
@@ -180,7 +179,7 @@ class MCPPermissions:
         logger.warning(f"Resource {resource_type} not allowed for client {client_id}")
         return False
 
-    def _matches_patterns(self, item: str, patterns: List[str]) -> bool:
+    def _matches_patterns(self, item: str, patterns: list[str]) -> bool:
         """Check if item matches any of the given patterns."""
         for pattern in patterns:
             if pattern == "*" or fnmatch.fnmatch(item, pattern):
@@ -254,8 +253,8 @@ class MCPPermissions:
         return True
 
     def create_security_context(
-        self, user_id: str, client_id: str, user_info: Dict
-    ) -> Dict:
+        self, user_id: str, client_id: str, user_info: dict
+    ) -> dict:
         """Create security context for a session."""
         permissions = self.get_client_permissions(client_id)
 
@@ -280,7 +279,7 @@ class MCPPermissions:
         operation: str,
         resource: str,
         success: bool,
-        details: Optional[Dict] = None,
+        details: dict | None = None,
     ):
         """Log security-relevant operations for auditing."""
         log_entry = {
@@ -303,7 +302,7 @@ class MCPPermissions:
                 f"AUDIT: FAILED {operation} on {resource} by {user_id} via {client_id}"
             )
 
-    def validate_input_safety(self, input_data: Dict) -> Tuple[bool, List[str]]:
+    def validate_input_safety(self, input_data: dict) -> tuple[bool, list[str]]:
         """
         Validate input data for safety and security.
 

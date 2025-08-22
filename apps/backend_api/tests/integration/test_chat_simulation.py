@@ -6,7 +6,6 @@ with the AI system, including multi-turn conversations, context awareness,
 and integration with memory and goal systems.
 """
 
-import json
 import os
 import time
 
@@ -581,9 +580,7 @@ class TestChatPerformance:
         """Test handling multiple chat requests simultaneously."""
         headers = get_test_user_headers
 
-        import asyncio
 
-        import aiohttp
 
         # This would be better with async test client, but for now test sequentially
         messages = [

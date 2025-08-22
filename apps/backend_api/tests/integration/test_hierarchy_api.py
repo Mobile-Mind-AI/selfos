@@ -5,7 +5,6 @@ Tests complete workflows for hierarchical goals and projects,
 using conftest.py fixtures for authentication and database setup.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from models import Goal, LifeArea, Project
 from sqlalchemy.orm import Session

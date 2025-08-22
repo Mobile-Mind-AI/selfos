@@ -41,18 +41,18 @@ def upgrade() -> None:
     op.create_index('ix_projects_user_status', 'projects', ['user_id', 'status'], unique=False)
     op.create_index('ix_projects_life_area_created', 'projects', ['life_area_id', sa.text('created_at DESC')], unique=False)
     op.create_index('ix_projects_user_priority', 'projects', ['user_id', 'priority'], unique=False)
-    
+
     # Add project_id to goals table
     op.add_column('goals', sa.Column('project_id', sa.Integer(), nullable=True))
     op.create_foreign_key('fk_goals_project', 'goals', 'projects', ['project_id'], ['id'])
     op.create_index('ix_goals_project_created', 'goals', ['project_id', sa.text('created_at DESC')], unique=False)
-    
+
     # Modify tasks table to make goal_id nullable and add project_id
     op.alter_column('tasks', 'goal_id', nullable=True)
     op.add_column('tasks', sa.Column('project_id', sa.Integer(), nullable=True))
     op.create_foreign_key('fk_tasks_project', 'tasks', 'projects', ['project_id'], ['id'])
     op.create_index('ix_tasks_project_created', 'tasks', ['project_id', sa.text('created_at DESC')], unique=False)
-    
+
     # Add project_id to media_attachments table
     op.add_column('media_attachments', sa.Column('project_id', sa.Integer(), nullable=True))
     op.create_foreign_key('fk_media_project', 'media_attachments', 'projects', ['project_id'], ['id'])
@@ -64,17 +64,17 @@ def downgrade() -> None:
     op.drop_index('ix_media_project', table_name='media_attachments')
     op.drop_constraint('fk_media_project', 'media_attachments', type_='foreignkey')
     op.drop_column('media_attachments', 'project_id')
-    
+
     # Remove project_id from tasks and revert goal_id to not nullable
     op.drop_index('ix_tasks_project_created', table_name='tasks')
     op.drop_constraint('fk_tasks_project', 'tasks', type_='foreignkey')
     op.drop_column('tasks', 'project_id')
     op.alter_column('tasks', 'goal_id', nullable=False)
-    
+
     # Remove project_id from goals
     op.drop_index('ix_goals_project_created', table_name='goals')
     op.drop_constraint('fk_goals_project', 'goals', type_='foreignkey')
     op.drop_column('goals', 'project_id')
-    
+
     # Drop projects table
     op.drop_table('projects')

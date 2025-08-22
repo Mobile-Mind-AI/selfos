@@ -5,9 +5,7 @@ Handles authentication for MCP client connections using Firebase tokens
 and API keys, ensuring secure access to SelfOS resources.
 """
 
-import json
 import logging
-from typing import Dict, Optional, Tuple
 
 try:
     import firebase_admin
@@ -52,8 +50,8 @@ class MCPAuthProvider:
                 self._firebase_initialized = False
 
     async def authenticate_client(
-        self, credentials_data: Dict
-    ) -> Tuple[bool, Optional[str], Optional[Dict]]:
+        self, credentials_data: dict
+    ) -> tuple[bool, str | None, dict | None]:
         """
         Authenticate MCP client connection.
 
@@ -74,8 +72,8 @@ class MCPAuthProvider:
             return False, None, None
 
     async def _authenticate_firebase_token(
-        self, credentials_data: Dict
-    ) -> Tuple[bool, Optional[str], Optional[Dict]]:
+        self, credentials_data: dict
+    ) -> tuple[bool, str | None, dict | None]:
         """Authenticate using Firebase ID token."""
         if not self._firebase_initialized:
             logger.error("Firebase not initialized - cannot authenticate token")
@@ -114,8 +112,8 @@ class MCPAuthProvider:
             return False, None, None
 
     async def _authenticate_api_key(
-        self, credentials_data: Dict
-    ) -> Tuple[bool, Optional[str], Optional[Dict]]:
+        self, credentials_data: dict
+    ) -> tuple[bool, str | None, dict | None]:
         """Authenticate using API key (for development/testing)."""
         api_key = credentials_data.get("key")
         if not api_key:
@@ -184,8 +182,8 @@ class MCPAuthProvider:
         return False
 
     def create_session_context(
-        self, user_id: str, user_info: Dict, client_info: Optional[Dict] = None
-    ) -> Dict:
+        self, user_id: str, user_info: dict, client_info: dict | None = None
+    ) -> dict:
         """Create session context for authenticated user."""
         return {
             "user_id": user_id,

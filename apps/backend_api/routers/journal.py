@@ -1,14 +1,12 @@
 """Journal entry routes - API endpoints for journal/notes functionality."""
 
 from datetime import datetime
-from typing import List, Optional
 
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, Query
 from schemas import (
     JournalEntry,
     JournalEntryCreate,
-    JournalEntryOut,
     JournalEntryUpdate,
 )
 from services.journal_service import JournalService
@@ -48,16 +46,16 @@ def create_journal_entry(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/", response_model=List[JournalEntry])
+@router.get("/", response_model=list[JournalEntry])
 def get_journal_entries(
-    project_id: Optional[int] = Query(None, description="Filter by project ID"),
-    goal_id: Optional[int] = Query(None, description="Filter by goal ID"),
-    task_id: Optional[int] = Query(None, description="Filter by task ID"),
-    search: Optional[str] = Query(None, description="Search in content"),
-    start_date: Optional[datetime] = Query(
+    project_id: int | None = Query(None, description="Filter by project ID"),
+    goal_id: int | None = Query(None, description="Filter by goal ID"),
+    task_id: int | None = Query(None, description="Filter by task ID"),
+    search: str | None = Query(None, description="Search in content"),
+    start_date: datetime | None = Query(
         None, description="Filter entries created after this date"
     ),
-    end_date: Optional[datetime] = Query(
+    end_date: datetime | None = Query(
         None, description="Filter entries created before this date"
     ),
     limit: int = Query(
@@ -105,13 +103,13 @@ def get_journal_entries(
 
 @router.get("/count")
 def get_journal_entry_count(
-    project_id: Optional[int] = Query(None, description="Filter by project ID"),
-    goal_id: Optional[int] = Query(None, description="Filter by goal ID"),
-    task_id: Optional[int] = Query(None, description="Filter by task ID"),
-    start_date: Optional[datetime] = Query(
+    project_id: int | None = Query(None, description="Filter by project ID"),
+    goal_id: int | None = Query(None, description="Filter by goal ID"),
+    task_id: int | None = Query(None, description="Filter by task ID"),
+    start_date: datetime | None = Query(
         None, description="Filter entries created after this date"
     ),
-    end_date: Optional[datetime] = Query(
+    end_date: datetime | None = Query(
         None, description="Filter entries created before this date"
     ),
     db: Session = Depends(get_db),
@@ -147,7 +145,7 @@ def get_journal_entry_count(
     return {"count": count}
 
 
-@router.get("/recent", response_model=List[JournalEntry])
+@router.get("/recent", response_model=list[JournalEntry])
 def get_recent_journal_entries(
     days: int = Query(7, ge=1, le=90, description="Number of days to look back"),
     limit: int = Query(
@@ -177,7 +175,7 @@ def get_recent_journal_entries(
     return entries
 
 
-@router.get("/search", response_model=List[JournalEntry])
+@router.get("/search", response_model=list[JournalEntry])
 def search_journal_entries(
     q: str = Query(..., min_length=1, description="Search term"),
     limit: int = Query(20, ge=1, le=50, description="Maximum number of results"),
@@ -226,7 +224,7 @@ def get_journal_statistics(
     return stats
 
 
-@router.get("/for/{parent_type}/{parent_id}", response_model=List[JournalEntry])
+@router.get("/for/{parent_type}/{parent_id}", response_model=list[JournalEntry])
 def get_journal_entries_for_parent(
     parent_type: str,
     parent_id: int,

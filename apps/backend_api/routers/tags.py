@@ -1,7 +1,7 @@
 """API endpoints for tag management."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/tags", tags=["tags"])
 async def create_tag(
     tag_data: TagCreate,
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """Create a new tag."""
     try:
@@ -33,13 +33,13 @@ async def create_tag(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.get("/", response_model=List[TagOut])
+@router.get("/", response_model=list[TagOut])
 async def get_tags(
     include_usage_count: bool = Query(
         False, description="Include usage count for each tag"
     ),
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """Get all tags for the current user."""
     try:
@@ -50,12 +50,12 @@ async def get_tags(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.get("/search", response_model=List[TagOut])
+@router.get("/search", response_model=list[TagOut])
 async def search_tags(
     q: str = Query(..., description="Search query", min_length=1),
     limit: int = Query(10, description="Maximum number of results", ge=1, le=50),
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """Search tags by name."""
     try:
@@ -66,10 +66,10 @@ async def search_tags(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.get("/statistics", response_model=Dict[str, Any])
+@router.get("/statistics", response_model=dict[str, Any])
 async def get_tag_statistics(
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """Get tag usage statistics."""
     try:
@@ -87,7 +87,7 @@ async def get_tag(
     tag_id: int,
     include_usage_count: bool = Query(False, description="Include usage count"),
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """Get a specific tag by ID."""
     try:
@@ -108,7 +108,7 @@ async def update_tag(
     tag_id: int,
     tag_update: TagUpdate,
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """Update an existing tag."""
     try:
@@ -131,7 +131,7 @@ async def update_tag(
 async def delete_tag(
     tag_id: int,
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """Delete a tag and all its associations."""
     try:
@@ -147,14 +147,14 @@ async def delete_tag(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.get("/{tag_id}/entities", response_model=Dict[str, List[Dict]])
+@router.get("/{tag_id}/entities", response_model=dict[str, list[dict]])
 async def get_entities_by_tag(
     tag_id: int,
-    entity_types: Optional[List[str]] = Query(
+    entity_types: list[str] | None = Query(
         None, description="Filter by entity types"
     ),
     db: Session = Depends(get_db),
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
     """Get all entities associated with a specific tag."""
     try:

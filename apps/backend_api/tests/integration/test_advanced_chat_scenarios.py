@@ -5,11 +5,8 @@ Complex chat scenarios including edge cases, stress testing,
 and advanced conversation patterns for the AI system.
 """
 
-import json
 import os
-import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 from fastapi.testclient import TestClient

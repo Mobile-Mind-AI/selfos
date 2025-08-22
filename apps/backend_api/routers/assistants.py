@@ -3,10 +3,10 @@ Assistants API endpoints for managing multiple assistant profiles.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from dependencies import get_current_user, get_db
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from models import AssistantPermission, AssistantProfile, PermissionLevel
 from schemas.assistant_schemas import (
     AssistantProfileCreate,
@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 router = APIRouter(prefix="/assistants", tags=["assistants"])
 
 
-@router.get("/", response_model=List[AssistantProfileOut])
+@router.get("/", response_model=list[AssistantProfileOut])
 def get_user_assistants(
     current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
@@ -152,7 +152,7 @@ def update_assistant(
 @router.post("/{assistant_id}/share", status_code=200)
 def share_assistant(
     assistant_id: str,
-    share_data: Dict[str, Any],
+    share_data: dict[str, Any],
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -276,7 +276,7 @@ def revoke_permission(
     return None
 
 
-@router.get("/{assistant_id}/permissions", response_model=List[Dict[str, Any]])
+@router.get("/{assistant_id}/permissions", response_model=list[dict[str, Any]])
 def get_assistant_permissions(
     assistant_id: str,
     current_user: dict = Depends(get_current_user),
@@ -334,7 +334,7 @@ def get_assistant_permissions(
     ]
 
 
-@router.get("/{assistant_id}/permission-level", response_model=Dict[str, str])
+@router.get("/{assistant_id}/permission-level", response_model=dict[str, str])
 def get_user_permission_level(
     assistant_id: str,
     current_user: dict = Depends(get_current_user),
@@ -403,7 +403,7 @@ def delete_assistant(
     return None
 
 
-@router.get("/versions/", response_model=List[dict])
+@router.get("/versions/", response_model=list[dict])
 def get_assistant_versions(
     current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
@@ -472,7 +472,7 @@ def revoke_permission(
         return {"message": "No permission found to revoke"}
 
 
-@router.get("/{assistant_id}/permissions", response_model=List[dict])
+@router.get("/{assistant_id}/permissions", response_model=list[dict])
 def get_assistant_permissions(
     assistant_id: str,
     current_user: dict = Depends(get_current_user),
@@ -534,7 +534,7 @@ def get_assistant_permissions(
     return result
 
 
-@router.get("/{assistant_id}/versions", response_model=List[dict])
+@router.get("/{assistant_id}/versions", response_model=list[dict])
 def get_assistant_versions(
     assistant_id: str,
     current_user: dict = Depends(get_current_user),
@@ -570,7 +570,7 @@ def get_assistant_versions(
 @router.get("/{assistant_id}/permission-level", response_model=dict)
 def get_user_permission_level(
     assistant_id: str,
-    user_id: Optional[str] = None,
+    user_id: str | None = None,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

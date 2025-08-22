@@ -3,7 +3,6 @@ Entity management API endpoints for knowledge graph.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
 
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -27,7 +26,7 @@ router = APIRouter(prefix="/entities", tags=["entities"])
 # ========================= Entity Types =========================
 
 
-@router.get("/types", response_model=List[EntityTypeSchema])
+@router.get("/types", response_model=list[EntityTypeSchema])
 def get_entity_types(
     db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
@@ -81,11 +80,11 @@ def create_entity_type(
 # ========================= Entities =========================
 
 
-@router.get("/", response_model=List[EntitySchema])
+@router.get("/", response_model=list[EntitySchema])
 def get_entities(
-    type_id: Optional[int] = None,
-    search: Optional[str] = None,
-    min_importance: Optional[float] = None,
+    type_id: int | None = None,
+    search: str | None = None,
+    min_importance: float | None = None,
     limit: int = Query(100, le=500),
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -257,10 +256,10 @@ def delete_entity(
 # ========================= Entity Relationships =========================
 
 
-@router.get("/{entity_id}/relationships", response_model=List[EntityRelationshipSchema])
+@router.get("/{entity_id}/relationships", response_model=list[EntityRelationshipSchema])
 def get_entity_relationships(
     entity_id: int,
-    direction: Optional[str] = Query(None, regex="^(outgoing|incoming|both)$"),
+    direction: str | None = Query(None, regex="^(outgoing|incoming|both)$"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):

@@ -5,7 +5,6 @@ MCP resources for user-related data including profiles, preferences,
 and context information for AI agents.
 """
 
-from typing import Dict, List
 
 from mcp.types import Resource
 
@@ -13,7 +12,7 @@ from mcp.types import Resource
 class UserResourcesHandler:
     """Handler for user-related MCP resources."""
 
-    async def list_resources(self) -> List[Resource]:
+    async def list_resources(self) -> list[Resource]:
         """Return list of user-related resources."""
         return [
             Resource(

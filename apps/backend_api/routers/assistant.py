@@ -3,19 +3,15 @@ Assistant profile management endpoints.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import models
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, status
 from schemas.assistant_schemas import (
-    AssistantProfile,
     AssistantProfileCreate,
     AssistantProfileOut,
     AssistantProfileUpdate,
-    PersonalityStyle,
-    SupportedAIModel,
-    SupportedLanguage,
 )
 from sqlalchemy.orm import Session
 
@@ -67,7 +63,7 @@ def get_current_assistant_profile(
 
 @router.put("/profile", response_model=AssistantProfileOut)
 def update_assistant_profile(
-    update_data: Dict[str, Any],
+    update_data: dict[str, Any],
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -142,7 +138,7 @@ def create_assistant_profile(
     return profile
 
 
-@router.get("/profiles", response_model=List[AssistantProfileOut])
+@router.get("/profiles", response_model=list[AssistantProfileOut])
 def list_assistant_profiles(
     current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):

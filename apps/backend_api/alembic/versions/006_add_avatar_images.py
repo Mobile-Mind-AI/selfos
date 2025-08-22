@@ -36,7 +36,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['user_id'], ['users.uid'], ),
         sa.PrimaryKeyConstraint('id')
     )
-    
+
     # Create indexes
     op.create_index('ix_avatar_images_id', 'avatar_images', ['id'], unique=False)
     op.create_index('ix_avatar_images_user_created', 'avatar_images', ['user_id', 'created_at'], unique=False)
@@ -48,6 +48,6 @@ def downgrade() -> None:
     op.drop_index('ix_avatar_images_user_active', table_name='avatar_images')
     op.drop_index('ix_avatar_images_user_created', table_name='avatar_images')
     op.drop_index('ix_avatar_images_id', table_name='avatar_images')
-    
+
     # Drop table
     op.drop_table('avatar_images')

@@ -132,15 +132,15 @@ def downgrade() -> None:
     op.drop_index('ix_task_entities_task', table_name='task_entities')
     op.drop_index('ix_task_entities_entity', table_name='task_entities')
     op.drop_table('task_entities')
-    
+
     op.drop_index('ix_project_entities_project', table_name='project_entities')
     op.drop_index('ix_project_entities_entity', table_name='project_entities')
     op.drop_table('project_entities')
-    
+
     op.drop_index('ix_goal_entities_goal', table_name='goal_entities')
     op.drop_index('ix_goal_entities_entity', table_name='goal_entities')
     op.drop_table('goal_entities')
-    
+
     # Drop entity_relationships table
     op.drop_index('ix_entity_relationships_user', table_name='entity_relationships')
     op.drop_index('ix_entity_relationships_type', table_name='entity_relationships')
@@ -148,7 +148,7 @@ def downgrade() -> None:
     op.drop_index('ix_entity_relationships_source', table_name='entity_relationships')
     op.drop_index(op.f('ix_entity_relationships_id'), table_name='entity_relationships')
     op.drop_table('entity_relationships')
-    
+
     # Drop entities table
     op.drop_index('ix_entities_user_type', table_name='entities')
     op.drop_index('ix_entities_user_name', table_name='entities')
@@ -156,7 +156,7 @@ def downgrade() -> None:
     op.drop_index('ix_entities_external', table_name='entities')
     op.drop_index(op.f('ix_entities_id'), table_name='entities')
     op.drop_table('entities')
-    
+
     # Drop entity_types table
     op.drop_index('ix_entity_types_user_name', table_name='entity_types')
     op.drop_index('ix_entity_types_is_system', table_name='entity_types')

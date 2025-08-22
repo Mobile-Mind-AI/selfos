@@ -4,7 +4,7 @@ Pydantic schemas for AI Assistant Profile management.
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, validator
 
@@ -65,10 +65,10 @@ class AssistantProfileBase(BaseModel):
     """Base schema for assistant profiles."""
 
     name: str = Field(..., min_length=1, max_length=100, description="Assistant name")
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None, max_length=500, description="Assistant description"
     )
-    avatar_url: Optional[str] = Field(
+    avatar_url: str | None = Field(
         None, max_length=500, description="Avatar image URL"
     )
     ai_model: SupportedAIModel = Field(
@@ -87,7 +87,7 @@ class AssistantProfileBase(BaseModel):
     intent_temperature: float = Field(
         0.3, ge=0.0, le=2.0, description="Temperature for intent classification"
     )
-    custom_instructions: Optional[str] = Field(
+    custom_instructions: str | None = Field(
         None, max_length=1000, description="Custom behavior instructions"
     )
 
@@ -117,17 +117,17 @@ class AssistantProfileCreate(AssistantProfileBase):
 class AssistantProfileUpdate(BaseModel):
     """Schema for updating an assistant profile (all fields optional)."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=500)
-    avatar_url: Optional[str] = Field(None, max_length=500)
-    ai_model: Optional[SupportedAIModel] = None
-    language: Optional[SupportedLanguage] = None
-    requires_confirmation: Optional[bool] = None
-    style: Optional[PersonalityStyle] = None
-    dialogue_temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
-    intent_temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
-    custom_instructions: Optional[str] = Field(None, max_length=1000)
-    is_default: Optional[bool] = None
+    name: str | None = Field(None, min_length=1, max_length=100)
+    description: str | None = Field(None, max_length=500)
+    avatar_url: str | None = Field(None, max_length=500)
+    ai_model: SupportedAIModel | None = None
+    language: SupportedLanguage | None = None
+    requires_confirmation: bool | None = None
+    style: PersonalityStyle | None = None
+    dialogue_temperature: float | None = Field(None, ge=0.0, le=2.0)
+    intent_temperature: float | None = Field(None, ge=0.0, le=2.0)
+    custom_instructions: str | None = Field(None, max_length=1000)
+    is_default: bool | None = None
 
 
 class AssistantProfile(AssistantProfileBase):
@@ -166,7 +166,7 @@ class OnboardingStepRequest(BaseModel):
     """Base request for any onboarding step."""
 
     step: OnboardingStep = Field(..., description="Current onboarding step")
-    data: Dict[str, Any] = Field(..., description="Step-specific data")
+    data: dict[str, Any] = Field(..., description="Step-specific data")
 
 
 class OnboardingStateOut(BaseModel):
@@ -175,16 +175,16 @@ class OnboardingStateOut(BaseModel):
     id: str
     user_id: str
     current_step: int
-    completed_steps: List[int]
+    completed_steps: list[int]
     onboarding_completed: bool
-    assistant_profile_id: Optional[str]
-    selected_life_areas: List[int]
-    first_goal_id: Optional[int]
-    first_task_id: Optional[int]
-    temp_data: Dict[str, Any] = Field(default_factory=dict)
-    theme_preference: Optional[str]
+    assistant_profile_id: str | None
+    selected_life_areas: list[int]
+    first_goal_id: int | None
+    first_task_id: int | None
+    temp_data: dict[str, Any] = Field(default_factory=dict)
+    theme_preference: str | None
     started_at: datetime
-    completed_at: Optional[datetime]
+    completed_at: datetime | None
     last_activity: datetime
 
     class Config:
@@ -195,7 +195,7 @@ class AssistantCreationData(BaseModel):
     """Data for assistant creation step."""
 
     name: str = Field(..., min_length=1, max_length=100, description="Assistant name")
-    avatar_url: Optional[str] = Field(
+    avatar_url: str | None = Field(
         None, max_length=500, description="Avatar image URL"
     )
 
@@ -218,10 +218,10 @@ class LanguagePreferencesData(BaseModel):
 class LifeAreasSelectionData(BaseModel):
     """Data for life areas selection step."""
 
-    life_area_ids: List[int] = Field(
+    life_area_ids: list[int] = Field(
         ..., min_items=1, description="Selected life area IDs"
     )
-    custom_life_areas: Optional[List[str]] = Field(
+    custom_life_areas: list[str] | None = Field(
         None, description="Custom life areas to create"
     )
 
@@ -232,13 +232,13 @@ class FirstGoalData(BaseModel):
     skip_goal_creation: bool = Field(
         False, description="Skip goal creation and complete onboarding"
     )
-    title: Optional[str] = Field(
+    title: str | None = Field(
         None, min_length=1, max_length=200, description="Goal title"
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None, max_length=1000, description="Goal description"
     )
-    life_area_id: Optional[int] = Field(None, description="Associated life area")
+    life_area_id: int | None = Field(None, description="Associated life area")
     generate_tasks: bool = Field(True, description="Auto-generate tasks using AI")
 
 
@@ -246,20 +246,20 @@ class OnboardingRequest(BaseModel):
     """Request schema for assistant onboarding flow."""
 
     name: str = Field(..., min_length=1, max_length=100, description="Assistant name")
-    avatar_url: Optional[str] = Field(
+    avatar_url: str | None = Field(
         None, max_length=500, description="Avatar image URL"
     )
     style: PersonalityStyle = Field(..., description="Personality style configuration")
     language: SupportedLanguage = Field(
         SupportedLanguage.ENGLISH, description="Primary language"
     )
-    ai_model: Optional[SupportedAIModel] = Field(
+    ai_model: SupportedAIModel | None = Field(
         SupportedAIModel.GPT_35_TURBO, description="AI model preference"
     )
     requires_confirmation: bool = Field(
         True, description="Require confirmation for actions"
     )
-    custom_instructions: Optional[str] = Field(
+    custom_instructions: str | None = Field(
         None, max_length=1000, description="Custom instructions"
     )
 
@@ -277,21 +277,21 @@ class OnboardingStepResponse(BaseModel):
 
     success: bool
     current_step: int
-    completed_steps: List[int]
-    next_step: Optional[int]
+    completed_steps: list[int]
+    next_step: int | None
     message: str
-    data: Optional[Dict[str, Any]] = None
+    data: dict[str, Any] | None = None
 
 
 class AssistantConfigResponse(BaseModel):
     """Response schema for assistant configuration options."""
 
-    supported_languages: Dict[str, str] = Field(..., description="Available languages")
-    supported_models: Dict[str, str] = Field(..., description="Available AI models")
+    supported_languages: dict[str, str] = Field(..., description="Available languages")
+    supported_models: dict[str, str] = Field(..., description="Available AI models")
     default_style: PersonalityStyle = Field(
         ..., description="Default personality style"
     )
-    temperature_ranges: Dict[str, Dict[str, float]] = Field(
+    temperature_ranges: dict[str, dict[str, float]] = Field(
         ..., description="Temperature setting ranges"
     )
 
@@ -300,10 +300,10 @@ class ChatWithAssistantRequest(BaseModel):
     """Request schema for chat with specific assistant."""
 
     message: str = Field(..., min_length=1, max_length=2000, description="User message")
-    assistant_id: Optional[str] = Field(
+    assistant_id: str | None = Field(
         None, description="Specific assistant ID (uses default if not provided)"
     )
-    session_id: Optional[str] = Field(None, description="Conversation session ID")
+    session_id: str | None = Field(None, description="Conversation session ID")
     include_context: bool = Field(True, description="Include conversation context")
 
 
@@ -327,7 +327,7 @@ class PersonalityPreviewResponse(BaseModel):
     style_description: str = Field(
         ..., description="Description of the personality style"
     )
-    personality_summary: Dict[str, str] = Field(
+    personality_summary: dict[str, str] = Field(
         ..., description="Summary of each personality trait"
     )
 
@@ -351,7 +351,7 @@ class ShareAssistantRequest(BaseModel):
     permission_level: PermissionLevel = Field(
         ..., description="Permission level to grant"
     )
-    expires_at: Optional[datetime] = Field(None, description="Optional expiration date")
+    expires_at: datetime | None = Field(None, description="Optional expiration date")
 
 
 class ShareAssistantResponse(BaseModel):
@@ -368,7 +368,7 @@ class AssistantPermissionOut(BaseModel):
     permission_level: PermissionLevel = Field(..., description="Permission level")
     granted_by: str = Field(..., description="User who granted permission")
     granted_at: datetime = Field(..., description="When permission was granted")
-    expires_at: Optional[datetime] = Field(None, description="When permission expires")
+    expires_at: datetime | None = Field(None, description="When permission expires")
 
 
 class AssistantVersionOut(BaseModel):

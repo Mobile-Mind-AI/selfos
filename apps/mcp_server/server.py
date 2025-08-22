@@ -9,22 +9,13 @@ import asyncio
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from auth import MCPAuthProvider
 from config import MCPConfig
 from mcp.server import Server
-from mcp.server.models import InitializationOptions
 from mcp.types import (
-    CallToolRequest,
-    EmbeddedResource,
-    GetPromptRequest,
-    ImageContent,
-    ListPromptsRequest,
-    ListResourcesRequest,
-    ListToolsRequest,
     Prompt,
-    ReadResourceRequest,
     Resource,
     TextContent,
     Tool,
@@ -53,7 +44,7 @@ class SelfOSMcpServer:
     through the Model Context Protocol specification.
     """
 
-    def __init__(self, config: Optional[MCPConfig] = None):
+    def __init__(self, config: MCPConfig | None = None):
         """Initialize the MCP server with configuration."""
         self.config = config or MCPConfig()
         self.server = Server(self.config.server_name)
@@ -85,7 +76,7 @@ class SelfOSMcpServer:
         """Set up MCP protocol handlers."""
 
         @self.server.list_tools()
-        async def handle_list_tools() -> List[Tool]:
+        async def handle_list_tools() -> list[Tool]:
             """List all available tools."""
             tools = []
 
@@ -100,8 +91,8 @@ class SelfOSMcpServer:
 
         @self.server.call_tool()
         async def handle_call_tool(
-            name: str, arguments: Dict[str, Any]
-        ) -> List[TextContent]:
+            name: str, arguments: dict[str, Any]
+        ) -> list[TextContent]:
             """Handle tool execution requests."""
             try:
                 # Extract user context from arguments
@@ -135,7 +126,7 @@ class SelfOSMcpServer:
                 return [TextContent(type="text", text=json.dumps({"error": str(e)}))]
 
         @self.server.list_resources()
-        async def handle_list_resources() -> List[Resource]:
+        async def handle_list_resources() -> list[Resource]:
             """List all available resources."""
             resources = []
 
@@ -162,7 +153,7 @@ class SelfOSMcpServer:
                 raise
 
         @self.server.list_prompts()
-        async def handle_list_prompts() -> List[Prompt]:
+        async def handle_list_prompts() -> list[Prompt]:
             """List all available prompts."""
             return [
                 Prompt(
@@ -216,7 +207,7 @@ class SelfOSMcpServer:
             ]
 
         @self.server.get_prompt()
-        async def handle_get_prompt(name: str, arguments: Dict[str, str]) -> str:
+        async def handle_get_prompt(name: str, arguments: dict[str, str]) -> str:
             """Handle prompt requests."""
             if name == "decompose_goal":
                 goal = arguments.get("goal_description", "")
@@ -287,7 +278,7 @@ class SelfOSMcpServer:
             except Exception as e:
                 logger.error(f"Error stopping transport: {e}")
 
-    def get_capabilities(self) -> Dict[str, Any]:
+    def get_capabilities(self) -> dict[str, Any]:
         """Get server capabilities information."""
         return {
             "tools": {

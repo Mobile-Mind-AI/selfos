@@ -1,5 +1,4 @@
-from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -13,7 +12,7 @@ from services.preferences_service import update_user_preferences_with_history
 from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
-    from models import LifeArea
+    pass
 
 router = APIRouter(prefix="/user-preferences", tags=["user-preferences"])
 

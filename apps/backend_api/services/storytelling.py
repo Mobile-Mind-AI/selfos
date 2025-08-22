@@ -5,10 +5,9 @@ This service generates narrative content from completed tasks,
 incorporating media attachments and personal context.
 """
 
-import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -16,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 async def enqueue_segment_generation(
-    db: Session, task_data: Dict[str, Any]
-) -> Dict[str, Any]:
+    db: Session, task_data: dict[str, Any]
+) -> dict[str, Any]:
     """
     Generate a story segment when a task is completed.
 
@@ -94,7 +93,7 @@ async def enqueue_segment_generation(
         return {"error": str(e), "success": False}
 
 
-async def _generate_task_story(task, media_attachments: List) -> Dict[str, str]:
+async def _generate_task_story(task, media_attachments: list) -> dict[str, str]:
     """
     Generate narrative content for a completed task.
 
@@ -152,7 +151,7 @@ async def _generate_task_story(task, media_attachments: List) -> Dict[str, str]:
     }
 
 
-async def generate_weekly_summary(db: Session, user_id: str) -> Dict[str, Any]:
+async def generate_weekly_summary(db: Session, user_id: str) -> dict[str, Any]:
     """
     Generate a weekly summary story from completed tasks.
 
@@ -234,7 +233,7 @@ async def generate_weekly_summary(db: Session, user_id: str) -> Dict[str, Any]:
         return {"error": str(e), "success": False}
 
 
-async def suggest_story_prompts(task_data: Dict[str, Any]) -> List[str]:
+async def suggest_story_prompts(task_data: dict[str, Any]) -> list[str]:
     """
     Generate AI prompt suggestions for story generation based on task context.
 

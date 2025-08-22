@@ -5,7 +5,6 @@ Utility functions for the SelfOS backend API.
 import hashlib
 import io
 import os
-from typing import List, Optional, Tuple
 
 import magic
 from fastapi import HTTPException, UploadFile
@@ -75,8 +74,8 @@ class FileValidator:
 
     @classmethod
     async def validate_upload(
-        cls, file: UploadFile, allowed_types: Optional[List[str]] = None
-    ) -> Tuple[str, str, dict]:
+        cls, file: UploadFile, allowed_types: list[str] | None = None
+    ) -> tuple[str, str, dict]:
         """
         Comprehensive file validation.
 
@@ -165,7 +164,7 @@ class FileValidator:
         return file_type, mime_type, metadata
 
     @classmethod
-    def _get_file_type_from_extension(cls, extension: str) -> Optional[str]:
+    def _get_file_type_from_extension(cls, extension: str) -> str | None:
         """Get file type from extension."""
         for file_type, extensions in cls.ALLOWED_EXTENSIONS.items():
             if extension in extensions:

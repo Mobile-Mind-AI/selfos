@@ -4,16 +4,12 @@ Handles the multi-step onboarding process for new users.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, status
-from models import AssistantProfile, Goal, LifeArea, OnboardingState, Task, User
-from schemas import GoalCreate, LifeAreaCreate, TaskCreate
+from models import AssistantProfile, Goal, LifeArea, OnboardingState, Task
 from schemas.assistant_schemas import (
-    AssistantCreationData,
-    AssistantProfileCreate,
-    AssistantProfileOut,
     FirstGoalData,
     LanguagePreferencesData,
     LifeAreasSelectionData,
@@ -22,10 +18,8 @@ from schemas.assistant_schemas import (
     OnboardingStepRequest,
     OnboardingStepResponse,
     PersonalitySetupData,
-    PersonalityStyle,
 )
 from services.permission_service import PermissionLevel, PermissionService
-from sqlalchemy import or_ as db
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
@@ -45,7 +39,7 @@ def get_onboarding_state(
     )
 
     if not state:
-        print(f"🔍 BACKEND: No onboarding state found, creating new one")
+        print("🔍 BACKEND: No onboarding state found, creating new one")
         # Create initial onboarding state
         state = OnboardingState(
             user_id=current_user["uid"], current_step=1, completed_steps=[]
@@ -189,7 +183,7 @@ async def complete_onboarding(
 
         if assistant:
             print(
-                f"🎯 ONBOARDING: Found assistant profile, creating onboarding state..."
+                "🎯 ONBOARDING: Found assistant profile, creating onboarding state..."
             )
             # Create onboarding state since user has completed setup
             state = OnboardingState(
@@ -235,7 +229,7 @@ async def complete_onboarding(
     # For offline-first app, we're more lenient - only require assistant
     if not has_assistant:
         print(
-            f"🎯 ONBOARDING: Missing assistant profile in state, checking for existing assistants..."
+            "🎯 ONBOARDING: Missing assistant profile in state, checking for existing assistants..."
         )
 
         # Use PermissionService to get all assistants user has access to
@@ -272,7 +266,7 @@ async def complete_onboarding(
             db.commit()
             has_assistant = True
         else:
-            print(f"🎯 ONBOARDING: No owned assistant profile found for user")
+            print("🎯 ONBOARDING: No owned assistant profile found for user")
             # Debug: list all assistant profiles for this user with permission levels
             assistant_info = []
             for a in user_assistants:
@@ -433,8 +427,8 @@ def _get_step_number(step: OnboardingStep) -> int:
 
 
 def _handle_assistant_creation(
-    data: Dict[str, Any], state: OnboardingState, current_user: dict, db: Session
-) -> Dict[str, Any]:
+    data: dict[str, Any], state: OnboardingState, current_user: dict, db: Session
+) -> dict[str, Any]:
     """Handle combined assistant creation step (includes personality and language)."""
     # Create the assistant profile directly since we're combining all steps
     from schemas.assistant_schemas import SupportedLanguage
@@ -506,8 +500,8 @@ def _handle_assistant_creation(
 
 
 def _handle_personality_setup(
-    data: Dict[str, Any], state: OnboardingState, db: Session
-) -> Dict[str, Any]:
+    data: dict[str, Any], state: OnboardingState, db: Session
+) -> dict[str, Any]:
     """Handle personality setup step."""
     try:
         setup_data = PersonalitySetupData(**data)
@@ -523,8 +517,8 @@ def _handle_personality_setup(
 
 
 def _handle_language_preferences(
-    data: Dict[str, Any], state: OnboardingState, db: Session
-) -> Dict[str, Any]:
+    data: dict[str, Any], state: OnboardingState, db: Session
+) -> dict[str, Any]:
     """Handle language preferences step."""
     try:
         prefs_data = LanguagePreferencesData(**data)
@@ -540,8 +534,8 @@ def _handle_language_preferences(
 
 
 def _handle_life_areas(
-    data: Dict[str, Any], state: OnboardingState, current_user: dict, db: Session
-) -> Dict[str, Any]:
+    data: dict[str, Any], state: OnboardingState, current_user: dict, db: Session
+) -> dict[str, Any]:
     """Handle life areas selection step."""
     try:
         areas_data = LifeAreasSelectionData(**data)
@@ -569,8 +563,8 @@ def _handle_life_areas(
 
 
 def _handle_first_goal(
-    data: Dict[str, Any], state: OnboardingState, current_user: dict, db: Session
-) -> Dict[str, Any]:
+    data: dict[str, Any], state: OnboardingState, current_user: dict, db: Session
+) -> dict[str, Any]:
     """Handle first goal creation step."""
     try:
         goal_data = FirstGoalData(**data)
@@ -628,8 +622,8 @@ def _handle_first_goal(
 
 
 def _handle_personal_config(
-    data: Dict[str, Any], state: OnboardingState, current_user: dict, db: Session
-) -> Dict[str, Any]:
+    data: dict[str, Any], state: OnboardingState, current_user: dict, db: Session
+) -> dict[str, Any]:
     """Handle personal configuration step - create personal profile and custom life areas."""
     import uuid
 

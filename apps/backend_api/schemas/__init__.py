@@ -181,15 +181,15 @@ try:
         "HierarchyOverview",
     ]
 
-except (ImportError, AttributeError) as e:
+except (ImportError, AttributeError):
     # Fallback: define minimal schemas if parent import fails
     from typing import Optional
 
     from pydantic import BaseModel
 
     class RegisterRequest(BaseModel):
-        username: Optional[str] = None
-        password: Optional[str] = None
+        username: str | None = None
+        password: str | None = None
 
     class LoginRequest(BaseModel):
         username: str

@@ -6,7 +6,6 @@ Runs the MCP server integrated with FastAPI for WebSocket and SSE endpoints.
 This allows the MCP server to be accessible via HTTP/WebSocket from web clients.
 """
 
-import asyncio
 import logging
 import sys
 from contextlib import asynccontextmanager

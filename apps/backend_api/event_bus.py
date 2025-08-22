@@ -7,9 +7,9 @@ AI services when important events occur (like task completion).
 
 import asyncio
 import logging
+from collections.abc import Awaitable, Callable
 from datetime import datetime
 from enum import Enum
-from typing import Any, Awaitable, Callable, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class EventType(str, Enum):
 
 
 # Global registry of event subscribers
-subscribers: Dict[EventType, List[Callable[[dict], Awaitable[None]]]] = {}
+subscribers: dict[EventType, list[Callable[[dict], Awaitable[None]]]] = {}
 
 # Event publishing statistics for monitoring
 event_stats = {
@@ -140,7 +140,7 @@ async def _safe_handler_execution(handler: Callable, payload: dict):
         raise
 
 
-def get_subscribers(event_type: EventType = None) -> Dict[str, int]:
+def get_subscribers(event_type: EventType = None) -> dict[str, int]:
     """
     Get information about registered subscribers.
 

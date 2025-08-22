@@ -1,7 +1,7 @@
 """Service for managing user preferences and tracking changes."""
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 from uuid import uuid4
 
 from models import UserPreferences, UserPreferencesHistory
@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 
 def log_preference_changes(
-    db: Session, user_id: str, old_prefs: UserPreferences, new_data: Dict[str, Any]
+    db: Session, user_id: str, old_prefs: UserPreferences, new_data: dict[str, Any]
 ) -> None:
     """
     Compare old and new preferences and log changes to the history table.
@@ -40,7 +40,7 @@ def log_preference_changes(
 
 
 def update_user_preferences_with_history(
-    db: Session, user_id: str, update_data: Dict[str, Any]
+    db: Session, user_id: str, update_data: dict[str, Any]
 ) -> UserPreferences:
     """
     Update user preferences and automatically log changes to history.
@@ -84,8 +84,8 @@ def update_user_preferences_with_history(
 def get_user_preferences_history(
     db: Session,
     user_id: str,
-    limit: Optional[int] = None,
-    preference_name: Optional[str] = None,
+    limit: int | None = None,
+    preference_name: str | None = None,
 ) -> list[UserPreferencesHistory]:
     """
     Get preferences change history for a user.
@@ -116,7 +116,7 @@ def get_user_preferences_history(
 
 def get_preference_change_summary(
     db: Session, user_id: str, days_back: int = 30
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get summary of preference changes for a user in the last N days.
 
@@ -189,13 +189,13 @@ class PreferencesService:
 
     @staticmethod
     def log_preference_changes(
-        db: Session, user_id: str, old_prefs: UserPreferences, new_data: Dict[str, Any]
+        db: Session, user_id: str, old_prefs: UserPreferences, new_data: dict[str, Any]
     ) -> None:
         return log_preference_changes(db, user_id, old_prefs, new_data)
 
     @staticmethod
     def update_user_preferences_with_history(
-        db: Session, user_id: str, update_data: Dict[str, Any]
+        db: Session, user_id: str, update_data: dict[str, Any]
     ) -> UserPreferences:
         return update_user_preferences_with_history(db, user_id, update_data)
 
@@ -203,15 +203,15 @@ class PreferencesService:
     def get_user_preferences_history(
         db: Session,
         user_id: str,
-        limit: Optional[int] = None,
-        preference_name: Optional[str] = None,
+        limit: int | None = None,
+        preference_name: str | None = None,
     ) -> list[UserPreferencesHistory]:
         return get_user_preferences_history(db, user_id, limit, preference_name)
 
     @staticmethod
     def get_preference_change_summary(
         db: Session, user_id: str, days_back: int = 30
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return get_preference_change_summary(db, user_id, days_back)
 
 

@@ -5,7 +5,7 @@ MCP tools for managing projects in the SelfOS system.
 Provides CRUD operations and analytics for projects.
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from mcp.types import Tool
 from tools.base_tools import BaseToolsHandler
@@ -18,7 +18,7 @@ class ProjectsToolsHandler(BaseToolsHandler):
         super().__init__()
         self.tool_prefix = "projects_"
 
-    async def list_tools(self) -> List[Tool]:
+    async def list_tools(self) -> list[Tool]:
         """Return list of project-related tools."""
         return [
             Tool(
@@ -69,7 +69,7 @@ class ProjectsToolsHandler(BaseToolsHandler):
             ),
         ]
 
-    async def call_tool(self, name: str, arguments: Dict[str, Any]) -> Dict:
+    async def call_tool(self, name: str, arguments: dict[str, Any]) -> dict:
         """Execute a project-related tool."""
         # Placeholder implementation
         return {"message": f"Project tool {name} not yet implemented", "success": False}

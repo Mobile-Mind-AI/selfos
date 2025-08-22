@@ -2,12 +2,7 @@
 Integration tests for tags API endpoints.
 """
 
-from unittest.mock import MagicMock, patch
-
-import pytest
-from fastapi.testclient import TestClient
-from main import app
-from schemas import TagCreate, TagOut, TagUpdate
+from unittest.mock import patch
 
 
 class TestTagsAPI:

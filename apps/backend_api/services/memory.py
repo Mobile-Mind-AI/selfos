@@ -6,7 +6,7 @@ for compatibility with existing health check code.
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from .enhanced_memory import create_memory_service
 
@@ -29,7 +29,7 @@ def get_memory_service():
     return _memory_service
 
 
-async def index_task(task_data: Dict[str, Any]) -> Dict[str, Any]:
+async def index_task(task_data: dict[str, Any]) -> dict[str, Any]:
     """
     Index a task for testing purposes.
 
@@ -66,7 +66,7 @@ async def index_task(task_data: Dict[str, Any]) -> Dict[str, Any]:
         return {"status": "error", "message": f"Failed to index task: {str(e)}"}
 
 
-async def search_tasks(query: str, user_id: str = None) -> Dict[str, Any]:
+async def search_tasks(query: str, user_id: str = None) -> dict[str, Any]:
     """
     Search tasks in memory.
 
@@ -108,7 +108,7 @@ async def search_tasks(query: str, user_id: str = None) -> Dict[str, Any]:
         }
 
 
-async def get_health_status() -> Dict[str, Any]:
+async def get_health_status() -> dict[str, Any]:
     """Get memory service health status."""
     try:
         memory_service = get_memory_service()

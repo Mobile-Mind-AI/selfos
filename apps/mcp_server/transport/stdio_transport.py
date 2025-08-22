@@ -9,7 +9,6 @@ import asyncio
 import json
 import logging
 import sys
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +20,8 @@ class StdioTransport:
         """Initialize stdio transport with MCP server."""
         self.server = server
         self.running = False
-        self.reader: Optional[asyncio.StreamReader] = None
-        self.writer: Optional[asyncio.StreamWriter] = None
+        self.reader: asyncio.StreamReader | None = None
+        self.writer: asyncio.StreamWriter | None = None
 
     async def start(self):
         """Start the stdio transport."""
@@ -88,7 +87,7 @@ class StdioTransport:
                 }
                 await self._send_message(error_response)
 
-    async def _read_message(self) -> Optional[dict]:
+    async def _read_message(self) -> dict | None:
         """Read a JSON-RPC message from stdin."""
         try:
             # Read Content-Length header
@@ -135,7 +134,7 @@ class StdioTransport:
 
             # Write Content-Length header and body
             self.writer.write(
-                f"Content-Length: {len(body_bytes)}\\r\\n\\r\\n".encode("utf-8")
+                f"Content-Length: {len(body_bytes)}\\r\\n\\r\\n".encode()
             )
             self.writer.write(body_bytes)
             await self.writer.drain()
@@ -147,7 +146,7 @@ class StdioTransport:
         except Exception as e:
             logger.error(f"Error sending message: {e}")
 
-    async def _process_message(self, message: dict) -> Optional[dict]:
+    async def _process_message(self, message: dict) -> dict | None:
         """Process an incoming JSON-RPC message."""
         try:
             method = message.get("method")

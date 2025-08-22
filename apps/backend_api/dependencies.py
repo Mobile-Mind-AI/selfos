@@ -31,23 +31,23 @@ if not is_testing:
             import os.path
 
             if os.path.exists(cred_path):
-                print(f"🔥 FIREBASE: Credentials file exists")
+                print("🔥 FIREBASE: Credentials file exists")
                 cred = credentials.Certificate(cred_path)
                 firebase_admin.initialize_app(cred)
                 firebase_initialized = True
-                print(f"🔥 FIREBASE: Successfully initialized with service account")
+                print("🔥 FIREBASE: Successfully initialized with service account")
             else:
                 print(f"🔥 FIREBASE: Credentials file does not exist: {cred_path}")
         else:
-            print(f"🔥 FIREBASE: No GOOGLE_APPLICATION_CREDENTIALS set, trying default")
+            print("🔥 FIREBASE: No GOOGLE_APPLICATION_CREDENTIALS set, trying default")
             firebase_admin.initialize_app()
             firebase_initialized = True
-            print(f"🔥 FIREBASE: Successfully initialized with default credentials")
+            print("🔥 FIREBASE: Successfully initialized with default credentials")
     except Exception as e:
         print(f"🔥 FIREBASE: Failed to initialize: {e}")
         firebase_initialized = False
 else:
-    print(f"🔥 FIREBASE: Testing mode detected, skipping Firebase initialization")
+    print("🔥 FIREBASE: Testing mode detected, skipping Firebase initialization")
     firebase_initialized = False
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
@@ -124,7 +124,7 @@ async def get_current_user(
 
         # In testing mode, be more restrictive with fallbacks
         if is_testing:
-            print(f"🔐 AUTH: Testing mode - limited fallback authentication")
+            print("🔐 AUTH: Testing mode - limited fallback authentication")
             # Only allow JWT tokens in testing mode
             try:
                 import jwt
@@ -156,7 +156,7 @@ async def get_current_user(
                 print(f"🔐 AUTH: JWT decode failed in testing mode: {jwt_e}")
 
             # In testing mode, fail fast - don't try additional fallbacks
-            print(f"🔐 AUTH: Testing mode - raising 401 Unauthorized")
+            print("🔐 AUTH: Testing mode - raising 401 Unauthorized")
             raise credentials_exception
 
         # Production fallback logic (more permissive for backwards compatibility)
@@ -234,5 +234,5 @@ async def get_current_user(
         except Exception as fallback_e:
             print(f"🔐 AUTH: All auth methods failed: {fallback_e}")
             pass
-        print(f"🔐 AUTH: Raising 401 Unauthorized")
+        print("🔐 AUTH: Raising 401 Unauthorized")
         raise credentials_exception

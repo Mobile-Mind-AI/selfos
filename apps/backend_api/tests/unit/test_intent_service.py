@@ -2,8 +2,6 @@
 Unit tests for intent classification and entity extraction service.
 """
 
-import asyncio
-from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest

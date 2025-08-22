@@ -12,7 +12,7 @@ Provides endpoints for:
 import logging
 import uuid
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -21,18 +21,14 @@ from models import (
     ConversationLog,
     ConversationSession,
     IntentFeedback,
-    User,
 )
 from schemas.intent_schemas import (
     ConversationAnalytics,
-    ConversationLogCreate,
     ConversationLogOut,
     ConversationMessageRequest,
     ConversationMessageResponse,
-    ConversationSessionCreate,
     ConversationSessionOut,
     ConversationState,
-    EntityExtractionAccuracy,
     IntentAnalytics,
     IntentClassificationResult,
     IntentFeedbackCreate,
@@ -55,7 +51,7 @@ intent_classifier = IntentClassifier()
 async def process_message(
     request: ConversationMessageRequest,
     background_tasks: BackgroundTasks,
-    current_user: Dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -163,7 +159,7 @@ async def process_message(
 async def classify_intent_only(
     message: str,
     include_entities: bool = Query(True, description="Include entity extraction"),
-    current_user: Dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Classify intent only without conversation flow management.
@@ -192,12 +188,12 @@ async def classify_intent_only(
         raise HTTPException(status_code=500, detail="Failed to classify intent")
 
 
-@router.get("/sessions", response_model=List[ConversationSessionOut])
+@router.get("/sessions", response_model=list[ConversationSessionOut])
 async def get_user_sessions(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    status: Optional[str] = Query(None, description="Filter by session status"),
-    current_user: Dict = Depends(get_current_user),
+    status: str | None = Query(None, description="Filter by session status"),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get user's conversation sessions."""
@@ -228,7 +224,7 @@ async def get_user_sessions(
 @router.get("/sessions/{session_id}", response_model=ConversationSessionOut)
 async def get_session(
     session_id: str,
-    current_user: Dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get specific conversation session details."""
@@ -258,11 +254,11 @@ async def get_session(
         raise HTTPException(status_code=500, detail="Failed to fetch session")
 
 
-@router.get("/sessions/{session_id}/logs", response_model=List[ConversationLogOut])
+@router.get("/sessions/{session_id}/logs", response_model=list[ConversationLogOut])
 async def get_session_logs(
     session_id: str,
     limit: int = Query(50, ge=1, le=200),
-    current_user: Dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get conversation logs for a specific session."""
@@ -309,7 +305,7 @@ async def get_session_logs(
 @router.post("/feedback", response_model=IntentFeedbackOut)
 async def provide_intent_feedback(
     feedback: IntentFeedbackCreate,
-    current_user: Dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -369,7 +365,7 @@ async def provide_intent_feedback(
 @router.get("/analytics/intent", response_model=IntentAnalytics)
 async def get_intent_analytics(
     days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
-    current_user: Dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get intent classification analytics for the user."""
@@ -521,7 +517,7 @@ async def get_intent_analytics(
 @router.get("/analytics/conversation", response_model=ConversationAnalytics)
 async def get_conversation_analytics(
     days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
-    current_user: Dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get conversation session analytics for the user."""
@@ -684,7 +680,7 @@ async def get_conversation_analytics(
 
 
 async def create_conversation_session(
-    user_id: str, session_id: str, assistant_id: Optional[str], db: Session
+    user_id: str, session_id: str, assistant_id: str | None, db: Session
 ):
     """Create a new conversation session."""
     try:
@@ -709,8 +705,8 @@ async def store_conversation_log(
     user_id: str,
     session_id: str,
     message: str,
-    intent_result: Dict[str, Any],
-    conversation_state: Dict[str, Any],
+    intent_result: dict[str, Any],
+    conversation_state: dict[str, Any],
     db: Session,
 ):
     """Store conversation log entry."""
@@ -737,8 +733,8 @@ async def store_conversation_log(
 
 async def update_conversation_session(
     session_id: str,
-    conversation_state: Dict[str, Any],
-    intent_result: Dict[str, Any],
+    conversation_state: dict[str, Any],
+    intent_result: dict[str, Any],
     db: Session,
 ):
     """Update conversation session with latest state."""

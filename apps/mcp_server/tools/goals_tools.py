@@ -7,7 +7,7 @@ Provides CRUD operations and search functionality for goals.
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 
 from mcp.types import Tool
 from tools.base_tools import BaseToolsHandler
@@ -22,7 +22,7 @@ class GoalsToolsHandler(BaseToolsHandler):
         super().__init__()
         self.tool_prefix = "goals_"
 
-    async def list_tools(self) -> List[Tool]:
+    async def list_tools(self) -> list[Tool]:
         """Return list of goal-related tools."""
         return [
             Tool(
@@ -156,7 +156,7 @@ class GoalsToolsHandler(BaseToolsHandler):
             ),
         ]
 
-    async def call_tool(self, name: str, arguments: Dict[str, Any]) -> Dict:
+    async def call_tool(self, name: str, arguments: dict[str, Any]) -> dict:
         """Execute a goal-related tool."""
         try:
             # Sanitize arguments
@@ -181,7 +181,7 @@ class GoalsToolsHandler(BaseToolsHandler):
         except Exception as e:
             return self.handle_error(e, name)
 
-    async def _list_goals(self, arguments: Dict) -> Dict:
+    async def _list_goals(self, arguments: dict) -> dict:
         """List goals for a user."""
         # Validate required arguments
         error = self.validate_required_args(arguments, ["user_id"])
@@ -191,8 +191,8 @@ class GoalsToolsHandler(BaseToolsHandler):
         db = self.get_db_session()
         try:
             # Import models here to avoid circular imports
-            from models import Goal, LifeArea, Project
-            from sqlalchemy import and_, desc
+            from models import Goal
+            from sqlalchemy import desc
 
             user_id = arguments["user_id"]
 
@@ -242,7 +242,7 @@ class GoalsToolsHandler(BaseToolsHandler):
         finally:
             db.close()
 
-    async def _get_goal(self, arguments: Dict) -> Dict:
+    async def _get_goal(self, arguments: dict) -> dict:
         """Get a specific goal by ID."""
         error = self.validate_required_args(arguments, ["user_id", "goal_id"])
         if error:
@@ -293,7 +293,7 @@ class GoalsToolsHandler(BaseToolsHandler):
         finally:
             db.close()
 
-    async def _create_goal(self, arguments: Dict) -> Dict:
+    async def _create_goal(self, arguments: dict) -> dict:
         """Create a new goal."""
         error = self.validate_required_args(arguments, ["user_id", "title"])
         if error:
@@ -356,7 +356,7 @@ class GoalsToolsHandler(BaseToolsHandler):
         finally:
             db.close()
 
-    async def _update_goal(self, arguments: Dict) -> Dict:
+    async def _update_goal(self, arguments: dict) -> dict:
         """Update an existing goal."""
         error = self.validate_required_args(arguments, ["user_id", "goal_id"])
         if error:
@@ -425,7 +425,7 @@ class GoalsToolsHandler(BaseToolsHandler):
         finally:
             db.close()
 
-    async def _delete_goal(self, arguments: Dict) -> Dict:
+    async def _delete_goal(self, arguments: dict) -> dict:
         """Delete a goal."""
         error = self.validate_required_args(arguments, ["user_id", "goal_id"])
         if error:
@@ -466,7 +466,7 @@ class GoalsToolsHandler(BaseToolsHandler):
         finally:
             db.close()
 
-    async def _search_goals(self, arguments: Dict) -> Dict:
+    async def _search_goals(self, arguments: dict) -> dict:
         """Search goals by keywords."""
         error = self.validate_required_args(arguments, ["user_id", "query"])
         if error:
@@ -475,7 +475,7 @@ class GoalsToolsHandler(BaseToolsHandler):
         db = self.get_db_session()
         try:
             from models import Goal
-            from sqlalchemy import and_, func, or_
+            from sqlalchemy import and_, or_
 
             user_id = arguments["user_id"]
             query = arguments["query"]

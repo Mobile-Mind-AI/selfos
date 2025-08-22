@@ -1,18 +1,9 @@
 """User-related models."""
 
-from datetime import datetime
-from uuid import uuid4
 
 from sqlalchemy import (
-    Boolean,
     Column,
-    DateTime,
-    Enum,
-    ForeignKey,
-    Index,
-    Integer,
     String,
-    Time,
 )
 from sqlalchemy.orm import relationship
 

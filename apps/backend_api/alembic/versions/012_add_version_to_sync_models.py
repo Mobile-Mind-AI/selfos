@@ -18,7 +18,7 @@ depends_on = None
 def upgrade():
     from alembic import context
     connection = context.get_bind()
-    
+
     # Check and add version field to projects table
     result = connection.execute(sa.text("""
         SELECT column_name FROM information_schema.columns 
@@ -26,7 +26,7 @@ def upgrade():
     """))
     if not result.fetchone():
         op.add_column('projects', sa.Column('version', sa.Integer(), nullable=False, server_default='1'))
-    
+
     # Check and add version field to tasks table
     result = connection.execute(sa.text("""
         SELECT column_name FROM information_schema.columns 
@@ -34,7 +34,7 @@ def upgrade():
     """))
     if not result.fetchone():
         op.add_column('tasks', sa.Column('version', sa.Integer(), nullable=False, server_default='1'))
-    
+
     # Check and add version field to life_areas table
     result = connection.execute(sa.text("""
         SELECT column_name FROM information_schema.columns 
@@ -42,7 +42,7 @@ def upgrade():
     """))
     if not result.fetchone():
         op.add_column('life_areas', sa.Column('version', sa.Integer(), nullable=False, server_default='1'))
-    
+
     # Check and add updated_at field to life_areas table
     result = connection.execute(sa.text("""
         SELECT column_name FROM information_schema.columns 
@@ -52,7 +52,7 @@ def upgrade():
         op.add_column('life_areas', sa.Column('updated_at', sa.DateTime(), nullable=True))
         # Update existing records to have updated_at if null
         op.execute("UPDATE life_areas SET updated_at = created_at WHERE updated_at IS NULL")
-    
+
     # Check and add version field to media_attachments table
     result = connection.execute(sa.text("""
         SELECT column_name FROM information_schema.columns 

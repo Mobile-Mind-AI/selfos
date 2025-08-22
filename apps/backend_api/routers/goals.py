@@ -1,4 +1,3 @@
-from typing import List
 
 import schemas
 from dependencies import get_current_user, get_db
@@ -19,7 +18,7 @@ def create_goal(
     return goal_service.create_goal(db, current_user["uid"], goal)
 
 
-@router.get("/", response_model=List[schemas.GoalOut])
+@router.get("/", response_model=list[schemas.GoalOut])
 def list_goals(
     db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
@@ -28,7 +27,7 @@ def list_goals(
 
 
 # Hierarchy endpoints - MUST come before /{goal_id} to avoid route conflicts
-@router.get("/roots", response_model=List[schemas.GoalOut])
+@router.get("/roots", response_model=list[schemas.GoalOut])
 def get_root_goals(
     db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
@@ -36,7 +35,7 @@ def get_root_goals(
     return goal_service.get_root_goals(db, current_user["uid"])
 
 
-@router.get("/tree", response_model=List[schemas.HierarchyTreeNode])
+@router.get("/tree", response_model=list[schemas.HierarchyTreeNode])
 def get_goal_tree(
     db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
@@ -44,7 +43,7 @@ def get_goal_tree(
     return goal_service.get_goal_tree(db, current_user["uid"])
 
 
-@router.get("/life-area/{life_area_id}", response_model=List[schemas.GoalOut])
+@router.get("/life-area/{life_area_id}", response_model=list[schemas.GoalOut])
 def get_goals_by_life_area(
     life_area_id: int,
     db: Session = Depends(get_db),
@@ -54,7 +53,7 @@ def get_goals_by_life_area(
     return goal_service.get_goals_by_life_area(db, current_user["uid"], life_area_id)
 
 
-@router.get("/status/{status}", response_model=List[schemas.GoalOut])
+@router.get("/status/{status}", response_model=list[schemas.GoalOut])
 def get_goals_by_status(
     status: str,
     db: Session = Depends(get_db),
@@ -78,7 +77,7 @@ def get_goal(
     return goal
 
 
-@router.get("/{goal_id}/children", response_model=List[schemas.GoalOut])
+@router.get("/{goal_id}/children", response_model=list[schemas.GoalOut])
 def get_goal_children(
     goal_id: int,
     db: Session = Depends(get_db),
@@ -93,7 +92,7 @@ def get_goal_children(
     return goal_service.get_goal_children(db, current_user["uid"], goal_id)
 
 
-@router.get("/{goal_id}/descendants", response_model=List[schemas.GoalOut])
+@router.get("/{goal_id}/descendants", response_model=list[schemas.GoalOut])
 def get_goal_descendants(
     goal_id: int,
     db: Session = Depends(get_db),
@@ -108,7 +107,7 @@ def get_goal_descendants(
     return goal_service.get_goal_descendants(db, current_user["uid"], goal_id)
 
 
-@router.get("/{goal_id}/path", response_model=List[schemas.HierarchyPathItem])
+@router.get("/{goal_id}/path", response_model=list[schemas.HierarchyPathItem])
 def get_goal_path(
     goal_id: int,
     db: Session = Depends(get_db),

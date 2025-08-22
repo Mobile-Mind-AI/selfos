@@ -4,8 +4,6 @@ Tests for MCP Server Core
 Unit tests for the main SelfOS MCP Server functionality.
 """
 
-import asyncio
-import os
 import sys
 from pathlib import Path
 

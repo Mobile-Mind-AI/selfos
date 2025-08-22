@@ -11,11 +11,11 @@ Handles personal configuration endpoints for enhanced onboarding:
 
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, status
-from models import OnboardingAnalytics, PersonalProfile, User
+from models import OnboardingAnalytics, PersonalProfile
 from models.goals import LifeArea
 from schemas.personal_config_schemas import (
     CustomLifeAreaCreate,
@@ -65,7 +65,7 @@ async def create_personal_profile(
 
             db.commit()
             db.refresh(existing_profile)
-            print(f"✅ PERSONAL_CONFIG: Profile updated successfully")
+            print("✅ PERSONAL_CONFIG: Profile updated successfully")
             return existing_profile
 
         # Create new profile
@@ -82,7 +82,7 @@ async def create_personal_profile(
         db.add(new_profile)
         db.commit()
         db.refresh(new_profile)
-        print(f"✅ PERSONAL_CONFIG: New profile created successfully")
+        print("✅ PERSONAL_CONFIG: New profile created successfully")
 
         return new_profile
 
@@ -166,7 +166,7 @@ async def update_personal_profile(
 
 
 # Custom Life Areas Endpoints
-@router.get("/life-areas", response_model=List[CustomLifeAreaOut])
+@router.get("/life-areas", response_model=list[CustomLifeAreaOut])
 async def get_custom_life_areas(
     current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
@@ -266,7 +266,7 @@ async def delete_custom_life_area(
 
 @router.put("/life-areas/reorder")
 async def reorder_life_areas(
-    area_ids: List[int],
+    area_ids: list[int],
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -297,9 +297,9 @@ async def reorder_life_areas(
 
 
 # Life Area Suggestions
-@router.get("/life-areas/suggestions", response_model=List[LifeAreaSuggestionOut])
+@router.get("/life-areas/suggestions", response_model=list[LifeAreaSuggestionOut])
 async def get_life_area_suggestions(
-    interests: Optional[str] = None,
+    interests: str | None = None,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

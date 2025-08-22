@@ -1,17 +1,12 @@
-import db  # ensure database engine & Base
 
 # Import dependencies to initialize Firebase
-import dependencies
 
 # Import event system
-import event_consumers
 
 # Import ORM models so they are registered
-import models
 
 # Import centralized configuration
 from config import settings
-from db import Base, engine
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

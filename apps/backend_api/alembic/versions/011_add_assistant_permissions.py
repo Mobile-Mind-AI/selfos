@@ -17,11 +17,11 @@ depends_on = None
 def upgrade():
     # No enum needed - permission_level is just a String column
     print("🔄 Adding assistant permissions system...")
-    
+
     # Check if assistant_permissions table already exists
     from alembic import context
     connection = context.get_bind()
-    
+
     # Check if table exists
     result = connection.execute(sa.text("""
         SELECT table_name 
@@ -29,7 +29,7 @@ def upgrade():
         WHERE table_name = 'assistant_permissions'
         AND table_schema = current_schema()
     """))
-    
+
     if not result.fetchone():
         # Add columns to assistant_profiles if they don't exist
         # Check for version column
@@ -42,7 +42,7 @@ def upgrade():
         """))
         if not version_result.fetchone():
             op.add_column('assistant_profiles', sa.Column('version', sa.BigInteger(), nullable=False, server_default='0'))
-        
+
         # Check for owner_id column
         owner_result = connection.execute(sa.text("""
             SELECT column_name 
@@ -56,7 +56,7 @@ def upgrade():
             # Update existing assistant_profiles to set owner_id from user_id
             op.execute("UPDATE assistant_profiles SET owner_id = user_id WHERE owner_id IS NULL")
             op.alter_column('assistant_profiles', 'owner_id', nullable=False)
-        
+
         # Check for is_public column
         public_result = connection.execute(sa.text("""
             SELECT column_name 
@@ -67,7 +67,7 @@ def upgrade():
         """))
         if not public_result.fetchone():
             op.add_column('assistant_profiles', sa.Column('is_public', sa.Boolean(), nullable=False, server_default='false'))
-        
+
         # Create assistant_permissions table
         op.create_table('assistant_permissions',
             sa.Column('id', sa.String(), nullable=False),
@@ -81,7 +81,7 @@ def upgrade():
             sa.ForeignKeyConstraint(['assistant_id'], ['assistant_profiles.id'], ondelete='CASCADE'),
             sa.UniqueConstraint('assistant_id', 'user_id', name='uq_assistant_user_permission')
         )
-        
+
         # Create indexes
         op.create_index('ix_assistant_permissions_user', 'assistant_permissions', ['user_id'])
         op.create_index('ix_assistant_permissions_assistant', 'assistant_permissions', ['assistant_id'])
@@ -92,13 +92,13 @@ def downgrade():
     op.drop_index('ix_assistant_profiles_owner', table_name='assistant_profiles')
     op.drop_index('ix_assistant_permissions_assistant', table_name='assistant_permissions')
     op.drop_index('ix_assistant_permissions_user', table_name='assistant_permissions')
-    
+
     # Drop table
     op.drop_table('assistant_permissions')
-    
+
     # Remove columns
     op.drop_column('assistant_profiles', 'is_public')
     op.drop_column('assistant_profiles', 'owner_id')
     op.drop_column('assistant_profiles', 'version')
-    
+
     # No enum to drop since we use String columns

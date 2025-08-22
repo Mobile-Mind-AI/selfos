@@ -1,6 +1,5 @@
 """Analytics router for user behavior insights and preference history."""
 
-from typing import List, Optional
 
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -14,12 +13,12 @@ from sqlalchemy.orm import Session
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 
-@router.get("/preferences/history", response_model=List[UserPreferencesHistoryItem])
+@router.get("/preferences/history", response_model=list[UserPreferencesHistoryItem])
 def get_preferences_history(
-    limit: Optional[int] = Query(
+    limit: int | None = Query(
         50, ge=1, le=1000, description="Maximum number of records to return"
     ),
-    preference_name: Optional[str] = Query(
+    preference_name: str | None = Query(
         None, description="Filter by specific preference name"
     ),
     current_user: dict = Depends(get_current_user),
@@ -45,7 +44,7 @@ def get_preferences_history(
 
 @router.get("/preferences/summary", response_model=UserPreferencesChangeSummary)
 def get_preferences_change_summary(
-    days_back: Optional[int] = Query(
+    days_back: int | None = Query(
         30, ge=1, le=365, description="Number of days to analyze"
     ),
     current_user: dict = Depends(get_current_user),
@@ -67,14 +66,14 @@ def get_preferences_change_summary(
 # Admin-only endpoints (would need admin authentication in production)
 @router.get(
     "/users/{target_user_id}/preferences/history",
-    response_model=List[UserPreferencesHistoryItem],
+    response_model=list[UserPreferencesHistoryItem],
 )
 def get_user_preferences_history_admin(
     target_user_id: str,
-    limit: Optional[int] = Query(
+    limit: int | None = Query(
         50, ge=1, le=1000, description="Maximum number of records to return"
     ),
-    preference_name: Optional[str] = Query(
+    preference_name: str | None = Query(
         None, description="Filter by specific preference name"
     ),
     current_user: dict = Depends(
@@ -112,7 +111,7 @@ def get_user_preferences_history_admin(
 )
 def get_user_preferences_change_summary_admin(
     target_user_id: str,
-    days_back: Optional[int] = Query(
+    days_back: int | None = Query(
         30, ge=1, le=365, description="Number of days to analyze"
     ),
     current_user: dict = Depends(

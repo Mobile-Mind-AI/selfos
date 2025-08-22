@@ -1,4 +1,3 @@
-from typing import List
 
 import schemas
 from dependencies import get_current_user, get_db
@@ -19,7 +18,7 @@ def create_task(
     return task_service.create_task(db, current_user["uid"], task)
 
 
-@router.get("/tasks", response_model=List[schemas.TaskOut])
+@router.get("/tasks", response_model=list[schemas.TaskOut])
 def list_tasks(
     db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
@@ -85,7 +84,7 @@ def delete_task(
     return None
 
 
-@router.get("/tasks/goal/{goal_id}", response_model=List[schemas.TaskOut])
+@router.get("/tasks/goal/{goal_id}", response_model=list[schemas.TaskOut])
 def get_tasks_by_goal(
     goal_id: int,
     db: Session = Depends(get_db),
@@ -95,7 +94,7 @@ def get_tasks_by_goal(
     return task_service.get_tasks_by_goal(db, current_user["uid"], goal_id)
 
 
-@router.get("/tasks/status/{status}", response_model=List[schemas.TaskOut])
+@router.get("/tasks/status/{status}", response_model=list[schemas.TaskOut])
 def get_tasks_by_status(
     status: str,
     db: Session = Depends(get_db),

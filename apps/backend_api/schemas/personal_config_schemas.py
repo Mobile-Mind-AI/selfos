@@ -12,7 +12,7 @@ Created for Phase 1.2 of enhanced onboarding implementation.
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from pydantic import BaseModel, Field, validator
 
@@ -34,58 +34,58 @@ class PersonalProfileBase(BaseModel):
     """Base personal profile schema."""
 
     # Personal information
-    preferred_name: Optional[str] = Field(
+    preferred_name: str | None = Field(
         None, max_length=100, description="User's preferred name"
     )
-    avatar_id: Optional[str] = Field(
+    avatar_id: str | None = Field(
         None, max_length=100, description="Avatar ID reference"
     )
 
-    current_situation: Optional[str] = Field(
+    current_situation: str | None = Field(
         None, max_length=2000, description="User's current life situation"
     )
-    interests: Optional[List[str]] = Field(
+    interests: list[str] | None = Field(
         default_factory=list, description="User's interests and hobbies"
     )
-    challenges: Optional[List[str]] = Field(
+    challenges: list[str] | None = Field(
         default_factory=list, description="Current challenges they face"
     )
-    aspirations: Optional[List[str]] = Field(
+    aspirations: list[str] | None = Field(
         default_factory=list, description="What they hope to achieve"
     )
-    motivation: Optional[str] = Field(
+    motivation: str | None = Field(
         None, max_length=1000, description="What motivates them"
     )
 
     # Preference learning fields - all strings to allow custom answers
-    work_style: Optional[str] = Field(
+    work_style: str | None = Field(
         None, max_length=50, description="Preferred work style"
     )
-    communication_frequency: Optional[str] = Field(
+    communication_frequency: str | None = Field(
         None, max_length=50, description="How often they want updates"
     )
-    goal_approach: Optional[str] = Field(
+    goal_approach: str | None = Field(
         None, max_length=50, description="How they like to approach goals"
     )
-    motivation_style: Optional[str] = Field(
+    motivation_style: str | None = Field(
         None, max_length=50, description="What motivates them most"
     )
 
     # Quick preferences and custom answers
-    preferences: Optional[Dict[str, Any]] = Field(
+    preferences: dict[str, Any] | None = Field(
         default_factory=dict, description="Quick preferences from UI"
     )
-    custom_answers: Optional[Dict[str, Any]] = Field(
+    custom_answers: dict[str, Any] | None = Field(
         default_factory=dict, description="Custom answers to questions"
     )
 
     # Selected standard life areas
-    selected_life_areas: Optional[List[int]] = Field(
+    selected_life_areas: list[int] | None = Field(
         default_factory=list, description="Selected standard life area IDs"
     )
 
     # AI analysis storage
-    story_analysis: Optional[Dict[str, Any]] = Field(
+    story_analysis: dict[str, Any] | None = Field(
         default_factory=dict, description="AI analysis results"
     )
 
@@ -127,21 +127,21 @@ class PersonalProfileCreate(PersonalProfileBase):
 class PersonalProfileUpdate(BaseModel):
     """Schema for updating a personal profile."""
 
-    preferred_name: Optional[str] = Field(None, max_length=100)
-    avatar_id: Optional[str] = Field(None, max_length=100)
-    current_situation: Optional[str] = Field(None, max_length=2000)
-    interests: Optional[List[str]] = None
-    challenges: Optional[List[str]] = None
-    aspirations: Optional[List[str]] = None
-    motivation: Optional[str] = Field(None, max_length=1000)
-    work_style: Optional[str] = Field(None, max_length=50)
-    communication_frequency: Optional[str] = Field(None, max_length=50)
-    goal_approach: Optional[str] = Field(None, max_length=50)
-    motivation_style: Optional[str] = Field(None, max_length=50)
-    preferences: Optional[Dict[str, Any]] = None
-    custom_answers: Optional[Dict[str, Any]] = None
-    selected_life_areas: Optional[List[int]] = None
-    story_analysis: Optional[Dict[str, Any]] = None
+    preferred_name: str | None = Field(None, max_length=100)
+    avatar_id: str | None = Field(None, max_length=100)
+    current_situation: str | None = Field(None, max_length=2000)
+    interests: list[str] | None = None
+    challenges: list[str] | None = None
+    aspirations: list[str] | None = None
+    motivation: str | None = Field(None, max_length=1000)
+    work_style: str | None = Field(None, max_length=50)
+    communication_frequency: str | None = Field(None, max_length=50)
+    goal_approach: str | None = Field(None, max_length=50)
+    motivation_style: str | None = Field(None, max_length=50)
+    preferences: dict[str, Any] | None = None
+    custom_answers: dict[str, Any] | None = None
+    selected_life_areas: list[int] | None = None
+    story_analysis: dict[str, Any] | None = None
 
 
 class PersonalProfileOut(PersonalProfileBase):
@@ -166,10 +166,10 @@ class CustomLifeAreaBase(BaseModel):
     color: str = Field(
         default="#6366f1", pattern=r"^#[0-9A-Fa-f]{6}$", description="Hex color code"
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None, max_length=500, description="Life area description"
     )
-    keywords: Optional[List[str]] = Field(
+    keywords: list[str] | None = Field(
         default_factory=list, description="Keywords for AI understanding"
     )
 
@@ -210,12 +210,12 @@ class CustomLifeAreaCreate(CustomLifeAreaBase):
 class CustomLifeAreaUpdate(BaseModel):
     """Schema for updating a custom life area."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    icon: Optional[str] = Field(None, max_length=50)
-    color: Optional[str] = Field(None, pattern=r"^#[0-9A-Fa-f]{6}$")
-    description: Optional[str] = Field(None, max_length=500)
-    keywords: Optional[List[str]] = None
-    priority_order: Optional[int] = Field(None, ge=1)
+    name: str | None = Field(None, min_length=1, max_length=100)
+    icon: str | None = Field(None, max_length=50)
+    color: str | None = Field(None, pattern=r"^#[0-9A-Fa-f]{6}$")
+    description: str | None = Field(None, max_length=500)
+    keywords: list[str] | None = None
+    priority_order: int | None = Field(None, ge=1)
 
 
 class CustomLifeAreaOut(CustomLifeAreaBase):
@@ -239,11 +239,11 @@ class LifeAreaSuggestionOut(BaseModel):
     icon: str
     color: str
     description: str
-    keywords: List[str]
-    confidence_score: Optional[float] = Field(
+    keywords: list[str]
+    confidence_score: float | None = Field(
         None, ge=0.0, le=1.0, description="AI confidence in suggestion"
     )
-    reason: Optional[str] = Field(None, description="Why this area was suggested")
+    reason: str | None = Field(None, description="Why this area was suggested")
 
 
 # Analytics Schemas
@@ -252,19 +252,19 @@ class OnboardingAnalyticsBase(BaseModel):
 
     session_id: str = Field(..., description="Unique session identifier")
     event_type: EventType = Field(..., description="Type of event")
-    step_name: Optional[str] = Field(
+    step_name: str | None = Field(
         None, max_length=50, description="Name of the onboarding step"
     )
-    step_number: Optional[int] = Field(
+    step_number: int | None = Field(
         None, ge=1, le=10, description="Step number in flow"
     )
-    time_spent_seconds: Optional[int] = Field(
+    time_spent_seconds: int | None = Field(
         None, ge=0, description="Time spent on step"
     )
-    completion_percentage: Optional[float] = Field(
+    completion_percentage: float | None = Field(
         None, ge=0.0, le=100.0, description="Percentage completed"
     )
-    event_metadata: Optional[Dict[str, Any]] = Field(
+    event_metadata: dict[str, Any] | None = Field(
         default_factory=dict, description="Additional event data"
     )
 
@@ -296,19 +296,19 @@ class OnboardingAnalyticsOut(OnboardingAnalyticsBase):
 class PersonalityInsights(BaseModel):
     """AI-generated personality insights."""
 
-    dominant_traits: List[str] = Field(
+    dominant_traits: list[str] = Field(
         default_factory=list, description="Key personality traits"
     )
-    communication_style: Optional[str] = Field(
+    communication_style: str | None = Field(
         None, description="Preferred communication style"
     )
-    motivation_type: Optional[str] = Field(
+    motivation_type: str | None = Field(
         None, description="Primary motivation driver"
     )
-    work_preferences: Optional[List[str]] = Field(
+    work_preferences: list[str] | None = Field(
         default_factory=list, description="Work style preferences"
     )
-    goal_patterns: Optional[List[str]] = Field(
+    goal_patterns: list[str] | None = Field(
         default_factory=list, description="Goal-setting patterns"
     )
 
@@ -317,16 +317,16 @@ class StoryAnalysisOut(BaseModel):
     """Schema for story analysis results."""
 
     personality_insights: PersonalityInsights
-    suggested_life_areas: List[str] = Field(
+    suggested_life_areas: list[str] = Field(
         default_factory=list, description="Recommended life areas"
     )
-    potential_goals: List[str] = Field(
+    potential_goals: list[str] = Field(
         default_factory=list, description="Suggested initial goals"
     )
     confidence_score: float = Field(
         default=0.0, ge=0.0, le=1.0, description="Analysis confidence"
     )
-    processing_notes: Optional[str] = Field(
+    processing_notes: str | None = Field(
         None, description="Additional analysis notes"
     )
 
@@ -361,13 +361,13 @@ class StoryAnalysisRequest(BaseModel):
 class PreferenceLearningData(BaseModel):
     """Schema for preference learning questionnaire data."""
 
-    scenario_responses: Dict[str, Union[str, int, float]] = Field(
+    scenario_responses: dict[str, str | int | float] = Field(
         default_factory=dict, description="Responses to scenario-based questions"
     )
-    behavioral_indicators: Dict[str, Any] = Field(
+    behavioral_indicators: dict[str, Any] = Field(
         default_factory=dict, description="Behavioral patterns from interactions"
     )
-    preference_weights: Dict[str, float] = Field(
+    preference_weights: dict[str, float] = Field(
         default_factory=dict, description="Calculated preference weights"
     )
     learning_confidence: float = Field(
@@ -387,8 +387,8 @@ class PersonalConfigurationComplete(BaseModel):
     """Complete personal configuration for onboarding."""
 
     profile: PersonalProfileCreate
-    life_areas: List[CustomLifeAreaCreate] = Field(default_factory=list, max_items=15)
-    preferences: Optional[PreferenceLearningData] = None
+    life_areas: list[CustomLifeAreaCreate] = Field(default_factory=list, max_items=15)
+    preferences: PreferenceLearningData | None = None
     skip_ai_analysis: bool = Field(default=False, description="Skip AI story analysis")
 
     @validator("life_areas")
@@ -407,9 +407,9 @@ class PersonalConfigurationComplete(BaseModel):
 class BulkLifeAreaResponse(BaseModel):
     """Response for bulk life area operations."""
 
-    created: List[CustomLifeAreaOut] = Field(default_factory=list)
-    updated: List[CustomLifeAreaOut] = Field(default_factory=list)
-    errors: List[Dict[str, str]] = Field(default_factory=list)
+    created: list[CustomLifeAreaOut] = Field(default_factory=list)
+    updated: list[CustomLifeAreaOut] = Field(default_factory=list)
+    errors: list[dict[str, str]] = Field(default_factory=list)
     total_processed: int
 
 
@@ -420,5 +420,5 @@ class PersonalConfigSummary(BaseModel):
     life_areas_count: int
     has_preferences: bool
     completion_percentage: float = Field(ge=0.0, le=100.0)
-    last_updated: Optional[datetime] = None
-    missing_components: List[str] = Field(default_factory=list)
+    last_updated: datetime | None = None
+    missing_components: list[str] = Field(default_factory=list)

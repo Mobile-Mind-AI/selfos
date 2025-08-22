@@ -7,7 +7,6 @@ including CRUD operations, progress calculations, and hierarchy operations.
 
 import logging
 from datetime import datetime
-from typing import List, Optional
 
 import models
 import schemas
@@ -22,7 +21,7 @@ class ProjectService:
 
     def get_project(
         self, db: Session, user_id: str, project_id: int
-    ) -> Optional[models.Project]:
+    ) -> models.Project | None:
         """
         Retrieve a single project by ID for a specific user.
 
@@ -58,7 +57,7 @@ class ProjectService:
             logger.error(f"Database error retrieving project {project_id}: {e}")
             raise
 
-    def list_projects(self, db: Session, user_id: str) -> List[models.Project]:
+    def list_projects(self, db: Session, user_id: str) -> list[models.Project]:
         """
         Retrieve all projects for a specific user.
 
@@ -149,7 +148,7 @@ class ProjectService:
         user_id: str,
         project_id: int,
         project_data: schemas.ProjectCreate,
-    ) -> Optional[models.Project]:
+    ) -> models.Project | None:
         """
         Update an existing project.
 
@@ -279,7 +278,7 @@ class ProjectService:
 
     def get_projects_by_life_area(
         self, db: Session, user_id: str, life_area_id: int
-    ) -> List[models.Project]:
+    ) -> list[models.Project]:
         """
         Retrieve all projects for a specific life area.
 
@@ -323,7 +322,7 @@ class ProjectService:
 
     def get_projects_by_status(
         self, db: Session, user_id: str, status: str
-    ) -> List[models.Project]:
+    ) -> list[models.Project]:
         """
         Retrieve all projects with a specific status.
 
@@ -380,7 +379,7 @@ class ProjectService:
 
     def get_children(
         self, db: Session, user_id: str, parent_id: int
-    ) -> List[models.Project]:
+    ) -> list[models.Project]:
         """Get direct children of a project."""
         try:
             children = (
@@ -411,7 +410,7 @@ class ProjectService:
 
     def get_descendants(
         self, db: Session, user_id: str, parent_id: int
-    ) -> List[models.Project]:
+    ) -> list[models.Project]:
         """Get all descendants of a project recursively."""
         try:
             descendants = []
@@ -438,7 +437,7 @@ class ProjectService:
 
     def get_project_path(
         self, db: Session, user_id: str, project_id: int
-    ) -> List[schemas.HierarchyPathItem]:
+    ) -> list[schemas.HierarchyPathItem]:
         """
         Get the full path from root to the specified project.
 
@@ -481,7 +480,7 @@ class ProjectService:
 
         return path
 
-    def get_root_projects(self, db: Session, user_id: str) -> List[models.Project]:
+    def get_root_projects(self, db: Session, user_id: str) -> list[models.Project]:
         """
         Get all root-level projects (projects without parents).
 
@@ -521,8 +520,8 @@ class ProjectService:
             raise
 
     def move_project(
-        self, db: Session, user_id: str, project_id: int, new_parent_id: Optional[int]
-    ) -> Optional[models.Project]:
+        self, db: Session, user_id: str, project_id: int, new_parent_id: int | None
+    ) -> models.Project | None:
         """
         Move a project to a new parent in the hierarchy.
 
@@ -575,7 +574,7 @@ class ProjectService:
 
     def get_ancestors(
         self, db: Session, user_id: str, project_id: int
-    ) -> List[models.Project]:
+    ) -> list[models.Project]:
         """Get all ancestors of a project up to root."""
         try:
             ancestors = []
@@ -603,7 +602,7 @@ class ProjectService:
             raise
 
     def validate_hierarchy_move(
-        self, db: Session, user_id: str, project_id: int, new_parent_id: Optional[int]
+        self, db: Session, user_id: str, project_id: int, new_parent_id: int | None
     ) -> bool:
         """Validate that moving a project won't create a circular dependency."""
         if new_parent_id is None:
@@ -622,9 +621,9 @@ class ProjectService:
         self,
         db: Session,
         user_id: str,
-        root_id: Optional[int] = None,
-        life_area_id: Optional[int] = None,
-    ) -> List[dict]:
+        root_id: int | None = None,
+        life_area_id: int | None = None,
+    ) -> list[dict]:
         """Get hierarchical tree of projects."""
         try:
 
@@ -663,8 +662,8 @@ class ProjectService:
             raise
 
     def get_root_projects_filtered(
-        self, db: Session, user_id: str, life_area_id: Optional[int] = None
-    ) -> List[models.Project]:
+        self, db: Session, user_id: str, life_area_id: int | None = None
+    ) -> list[models.Project]:
         """Get root level projects (parent_id = None) with optional life area filter."""
         try:
             query = (
@@ -695,7 +694,7 @@ class ProjectService:
             raise
 
     def get_hierarchy_stats(
-        self, db: Session, user_id: str, life_area_id: Optional[int] = None
+        self, db: Session, user_id: str, life_area_id: int | None = None
     ) -> dict:
         """Get hierarchy statistics for projects."""
         try:
@@ -769,19 +768,19 @@ class ProjectService:
     # Aliases for test compatibility
     def get_project_children(
         self, db: Session, user_id: str, parent_id: int
-    ) -> List[models.Project]:
+    ) -> list[models.Project]:
         """Alias for get_children - for test compatibility."""
         return self.get_children(db, user_id, parent_id)
 
     def get_project_descendants(
         self, db: Session, user_id: str, project_id: int
-    ) -> List[models.Project]:
+    ) -> list[models.Project]:
         """Alias for get_descendants - for test compatibility."""
         return self.get_descendants(db, user_id, project_id)
 
     def get_project_tree_structure(
         self, db: Session, user_id: str
-    ) -> List[schemas.HierarchyTreeNode]:
+    ) -> list[schemas.HierarchyTreeNode]:
         """
         Get complete hierarchical tree of projects for a user as HierarchyTreeNode.
 

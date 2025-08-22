@@ -9,8 +9,7 @@ from datetime import datetime
 from unittest.mock import Mock
 
 import pytest
-from models import LifeArea, Project, User
-from schemas import ProjectCreate
+from models import Project
 from services.project_service import project_service
 from sqlalchemy.orm import Session
 

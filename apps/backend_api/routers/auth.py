@@ -1,19 +1,16 @@
-from datetime import datetime
 
 import models
 from dependencies import get_current_user, get_db
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from firebase_admin import auth as firebase_auth
 from schemas import (
     AuthResponse,
     LoginRequest,
     RegisterRequest,
-    TokenResponse,
     User,
-    UserOut,
 )
 from services.email_service import email_service
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -61,9 +58,8 @@ async def register(req: RegisterRequest, db: Session = Depends(get_db)):
 
             uid = user.uid
             email = user.email
-    except Exception as e:
+    except Exception:
         # For testing purposes, create a mock user if Firebase fails
-        import uuid
 
         if req.provider == "email":
             uid = req.username  # Use username as UID for testing
@@ -168,8 +164,6 @@ async def login(req: LoginRequest, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"🔥 FIREBASE: Login failed, using fallback: {e}")
         # For testing purposes, return a mock token if Firebase fails
-        import base64
-        import json
 
         import jwt
 
@@ -303,7 +297,7 @@ async def forgot_password(request: dict):
                     "dev_note": "Reset link also provided above for development/testing",
                 }
             else:
-                print(f"🔥 EMAIL: Failed to send email, providing fallback link")
+                print("🔥 EMAIL: Failed to send email, providing fallback link")
                 return {
                     "message": "Password reset link generated",
                     "status": "Email service unavailable - using direct link",

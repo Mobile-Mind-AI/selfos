@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
 
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
@@ -7,27 +6,25 @@ from models import Goal, LifeArea, StorySession, Task
 from schemas import (
     GenerationRequest,
     PublishRequest,
-)
-from schemas import StorySession as StorySessionSchema
-from schemas import (
     StorySessionCreate,
     StorySessionSummary,
     StorySessionUpdate,
 )
+from schemas import StorySession as StorySessionSchema
 from sqlalchemy import and_, desc, func
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/story-sessions", tags=["story-sessions"])
 
 
-@router.get("", response_model=List[StorySessionSchema])
+@router.get("", response_model=list[StorySessionSchema])
 def get_story_sessions(
-    content_type: Optional[str] = Query(None, description="Filter by content type"),
-    posting_status: Optional[str] = Query(None, description="Filter by posting status"),
-    processing_status: Optional[str] = Query(
+    content_type: str | None = Query(None, description="Filter by content type"),
+    posting_status: str | None = Query(None, description="Filter by posting status"),
+    processing_status: str | None = Query(
         None, description="Filter by processing status"
     ),
-    summary_period: Optional[str] = Query(None, description="Filter by summary period"),
+    summary_period: str | None = Query(None, description="Filter by summary period"),
     limit: int = Query(
         50, ge=1, le=1000, description="Maximum number of records to return"
     ),

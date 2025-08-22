@@ -1,7 +1,7 @@
 """Service for managing journal entries and personal reflections."""
 
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import models
 import schemas
@@ -53,15 +53,15 @@ class JournalService:
     def get_entries(
         db: Session,
         user_id: str,
-        project_id: Optional[int] = None,
-        goal_id: Optional[int] = None,
-        task_id: Optional[int] = None,
+        project_id: int | None = None,
+        goal_id: int | None = None,
+        task_id: int | None = None,
         limit: int = 50,
         offset: int = 0,
-        search_content: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-    ) -> List[models.JournalEntry]:
+        search_content: str | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> list[models.JournalEntry]:
         """Get journal entries with optional filtering."""
         query = db.query(models.JournalEntry).filter(
             models.JournalEntry.user_id == user_id
@@ -100,11 +100,11 @@ class JournalService:
     def get_entry_count(
         db: Session,
         user_id: str,
-        project_id: Optional[int] = None,
-        goal_id: Optional[int] = None,
-        task_id: Optional[int] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        project_id: int | None = None,
+        goal_id: int | None = None,
+        task_id: int | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
     ) -> int:
         """Get count of journal entries with optional filtering."""
         query = db.query(func.count(models.JournalEntry.id)).filter(
@@ -130,7 +130,7 @@ class JournalService:
     @staticmethod
     def get_recent_entries(
         db: Session, user_id: str, days: int = 7, limit: int = 10
-    ) -> List[models.JournalEntry]:
+    ) -> list[models.JournalEntry]:
         """Get recent journal entries from the specified number of days."""
         cutoff_date = datetime.utcnow() - timedelta(days=days)
 
@@ -150,7 +150,7 @@ class JournalService:
     @staticmethod
     def search_entries(
         db: Session, user_id: str, search_term: str, limit: int = 20
-    ) -> List[models.JournalEntry]:
+    ) -> list[models.JournalEntry]:
         """Search journal entries by content."""
         return (
             db.query(models.JournalEntry)
@@ -169,7 +169,7 @@ class JournalService:
         )
 
     @staticmethod
-    def get_entry_statistics(db: Session, user_id: str) -> Dict[str, Any]:
+    def get_entry_statistics(db: Session, user_id: str) -> dict[str, Any]:
         """Get statistics about user's journal entries."""
         # Total entries
         total_entries = (
@@ -331,7 +331,7 @@ class JournalService:
     @staticmethod
     def get_entries_for_parent(
         db: Session, user_id: str, parent_type: str, parent_id: int
-    ) -> List[models.JournalEntry]:
+    ) -> list[models.JournalEntry]:
         """Get all journal entries associated with a specific parent entity."""
 
         if parent_type not in ["project", "goal", "task"]:
@@ -353,7 +353,7 @@ class JournalService:
     @staticmethod
     def get_entry(
         db: Session, user_id: str, entry_id: int
-    ) -> Optional[models.JournalEntry]:
+    ) -> models.JournalEntry | None:
         """Get a specific journal entry by ID."""
         return (
             db.query(models.JournalEntry)
@@ -369,7 +369,7 @@ class JournalService:
     @staticmethod
     def update_entry(
         db: Session, user_id: str, entry_id: int, entry_data: schemas.JournalEntryUpdate
-    ) -> Optional[models.JournalEntry]:
+    ) -> models.JournalEntry | None:
         """Update an existing journal entry."""
         db_entry = JournalService.get_entry(db, user_id, entry_id)
         if not db_entry:

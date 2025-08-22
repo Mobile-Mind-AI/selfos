@@ -8,14 +8,14 @@ and other important events in the SelfOS platform.
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 async def send_completion_notification(
-    user_id: str, task_title: str, task_data: Dict[str, Any] = None
-) -> Dict[str, Any]:
+    user_id: str, task_title: str, task_data: dict[str, Any] = None
+) -> dict[str, Any]:
     """
     Send a notification when a task is completed.
 
@@ -68,7 +68,7 @@ async def send_completion_notification(
         return {"success": False, "error": str(e)}
 
 
-async def _get_user_notification_preferences(user_id: str) -> Dict[str, Any]:
+async def _get_user_notification_preferences(user_id: str) -> dict[str, Any]:
     """
     Get user's notification preferences.
 
@@ -88,8 +88,8 @@ async def _get_user_notification_preferences(user_id: str) -> Dict[str, Any]:
 
 
 async def _generate_completion_notification(
-    task_title: str, task_data: Dict[str, Any] = None
-) -> Dict[str, str]:
+    task_title: str, task_data: dict[str, Any] = None
+) -> dict[str, str]:
     """
     Generate notification content for task completion.
 
@@ -137,8 +137,8 @@ async def _generate_completion_notification(
 
 
 async def _send_push_notification(
-    user_id: str, notification: Dict[str, str]
-) -> Dict[str, Any]:
+    user_id: str, notification: dict[str, str]
+) -> dict[str, Any]:
     """
     Send a push notification to the user's device.
 
@@ -169,8 +169,8 @@ async def _send_push_notification(
 
 
 async def _send_email_notification(
-    user_id: str, notification: Dict[str, str]
-) -> Dict[str, Any]:
+    user_id: str, notification: dict[str, str]
+) -> dict[str, Any]:
     """
     Send an email notification to the user.
 
@@ -202,7 +202,7 @@ async def _send_email_notification(
 
 
 async def _log_achievement_notification(
-    user_id: str, task_title: str, notification: Dict[str, str]
+    user_id: str, task_title: str, notification: dict[str, str]
 ):
     """
     Log the achievement notification for user's history.
@@ -222,8 +222,8 @@ async def _log_achievement_notification(
 
 
 async def send_goal_completion_notification(
-    user_id: str, goal_title: str, completion_stats: Dict[str, Any]
-) -> Dict[str, Any]:
+    user_id: str, goal_title: str, completion_stats: dict[str, Any]
+) -> dict[str, Any]:
     """
     Send a notification when a goal is completed.
 
@@ -277,8 +277,8 @@ async def send_goal_completion_notification(
 
 
 async def send_weekly_summary_notification(
-    user_id: str, summary_stats: Dict[str, Any]
-) -> Dict[str, Any]:
+    user_id: str, summary_stats: dict[str, Any]
+) -> dict[str, Any]:
     """
     Send a weekly progress summary notification.
 

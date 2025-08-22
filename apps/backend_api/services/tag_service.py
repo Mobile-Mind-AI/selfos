@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from models.goals import Goal
 from models.habits import Habit
@@ -11,7 +11,7 @@ from models.projects import Project
 from models.tags import Tag
 from models.tasks import Task
 from schemas import TagCreate, TagOut, TagUpdate
-from sqlalchemy import func, or_, text
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class TagService:
     """Service for managing tags and their associations."""
 
-    def __init__(self, db: Session, current_user: Dict[str, Any]):
+    def __init__(self, db: Session, current_user: dict[str, Any]):
         self.db = db
         self.current_user = current_user
         self.user_id = current_user["uid"]
@@ -60,7 +60,7 @@ class TagService:
             logger.error(f"Error creating tag for user {self.user_id}: {e}")
             raise
 
-    def get_tags(self, include_usage_count: bool = False) -> List[TagOut]:
+    def get_tags(self, include_usage_count: bool = False) -> list[TagOut]:
         """Get all tags for the current user."""
         try:
             query = self.db.query(Tag).filter(Tag.user_id == self.user_id)
@@ -90,7 +90,7 @@ class TagService:
             logger.error(f"Error fetching tags for user {self.user_id}: {e}")
             raise
 
-    def search_tags(self, query: str, limit: int) -> List[TagOut]:
+    def search_tags(self, query: str, limit: int) -> list[TagOut]:
         """Search tags by name."""
         try:
             db_tags = (
@@ -121,7 +121,7 @@ class TagService:
             logger.error(f"Error searching tags for user {self.user_id}: {e}")
             raise
 
-    def get_tag_statistics(self) -> Dict[str, Any]:
+    def get_tag_statistics(self) -> dict[str, Any]:
         """Get tag usage statistics."""
         try:
             # Get total number of tags
@@ -208,7 +208,7 @@ class TagService:
 
     def get_tag_by_id(
         self, tag_id: int, include_usage_count: bool = False
-    ) -> Optional[TagOut]:
+    ) -> TagOut | None:
         """Get a specific tag by ID."""
         try:
             tag = (
@@ -240,7 +240,7 @@ class TagService:
             logger.error(f"Error fetching tag {tag_id} for user {self.user_id}: {e}")
             raise
 
-    def update_tag(self, tag_id: int, tag_update: TagUpdate) -> Optional[Tag]:
+    def update_tag(self, tag_id: int, tag_update: TagUpdate) -> Tag | None:
         """Update an existing tag."""
         try:
             tag = (
@@ -313,8 +313,8 @@ class TagService:
             raise
 
     def get_entities_by_tag(
-        self, tag_id: int, entity_types: Optional[List[str]] = None
-    ) -> Dict[str, List[Dict]]:
+        self, tag_id: int, entity_types: list[str] | None = None
+    ) -> dict[str, list[dict]]:
         """Get all entities associated with a specific tag."""
         try:
             tag = (

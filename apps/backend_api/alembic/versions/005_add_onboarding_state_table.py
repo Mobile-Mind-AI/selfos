@@ -41,7 +41,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('user_id')
     )
-    
+
     # Create indexes
     op.create_index(op.f('ix_onboarding_states_id'), 'onboarding_states', ['id'], unique=False)
     op.create_index(op.f('ix_onboarding_states_user_id'), 'onboarding_states', ['user_id'], unique=True)
@@ -55,6 +55,6 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_onboarding_states_completed'), table_name='onboarding_states')
     op.drop_index(op.f('ix_onboarding_states_user_id'), table_name='onboarding_states')
     op.drop_index(op.f('ix_onboarding_states_id'), table_name='onboarding_states')
-    
+
     # Drop table
     op.drop_table('onboarding_states')

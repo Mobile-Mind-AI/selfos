@@ -5,11 +5,10 @@ Handles permission-based assistant sharing and access control.
 """
 
 from datetime import datetime
-from typing import List, Optional
 
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, status
-from models.onboarding import AssistantPermission, AssistantProfile
+from models.onboarding import AssistantProfile
 from schemas.assistant_schemas import (
     AssistantPermissionOut,
     AssistantProfileOut,
@@ -23,7 +22,7 @@ from sqlalchemy.orm import Session
 router = APIRouter(tags=["assistant-permissions"])
 
 
-@router.get("/assistants", response_model=List[AssistantProfileOut])
+@router.get("/assistants", response_model=list[AssistantProfileOut])
 async def get_user_assistants(
     current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
@@ -171,7 +170,7 @@ async def revoke_permission(
 
 @router.get(
     "/assistants/{assistant_id}/permissions",
-    response_model=List[AssistantPermissionOut],
+    response_model=list[AssistantPermissionOut],
 )
 async def get_assistant_permissions(
     assistant_id: str,
@@ -196,9 +195,9 @@ async def get_assistant_permissions(
     return [AssistantPermissionOut(**perm) for perm in permissions]
 
 
-@router.get("/assistants/versions", response_model=List[AssistantVersionOut])
+@router.get("/assistants/versions", response_model=list[AssistantVersionOut])
 async def get_assistant_versions(
-    assistant_ids: Optional[List[str]] = None,
+    assistant_ids: list[str] | None = None,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

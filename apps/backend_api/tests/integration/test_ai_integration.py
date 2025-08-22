@@ -5,7 +5,6 @@ Tests the AI-powered goal decomposition and chat functionality
 with actual AI orchestrator integration.
 """
 
-import json
 
 import pytest
 from fastapi.testclient import TestClient

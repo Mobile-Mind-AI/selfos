@@ -8,7 +8,6 @@ with progress tracking, storytelling, and notification services.
 
 import logging
 from datetime import datetime
-from typing import List, Optional
 
 import models
 import schemas
@@ -26,7 +25,7 @@ class TaskService:
 
     def get_task(
         self, db: Session, user_id: str, task_id: int
-    ) -> Optional[models.Task]:
+    ) -> models.Task | None:
         """
         Retrieve a single task by ID for a specific user.
 
@@ -59,7 +58,7 @@ class TaskService:
             logger.error(f"Database error retrieving task {task_id}: {e}")
             raise
 
-    def list_tasks(self, db: Session, user_id: str) -> List[models.Task]:
+    def list_tasks(self, db: Session, user_id: str) -> list[models.Task]:
         """
         Retrieve all tasks for a specific user.
 
@@ -155,7 +154,7 @@ class TaskService:
 
     async def update_task(
         self, db: Session, user_id: str, task_id: int, task_data: schemas.TaskCreate
-    ) -> Optional[models.Task]:
+    ) -> models.Task | None:
         """
         Update an existing task and handle completion workflows.
 
@@ -232,7 +231,7 @@ class TaskService:
 
     async def mark_task_complete(
         self, db: Session, user_id: str, task_id: int
-    ) -> Optional[models.Task]:
+    ) -> models.Task | None:
         """
         Mark a task as completed and trigger all completion workflows.
 
@@ -325,7 +324,7 @@ class TaskService:
 
     def get_tasks_by_goal(
         self, db: Session, user_id: str, goal_id: int
-    ) -> List[models.Task]:
+    ) -> list[models.Task]:
         """
         Retrieve all tasks for a specific goal.
 
@@ -358,7 +357,7 @@ class TaskService:
 
     def get_tasks_by_status(
         self, db: Session, user_id: str, status: str
-    ) -> List[models.Task]:
+    ) -> list[models.Task]:
         """
         Retrieve all tasks with a specific status.
 
@@ -392,7 +391,7 @@ class TaskService:
     # Hierarchy methods
     def get_children(
         self, db: Session, user_id: str, parent_id: int
-    ) -> List[models.Task]:
+    ) -> list[models.Task]:
         """Get direct children of a task."""
         try:
             children = (
@@ -418,7 +417,7 @@ class TaskService:
 
     def get_descendants(
         self, db: Session, user_id: str, parent_id: int
-    ) -> List[models.Task]:
+    ) -> list[models.Task]:
         """Get all descendants of a task recursively."""
         try:
             descendants = []
@@ -440,7 +439,7 @@ class TaskService:
 
     def get_ancestors(
         self, db: Session, user_id: str, task_id: int
-    ) -> List[models.Task]:
+    ) -> list[models.Task]:
         """Get all ancestors of a task up to root."""
         try:
             ancestors = []
@@ -466,9 +465,9 @@ class TaskService:
         self,
         db: Session,
         user_id: str,
-        project_id: Optional[int] = None,
-        goal_id: Optional[int] = None,
-    ) -> List[models.Task]:
+        project_id: int | None = None,
+        goal_id: int | None = None,
+    ) -> list[models.Task]:
         """Get root level tasks (parent_id = None)."""
         try:
             query = (
@@ -494,7 +493,7 @@ class TaskService:
             raise
 
     def validate_hierarchy_move(
-        self, db: Session, user_id: str, task_id: int, new_parent_id: Optional[int]
+        self, db: Session, user_id: str, task_id: int, new_parent_id: int | None
     ) -> bool:
         """Validate that moving a task won't create a circular dependency."""
         if new_parent_id is None:
@@ -510,8 +509,8 @@ class TaskService:
         return new_parent_id not in descendant_ids
 
     def move_task(
-        self, db: Session, user_id: str, task_id: int, new_parent_id: Optional[int]
-    ) -> Optional[models.Task]:
+        self, db: Session, user_id: str, task_id: int, new_parent_id: int | None
+    ) -> models.Task | None:
         """Move a task to a new parent in the hierarchy."""
         try:
             # Validate the move
@@ -560,10 +559,10 @@ class TaskService:
         self,
         db: Session,
         user_id: str,
-        root_id: Optional[int] = None,
-        project_id: Optional[int] = None,
-        goal_id: Optional[int] = None,
-    ) -> List[dict]:
+        root_id: int | None = None,
+        project_id: int | None = None,
+        goal_id: int | None = None,
+    ) -> list[dict]:
         """Get hierarchical tree of tasks."""
         try:
 
@@ -602,8 +601,8 @@ class TaskService:
         self,
         db: Session,
         user_id: str,
-        project_id: Optional[int] = None,
-        goal_id: Optional[int] = None,
+        project_id: int | None = None,
+        goal_id: int | None = None,
     ) -> dict:
         """Get hierarchy statistics for tasks."""
         try:

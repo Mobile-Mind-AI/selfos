@@ -4,7 +4,7 @@ Pydantic schemas for intent classification and conversation management.
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, validator
 
@@ -64,8 +64,8 @@ class ConversationMessageRequest(BaseModel):
     message: str = Field(
         ..., min_length=1, max_length=1000, description="User's message"
     )
-    session_id: Optional[str] = Field(None, description="Conversation session ID")
-    assistant_id: Optional[str] = Field(
+    session_id: str | None = Field(None, description="Conversation session ID")
+    assistant_id: str | None = Field(
         None, description="Specific assistant profile ID (uses default if not provided)"
     )
     include_context: bool = Field(
@@ -93,8 +93,8 @@ class IntentClassificationResult(BaseModel):
 
     intent: IntentType
     confidence: float = Field(..., ge=0.0, le=1.0)
-    entities: Dict[str, Any] = Field(default_factory=dict)
-    reasoning: Optional[str] = None
+    entities: dict[str, Any] = Field(default_factory=dict)
+    reasoning: str | None = None
     fallback_used: bool = False
     processing_time_ms: float
 
@@ -105,19 +105,19 @@ class NextAction(BaseModel):
     type: str = Field(
         ..., description="Action type (execute_action, clarification_request, etc.)"
     )
-    message: Optional[str] = None
-    required_entity: Optional[str] = None
-    action: Optional[str] = None
-    entities: Optional[Dict[str, Any]] = None
-    context: Optional[Dict[str, Any]] = None
-    suggested_intents: Optional[List[str]] = None
+    message: str | None = None
+    required_entity: str | None = None
+    action: str | None = None
+    entities: dict[str, Any] | None = None
+    context: dict[str, Any] | None = None
+    suggested_intents: list[str] | None = None
 
 
 class ConversationState(BaseModel):
     """Current state of conversation session."""
 
-    current_intent: Optional[str] = None
-    incomplete_entities: List[str] = Field(default_factory=list)
+    current_intent: str | None = None
+    incomplete_entities: list[str] = Field(default_factory=list)
     turn_count: int = 0
     last_update: datetime
     session_type: str = "chat"
@@ -129,7 +129,7 @@ class ConversationMessageResponse(BaseModel):
 
     intent_result: IntentClassificationResult
     conversation_state: ConversationState
-    next_actions: List[NextAction]
+    next_actions: list[NextAction]
     requires_clarification: bool
     session_id: str
 
@@ -141,31 +141,31 @@ class TaskEntitySet(BaseModel):
     """Entities required/optional for task creation."""
 
     title: str = Field(..., min_length=1, max_length=200)
-    due_date: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
-    life_area: Optional[LifeAreaType] = None
-    priority: Optional[PriorityLevel] = PriorityLevel.MEDIUM
-    duration: Optional[str] = None
-    description: Optional[str] = Field(None, max_length=1000)
+    due_date: str | None = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    life_area: LifeAreaType | None = None
+    priority: PriorityLevel | None = PriorityLevel.MEDIUM
+    duration: str | None = None
+    description: str | None = Field(None, max_length=1000)
 
 
 class GoalEntitySet(BaseModel):
     """Entities required/optional for goal creation."""
 
     title: str = Field(..., min_length=1, max_length=200)
-    life_area: Optional[LifeAreaType] = None
-    description: Optional[str] = Field(None, max_length=1000)
-    target_date: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    life_area: LifeAreaType | None = None
+    description: str | None = Field(None, max_length=1000)
+    target_date: str | None = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
 
 
 class ProjectEntitySet(BaseModel):
     """Entities required/optional for project creation."""
 
     title: str = Field(..., min_length=1, max_length=200)
-    life_area: Optional[LifeAreaType] = None
-    description: Optional[str] = Field(None, max_length=1000)
-    start_date: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
-    target_date: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
-    priority: Optional[PriorityLevel] = PriorityLevel.MEDIUM
+    life_area: LifeAreaType | None = None
+    description: str | None = Field(None, max_length=1000)
+    start_date: str | None = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    target_date: str | None = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    priority: PriorityLevel | None = PriorityLevel.MEDIUM
 
 
 class SettingsEntitySet(BaseModel):
@@ -173,7 +173,7 @@ class SettingsEntitySet(BaseModel):
 
     setting_type: str = Field(..., description="Type of setting to update")
     setting_value: str = Field(..., description="New setting value")
-    preference_category: Optional[str] = None
+    preference_category: str | None = None
 
 
 class LifeAreaRatingEntitySet(BaseModel):
@@ -181,7 +181,7 @@ class LifeAreaRatingEntitySet(BaseModel):
 
     life_area: LifeAreaType
     rating: int = Field(..., ge=1, le=10, description="Rating from 1-10")
-    comment: Optional[str] = Field(None, max_length=500)
+    comment: str | None = Field(None, max_length=500)
 
 
 # Database model schemas
@@ -193,14 +193,14 @@ class ConversationLogCreate(BaseModel):
     user_message: str
     intent: str
     confidence: float
-    entities: Dict[str, Any] = Field(default_factory=dict)
-    reasoning: Optional[str] = None
+    entities: dict[str, Any] = Field(default_factory=dict)
+    reasoning: str | None = None
     fallback_used: bool = False
-    processing_time_ms: Optional[float] = None
-    session_id: Optional[str] = None
+    processing_time_ms: float | None = None
+    session_id: str | None = None
     conversation_turn: int = 1
-    previous_intent: Optional[str] = None
-    user_context: Optional[Dict[str, Any]] = None
+    previous_intent: str | None = None
+    user_context: dict[str, Any] | None = None
 
 
 class ConversationLogOut(BaseModel):
@@ -208,16 +208,16 @@ class ConversationLogOut(BaseModel):
 
     id: int
     user_id: str
-    session_id: Optional[str]
+    session_id: str | None
     user_message: str
     intent: str
     confidence: float
-    entities: Dict[str, Any]
-    reasoning: Optional[str]
+    entities: dict[str, Any]
+    reasoning: str | None
     fallback_used: bool
-    processing_time_ms: Optional[float]
+    processing_time_ms: float | None
     conversation_turn: int
-    previous_intent: Optional[str]
+    previous_intent: str | None
     created_at: datetime
 
     class Config:
@@ -228,9 +228,9 @@ class ConversationSessionCreate(BaseModel):
     """Schema for creating conversation sessions."""
 
     session_type: str = "chat"
-    current_intent: Optional[str] = None
-    incomplete_entities: Dict[str, Any] = Field(default_factory=dict)
-    context_data: Dict[str, Any] = Field(default_factory=dict)
+    current_intent: str | None = None
+    incomplete_entities: dict[str, Any] = Field(default_factory=dict)
+    context_data: dict[str, Any] = Field(default_factory=dict)
 
 
 class ConversationSessionOut(BaseModel):
@@ -240,16 +240,16 @@ class ConversationSessionOut(BaseModel):
     user_id: str
     session_type: str
     status: str
-    current_intent: Optional[str]
-    incomplete_entities: Dict[str, Any]
-    context_data: Dict[str, Any]
+    current_intent: str | None
+    incomplete_entities: dict[str, Any]
+    context_data: dict[str, Any]
     turn_count: int
     successful_intents: int
     failed_intents: int
-    avg_confidence: Optional[float]
+    avg_confidence: float | None
     started_at: datetime
     last_activity: datetime
-    completed_at: Optional[datetime]
+    completed_at: datetime | None
 
     class Config:
         from_attributes = True
@@ -261,13 +261,13 @@ class IntentFeedbackCreate(BaseModel):
     conversation_log_id: int
     original_intent: str
     original_confidence: float
-    original_entities: Dict[str, Any] = Field(default_factory=dict)
+    original_entities: dict[str, Any] = Field(default_factory=dict)
     corrected_intent: str
-    corrected_entities: Dict[str, Any] = Field(default_factory=dict)
+    corrected_entities: dict[str, Any] = Field(default_factory=dict)
     feedback_type: str = Field(
         ..., pattern=r"^(wrong_intent|missing_entity|wrong_entity)$"
     )
-    user_comment: Optional[str] = Field(None, max_length=1000)
+    user_comment: str | None = Field(None, max_length=1000)
 
     @validator("corrected_intent")
     def validate_corrected_intent(cls, v):
@@ -285,12 +285,12 @@ class IntentFeedbackOut(BaseModel):
     conversation_log_id: int
     original_intent: str
     original_confidence: float
-    original_entities: Dict[str, Any]
+    original_entities: dict[str, Any]
     corrected_intent: str
-    corrected_entities: Dict[str, Any]
+    corrected_entities: dict[str, Any]
     feedback_type: str
-    user_comment: Optional[str]
-    feedback_quality: Optional[str]
+    user_comment: str | None
+    feedback_quality: str | None
     created_at: datetime
 
     class Config:
@@ -304,12 +304,12 @@ class IntentAnalytics(BaseModel):
     """Analytics data for intent classification performance."""
 
     total_messages: int
-    intent_distribution: Dict[str, int]
+    intent_distribution: dict[str, int]
     avg_confidence: float
     fallback_usage_rate: float
     avg_processing_time_ms: float
     success_rate: float
-    common_failure_patterns: List[Dict[str, Any]]
+    common_failure_patterns: list[dict[str, Any]]
 
 
 class ConversationAnalytics(BaseModel):
@@ -320,8 +320,8 @@ class ConversationAnalytics(BaseModel):
     completion_rate: float
     avg_turns_per_session: float
     intent_success_rate: float
-    most_common_intents: List[Dict[str, Any]]
-    user_satisfaction_score: Optional[float]
+    most_common_intents: list[dict[str, Any]]
+    user_satisfaction_score: float | None
 
 
 class EntityExtractionAccuracy(BaseModel):
@@ -331,8 +331,8 @@ class EntityExtractionAccuracy(BaseModel):
     total_extractions: int
     correct_extractions: int
     accuracy_rate: float
-    common_errors: List[Dict[str, Any]]
-    extraction_sources: Dict[str, int]  # llm vs rule_based
+    common_errors: list[dict[str, Any]]
+    extraction_sources: dict[str, int]  # llm vs rule_based
 
 
 # Configuration schemas

@@ -6,11 +6,10 @@ Enables users to create, manage, and customize their AI assistants.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
 
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
-from models import AssistantProfile, User
+from models import AssistantProfile
 from schemas.assistant_schemas import (
     AssistantConfigResponse,
     AssistantProfileCreate,
@@ -21,24 +20,21 @@ from schemas.assistant_schemas import (
     PersonalityPreviewRequest,
     PersonalityPreviewResponse,
     PersonalityStyle,
-    SupportedAIModel,
-    SupportedLanguage,
 )
 from sqlalchemy import and_, desc
-from sqlalchemy import or_ as db_or
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/assistant_profiles", tags=["assistant_profiles"])
 
 
-@router.get("/", response_model=List[AssistantProfileOut])
+@router.get("/", response_model=list[AssistantProfileOut])
 async def list_assistant_profiles(
     limit: int = Query(
         10, ge=1, le=50, description="Maximum number of profiles to return"
     ),
     offset: int = Query(0, ge=0, description="Number of profiles to skip"),
-    current_user: Dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -101,7 +97,7 @@ async def get_assistant_config():
 async def complete_onboarding(
     request: OnboardingRequest,
     background_tasks: BackgroundTasks,
-    current_user: Dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -158,7 +154,7 @@ async def complete_onboarding(
 @router.post("/", response_model=AssistantProfileOut)
 async def create_assistant_profile(
     profile_data: AssistantProfileCreate,
-    current_user: Dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -212,7 +208,7 @@ async def create_assistant_profile(
 
 @router.get("/default", response_model=AssistantProfileOut)
 async def get_default_assistant_profile(
-    current_user: Dict = Depends(get_current_user), db: Session = Depends(get_db)
+    current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
     Get the default assistant profile for the current user.
@@ -240,7 +236,7 @@ async def get_default_assistant_profile(
 @router.get("/{profile_id}", response_model=AssistantProfileOut)
 async def get_assistant_profile(
     profile_id: str,
-    current_user: Dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -266,7 +262,7 @@ async def get_assistant_profile(
 async def update_assistant_profile(
     profile_id: str,
     profile_data: AssistantProfileUpdate,
-    current_user: Dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -321,7 +317,7 @@ async def update_assistant_profile(
 @router.delete("/{profile_id}")
 async def delete_assistant_profile(
     profile_id: str,
-    current_user: Dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -377,7 +373,7 @@ async def delete_assistant_profile(
 
 @router.post("/preview", response_model=PersonalityPreviewResponse)
 async def preview_personality(
-    request: PersonalityPreviewRequest, current_user: Dict = Depends(get_current_user)
+    request: PersonalityPreviewRequest, current_user: dict = Depends(get_current_user)
 ):
     """
     Preview how a personality style would affect responses.

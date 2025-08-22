@@ -10,8 +10,7 @@ Provides AI agents with access to:
 
 import json
 import logging
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from mcp import TextContent, Tool
 from tools.base_tools import BaseToolsHandler
@@ -22,7 +21,7 @@ logger = logging.getLogger(__name__)
 class ConversationToolsHandler(BaseToolsHandler):
     """MCP tools for conversation and intent processing."""
 
-    async def list_tools(self) -> List[Tool]:
+    async def list_tools(self) -> list[Tool]:
         """List available conversation tools."""
         return [
             Tool(
@@ -196,8 +195,8 @@ class ConversationToolsHandler(BaseToolsHandler):
         ]
 
     async def call_tool(
-        self, name: str, arguments: Dict[str, Any]
-    ) -> List[TextContent]:
+        self, name: str, arguments: dict[str, Any]
+    ) -> list[TextContent]:
         """Execute a conversation tool."""
         try:
             if name == "conversation_process_message":
@@ -222,8 +221,8 @@ class ConversationToolsHandler(BaseToolsHandler):
             return [TextContent(type="text", text=f"Error executing {name}: {str(e)}")]
 
     async def _handle_process_message(
-        self, arguments: Dict[str, Any]
-    ) -> List[TextContent]:
+        self, arguments: dict[str, Any]
+    ) -> list[TextContent]:
         """Handle message processing with intent classification and conversation flow."""
         try:
             # Import here to avoid circular imports
@@ -277,8 +276,8 @@ class ConversationToolsHandler(BaseToolsHandler):
             ]
 
     async def _handle_classify_intent(
-        self, arguments: Dict[str, Any]
-    ) -> List[TextContent]:
+        self, arguments: dict[str, Any]
+    ) -> list[TextContent]:
         """Handle intent classification only."""
         try:
             from services.intent_service import IntentClassifier
@@ -316,8 +315,8 @@ class ConversationToolsHandler(BaseToolsHandler):
             ]
 
     async def _handle_execute_intent(
-        self, arguments: Dict[str, Any]
-    ) -> List[TextContent]:
+        self, arguments: dict[str, Any]
+    ) -> list[TextContent]:
         """Handle intent execution by calling appropriate backend APIs."""
         try:
             intent = arguments["intent"]
@@ -355,8 +354,8 @@ class ConversationToolsHandler(BaseToolsHandler):
             return [TextContent(type="text", text=f"Error executing intent: {str(e)}")]
 
     async def _execute_create_goal(
-        self, user_id: str, entities: Dict[str, Any], confidence: float
-    ) -> List[TextContent]:
+        self, user_id: str, entities: dict[str, Any], confidence: float
+    ) -> list[TextContent]:
         """Execute goal creation."""
         try:
             # Use the goals tools to create the goal
@@ -389,8 +388,8 @@ class ConversationToolsHandler(BaseToolsHandler):
             return [TextContent(type="text", text=f"❌ Error creating goal: {str(e)}")]
 
     async def _execute_create_task(
-        self, user_id: str, entities: Dict[str, Any], confidence: float
-    ) -> List[TextContent]:
+        self, user_id: str, entities: dict[str, Any], confidence: float
+    ) -> list[TextContent]:
         """Execute task creation."""
         try:
             # Use the tasks tools to create the task
@@ -420,8 +419,8 @@ class ConversationToolsHandler(BaseToolsHandler):
             return [TextContent(type="text", text=f"❌ Error creating task: {str(e)}")]
 
     async def _execute_create_project(
-        self, user_id: str, entities: Dict[str, Any], confidence: float
-    ) -> List[TextContent]:
+        self, user_id: str, entities: dict[str, Any], confidence: float
+    ) -> list[TextContent]:
         """Execute project creation."""
         try:
             # Use the projects tools to create the project
@@ -454,8 +453,8 @@ class ConversationToolsHandler(BaseToolsHandler):
             ]
 
     async def _execute_update_settings(
-        self, user_id: str, entities: Dict[str, Any], confidence: float
-    ) -> List[TextContent]:
+        self, user_id: str, entities: dict[str, Any], confidence: float
+    ) -> list[TextContent]:
         """Execute settings update."""
         return [
             TextContent(
@@ -465,8 +464,8 @@ class ConversationToolsHandler(BaseToolsHandler):
         ]
 
     async def _execute_rate_life_area(
-        self, user_id: str, entities: Dict[str, Any], confidence: float
-    ) -> List[TextContent]:
+        self, user_id: str, entities: dict[str, Any], confidence: float
+    ) -> list[TextContent]:
         """Execute life area rating."""
         return [
             TextContent(
@@ -476,8 +475,8 @@ class ConversationToolsHandler(BaseToolsHandler):
         ]
 
     async def _execute_chat_response(
-        self, user_id: str, intent: str, entities: Dict[str, Any], confidence: float
-    ) -> List[TextContent]:
+        self, user_id: str, intent: str, entities: dict[str, Any], confidence: float
+    ) -> list[TextContent]:
         """Execute chat response or advice."""
         if intent == "get_advice":
             return [
@@ -495,8 +494,8 @@ class ConversationToolsHandler(BaseToolsHandler):
             ]
 
     async def _handle_get_analytics(
-        self, arguments: Dict[str, Any]
-    ) -> List[TextContent]:
+        self, arguments: dict[str, Any]
+    ) -> list[TextContent]:
         """Handle conversation analytics request."""
         try:
             user_id = arguments["user_id"]
@@ -518,8 +517,8 @@ class ConversationToolsHandler(BaseToolsHandler):
             return [TextContent(type="text", text=f"Error getting analytics: {str(e)}")]
 
     async def _handle_get_sessions(
-        self, arguments: Dict[str, Any]
-    ) -> List[TextContent]:
+        self, arguments: dict[str, Any]
+    ) -> list[TextContent]:
         """Handle conversation sessions request."""
         try:
             user_id = arguments["user_id"]
@@ -541,8 +540,8 @@ class ConversationToolsHandler(BaseToolsHandler):
             return [TextContent(type="text", text=f"Error getting sessions: {str(e)}")]
 
     async def _handle_provide_feedback(
-        self, arguments: Dict[str, Any]
-    ) -> List[TextContent]:
+        self, arguments: dict[str, Any]
+    ) -> list[TextContent]:
         """Handle intent feedback submission."""
         try:
             feedback_data = {

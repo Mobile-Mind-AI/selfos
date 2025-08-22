@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from typing import Any
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
@@ -107,7 +107,7 @@ def archive_story_sessions(
     retention_days: int = ArchivalConfig.STORY_SESSION_RETENTION_DAYS,
     batch_size: int = ArchivalConfig.BATCH_SIZE,
     dry_run: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Archive old StorySession records to story_sessions_archive table.
 
@@ -192,7 +192,7 @@ def archive_feedback_logs(
     retention_days: int = ArchivalConfig.FEEDBACK_LOG_RETENTION_DAYS,
     batch_size: int = ArchivalConfig.BATCH_SIZE,
     dry_run: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Archive old FeedbackLog records to feedback_logs_archive table.
 
@@ -272,7 +272,7 @@ def archive_feedback_logs(
         }
 
 
-def get_archival_stats(db: Session) -> Dict[str, Any]:
+def get_archival_stats(db: Session) -> dict[str, Any]:
     """
     Get statistics about main and archive tables.
 
@@ -354,7 +354,7 @@ def get_archival_stats(db: Session) -> Dict[str, Any]:
     return stats
 
 
-def archive_all_tables(db: Session, dry_run: bool = False) -> Dict[str, Any]:
+def archive_all_tables(db: Session, dry_run: bool = False) -> dict[str, Any]:
     """
     Archive all configured tables in one operation.
 

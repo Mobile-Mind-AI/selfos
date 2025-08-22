@@ -17,7 +17,7 @@ import sys
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # Add ai_engine to path
 ai_engine_path = os.path.join(
@@ -82,8 +82,8 @@ class IntentResult:
 
     intent: str
     confidence: float
-    entities: Dict[str, Any]
-    reasoning: Optional[str] = None
+    entities: dict[str, Any]
+    reasoning: str | None = None
     fallback_used: bool = False
 
 
@@ -95,8 +95,8 @@ class ConversationLog:
     user_message: str
     intent: str
     confidence: float
-    entities: Dict[str, Any]
-    reasoning: Optional[str]
+    entities: dict[str, Any]
+    reasoning: str | None
     fallback_used: bool
     processing_time_ms: float
 
@@ -201,8 +201,8 @@ class IntentClassifier:
     async def classify_intent(
         self,
         message: str,
-        user_context: Optional[Dict] = None,
-        assistant_profile: Optional[Any] = None,
+        user_context: dict | None = None,
+        assistant_profile: Any | None = None,
     ) -> IntentResult:
         """
         Classify user intent using LLM with rule-based fallback.
@@ -262,8 +262,8 @@ class IntentClassifier:
     async def _llm_classify(
         self,
         message: str,
-        user_context: Optional[Dict] = None,
-        assistant_profile: Optional[Any] = None,
+        user_context: dict | None = None,
+        assistant_profile: Any | None = None,
     ) -> IntentResult:
         """Use LLM for intent classification and entity extraction."""
 
@@ -350,8 +350,8 @@ class IntentClassifier:
         )
 
     def _extract_entities(
-        self, message: str, intent: str, existing_entities: Dict[str, Any] = None
-    ) -> Dict[str, Any]:
+        self, message: str, intent: str, existing_entities: dict[str, Any] = None
+    ) -> dict[str, Any]:
         """Extract entities from message using regex patterns."""
         entities = {}
         existing_entities = existing_entities or {}
@@ -378,7 +378,7 @@ class IntentClassifier:
 
         return entities
 
-    def _extract_title(self, message: str, intent: str) -> Optional[str]:
+    def _extract_title(self, message: str, intent: str) -> str | None:
         """Extract title/description from create intent messages."""
         # Remove common intent keywords and extract remaining content
         patterns_to_remove = [
@@ -499,7 +499,7 @@ class IntentClassifier:
         unit = match.group(2).lower()
         return f"{amount} {unit}"
 
-    def _build_classification_prompt(self, user_context: Optional[Dict] = None) -> str:
+    def _build_classification_prompt(self, user_context: dict | None = None) -> str:
         """Build system prompt for LLM classification."""
         context_info = ""
         if user_context:
@@ -584,15 +584,15 @@ class ConversationFlowManager:
 
     def __init__(self):
         self.intent_classifier = IntentClassifier()
-        self.active_conversations: Dict[str, Dict] = {}  # user_id -> conversation state
+        self.active_conversations: dict[str, dict] = {}  # user_id -> conversation state
 
     async def process_message(
         self,
         user_id: str,
         message: str,
-        conversation_context: Optional[Dict] = None,
-        assistant_profile: Optional[Any] = None,
-    ) -> Dict[str, Any]:
+        conversation_context: dict | None = None,
+        assistant_profile: Any | None = None,
+    ) -> dict[str, Any]:
         """
         Process a user message with conversation flow management.
 
@@ -635,13 +635,13 @@ class ConversationFlowManager:
             "requires_clarification": result.confidence < 0.85,
         }
 
-    async def _get_user_context(self, user_id: str) -> Dict:
+    async def _get_user_context(self, user_id: str) -> dict:
         """Get user context for better intent classification."""
         # TODO: Implement user context retrieval
         # This would fetch user's recent activity, preferences, life areas, etc.
         return {"recent_activity": [], "preferences": {}, "life_areas": []}
 
-    def _update_conversation_state(self, user_id: str, result: IntentResult) -> Dict:
+    def _update_conversation_state(self, user_id: str, result: IntentResult) -> dict:
         """Update conversation state for multi-turn interactions."""
         if user_id not in self.active_conversations:
             self.active_conversations[user_id] = {
@@ -665,7 +665,7 @@ class ConversationFlowManager:
 
         return state
 
-    def _get_required_entities(self, intent: str) -> List[str]:
+    def _get_required_entities(self, intent: str) -> list[str]:
         """Get required entities for each intent type."""
         entity_requirements = {
             "create_goal": ["title"],
@@ -680,8 +680,8 @@ class ConversationFlowManager:
         return entity_requirements.get(intent, [])
 
     def _determine_next_actions(
-        self, result: IntentResult, conversation_state: Dict
-    ) -> List[Dict]:
+        self, result: IntentResult, conversation_state: dict
+    ) -> list[dict]:
         """Determine next actions based on intent and conversation state."""
         actions = []
 

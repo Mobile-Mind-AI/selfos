@@ -5,7 +5,7 @@ Centralized to avoid circular import issues.
 
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Table
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, Table
 
 from .base import Base
 

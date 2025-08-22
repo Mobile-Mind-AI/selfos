@@ -41,7 +41,7 @@ def upgrade() -> None:
     op.create_index('ix_conversation_logs_session_turn', 'conversation_logs', ['session_id', 'conversation_turn'], unique=False)
     op.create_index('ix_conversation_logs_intent_confidence', 'conversation_logs', ['intent', sa.text('confidence DESC')], unique=False)
     op.create_index('ix_conversation_logs_fallback', 'conversation_logs', ['fallback_used', sa.text('created_at DESC')], unique=False)
-    
+
     # Create conversation_sessions table
     op.create_table('conversation_sessions',
     sa.Column('id', sa.String(), nullable=False),
@@ -65,7 +65,7 @@ def upgrade() -> None:
     op.create_index('ix_conversation_sessions_user_activity', 'conversation_sessions', ['user_id', sa.text('last_activity DESC')], unique=False)
     op.create_index('ix_conversation_sessions_status_created', 'conversation_sessions', ['status', sa.text('started_at DESC')], unique=False)
     op.create_index('ix_conversation_sessions_type_user', 'conversation_sessions', ['session_type', 'user_id'], unique=False)
-    
+
     # Create intent_feedback table
     op.create_table('intent_feedback',
     sa.Column('id', sa.Integer(), nullable=False),

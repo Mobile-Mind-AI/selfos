@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 
 import models
 import schemas
@@ -77,11 +76,11 @@ def create_media_attachment(
     return db_attachment
 
 
-@router.get("/media-attachments", response_model=List[schemas.MediaAttachment])
+@router.get("/media-attachments", response_model=list[schemas.MediaAttachment])
 def list_media_attachments(
-    goal_id: Optional[int] = None,
-    task_id: Optional[int] = None,
-    file_type: Optional[str] = None,
+    goal_id: int | None = None,
+    task_id: int | None = None,
+    file_type: str | None = None,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):

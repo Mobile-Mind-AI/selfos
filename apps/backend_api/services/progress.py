@@ -7,7 +7,7 @@ intelligent progress tracking and insights.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 async def update_project_progress(
     db: Session, goal_id: int, user_id: str
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Update progress metrics when a task is completed.
 
@@ -102,7 +102,7 @@ async def update_project_progress(
         return {"error": str(e)}
 
 
-async def get_user_progress_insights(db: Session, user_id: str) -> Dict[str, Any]:
+async def get_user_progress_insights(db: Session, user_id: str) -> dict[str, Any]:
     """
     Generate progress insights for a user across all their goals.
 
@@ -216,7 +216,7 @@ async def get_user_progress_insights(db: Session, user_id: str) -> Dict[str, Any
 
 async def predict_completion_date(
     db: Session, goal_id: int, user_id: str
-) -> Optional[str]:
+) -> str | None:
     """
     Predict when a goal might be completed based on current velocity.
 

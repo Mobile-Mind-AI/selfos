@@ -1,12 +1,10 @@
 import re
 from datetime import datetime, time
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from pydantic import (
     BaseModel,
-    EmailStr,
     Field,
-    computed_field,
     constr,
     root_validator,
     validator,
@@ -23,18 +21,18 @@ if TYPE_CHECKING:
 
 ## Authentication Schemas
 class RegisterRequest(BaseModel):
-    username: Optional[str] = Field(None, description="Username or email address")
-    password: Optional[str] = Field(None, description="Password")
+    username: str | None = Field(None, description="Username or email address")
+    password: str | None = Field(None, description="Password")
 
     # Social login fields
-    provider: Optional[Literal["email", "google", "apple", "facebook"]] = Field(
+    provider: Literal["email", "google", "apple", "facebook"] | None = Field(
         "email", description="Authentication provider"
     )
-    social_token: Optional[str] = Field(
+    social_token: str | None = Field(
         None, description="OAuth token from social provider"
     )
-    email: Optional[str] = Field(None, description="Email from social provider")
-    display_name: Optional[str] = Field(
+    email: str | None = Field(None, description="Email from social provider")
+    display_name: str | None = Field(
         None, description="Display name from social provider"
     )
 
@@ -58,7 +56,7 @@ class RegisterRequest(BaseModel):
             # Allow both usernames and email addresses
             if "@" in username:
                 # Basic email validation
-                if not username.count("@") == 1 or not "." in username.split("@")[1]:
+                if not username.count("@") == 1 or "." not in username.split("@")[1]:
                     raise ValueError("Invalid email format")
             else:
                 # Username validation - no consecutive special chars
@@ -85,17 +83,17 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    username: Optional[str] = Field(None, description="Username or email")
-    password: Optional[str] = Field(None, description="Password")
+    username: str | None = Field(None, description="Username or email")
+    password: str | None = Field(None, description="Password")
 
     # Social login fields
-    provider: Optional[Literal["email", "google", "apple", "facebook"]] = Field(
+    provider: Literal["email", "google", "apple", "facebook"] | None = Field(
         "email", description="Authentication provider"
     )
-    social_token: Optional[str] = Field(
+    social_token: str | None = Field(
         None, description="OAuth token from social provider"
     )
-    email: Optional[str] = Field(None, description="Email from social provider")
+    email: str | None = Field(None, description="Email from social provider")
 
     @root_validator(skip_on_failure=True)
     def validate_fields_by_provider(cls, values):
@@ -113,7 +111,7 @@ class LoginRequest(BaseModel):
             username = username.strip()
             if "@" in username:
                 # Basic email validation
-                if not username.count("@") == 1 or not "." in username.split("@")[1]:
+                if not username.count("@") == 1 or "." not in username.split("@")[1]:
                     raise ValueError("Invalid email format")
 
             values["username"] = username.lower()
@@ -158,16 +156,16 @@ class GoalBase(BaseModel):
     title: constr(min_length=1, max_length=200, strip_whitespace=True) = Field(
         ..., description="Title of the goal (1-200 characters)"
     )
-    description: Optional[constr(max_length=2000, strip_whitespace=True)] = Field(
+    description: constr(max_length=2000, strip_whitespace=True) | None = Field(
         None, description="Detailed description of the goal (max 2000 characters)"
     )
-    status: Optional[Literal["todo", "in_progress", "completed", "paused"]] = Field(
+    status: Literal["todo", "in_progress", "completed", "paused"] | None = Field(
         "todo", description="Status of the goal"
     )
-    progress: Optional[float] = Field(
+    progress: float | None = Field(
         0.0, ge=0.0, le=100.0, description="Progress percentage (0-100)"
     )
-    life_area_id: Optional[int] = Field(
+    life_area_id: int | None = Field(
         None, gt=0, description="Associated life area ID (positive integer)"
     )
 
@@ -189,13 +187,13 @@ class GoalBase(BaseModel):
 class GoalCreate(GoalBase):
     """Schema for creating a new Goal"""
 
-    project_id: Optional[int] = Field(
+    project_id: int | None = Field(
         None, gt=0, description="Associated project ID (positive integer)"
     )
-    parent_id: Optional[int] = Field(
+    parent_id: int | None = Field(
         None, gt=0, description="Parent goal ID for hierarchical organization"
     )
-    tag_ids: Optional[List[int]] = Field(
+    tag_ids: list[int] | None = Field(
         default_factory=list, description="List of tag IDs to associate"
     )
 
@@ -210,7 +208,7 @@ class GoalCreate(GoalBase):
 class Goal(GoalBase):
     id: int = Field(..., description="Unique goal ID")
     user_id: str = Field(..., description="Owner user ID")
-    project_id: Optional[int] = Field(None, description="Associated project ID")
+    project_id: int | None = Field(None, description="Associated project ID")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -222,19 +220,19 @@ class ProjectBase(BaseModel):
     title: constr(min_length=1, max_length=200, strip_whitespace=True) = Field(
         ..., description="Title of the project (1-200 characters)"
     )
-    description: Optional[constr(max_length=2000, strip_whitespace=True)] = Field(
+    description: constr(max_length=2000, strip_whitespace=True) | None = Field(
         None, description="Detailed description of the project (max 2000 characters)"
     )
-    status: Optional[Literal["planning", "active", "on_hold", "completed"]] = Field(
+    status: Literal["planning", "active", "on_hold", "completed"] | None = Field(
         "planning", description="Status of the project"
     )
-    progress: Optional[float] = Field(
+    progress: float | None = Field(
         0.0, ge=0.0, le=100.0, description="Progress percentage (0-100)"
     )
-    life_area_id: Optional[int] = Field(
+    life_area_id: int | None = Field(
         None, gt=0, description="Associated life area ID (positive integer)"
     )
-    priority: Optional[Literal["low", "medium", "high"]] = Field(
+    priority: Literal["low", "medium", "high"] | None = Field(
         "medium", description="Priority level of the project"
     )
 
@@ -256,10 +254,10 @@ class ProjectBase(BaseModel):
 class ProjectCreate(ProjectBase):
     """Schema for creating a new Project"""
 
-    parent_id: Optional[int] = Field(
+    parent_id: int | None = Field(
         None, gt=0, description="Parent project ID for hierarchical organization"
     )
-    tag_ids: Optional[List[int]] = Field(
+    tag_ids: list[int] | None = Field(
         default_factory=list, description="List of tag IDs to associate"
     )
 
@@ -274,7 +272,7 @@ class ProjectCreate(ProjectBase):
 class Project(ProjectBase):
     id: int = Field(..., description="Unique project ID")
     user_id: str = Field(..., description="Owner user ID")
-    parent_id: Optional[int] = Field(
+    parent_id: int | None = Field(
         None, description="Parent project ID for hierarchical organization"
     )
     created_at: datetime = Field(..., description="Creation timestamp")
@@ -288,28 +286,28 @@ class TaskBase(BaseModel):
     title: constr(min_length=1, max_length=200, strip_whitespace=True) = Field(
         ..., description="Title of the task (1-200 characters)"
     )
-    description: Optional[constr(max_length=2000, strip_whitespace=True)] = Field(
+    description: constr(max_length=2000, strip_whitespace=True) | None = Field(
         None, description="Detailed description of the task (max 2000 characters)"
     )
-    due_date: Optional[datetime] = Field(
+    due_date: datetime | None = Field(
         None, description="Optional due date for the task"
     )
-    estimated_hours: Optional[float] = Field(
+    estimated_hours: float | None = Field(
         None, gt=0, description="Estimated hours to complete the task"
     )
-    actual_hours: Optional[float] = Field(
+    actual_hours: float | None = Field(
         None, gt=0, description="Actual hours spent on the task"
     )
-    status: Optional[Literal["todo", "in_progress", "completed", "cancelled"]] = Field(
+    status: Literal["todo", "in_progress", "completed", "cancelled"] | None = Field(
         "todo", description="Status of the task"
     )
-    progress: Optional[float] = Field(
+    progress: float | None = Field(
         0.0, ge=0.0, le=100.0, description="Progress percentage (0-100)"
     )
-    life_area_id: Optional[int] = Field(
+    life_area_id: int | None = Field(
         None, gt=0, description="Associated life area ID (positive integer)"
     )
-    dependencies: Optional[List[int]] = Field(
+    dependencies: list[int] | None = Field(
         default_factory=list,
         description="Prerequisite task IDs (max 10 dependencies)",
         max_items=10,
@@ -352,12 +350,12 @@ class TaskBase(BaseModel):
 
 
 class TaskCreate(TaskBase):
-    goal_id: Optional[int] = Field(None, description="Parent goal ID")
-    project_id: Optional[int] = Field(None, description="Parent project ID")
-    parent_id: Optional[int] = Field(
+    goal_id: int | None = Field(None, description="Parent goal ID")
+    project_id: int | None = Field(None, description="Parent project ID")
+    parent_id: int | None = Field(
         None, gt=0, description="Parent task ID for hierarchical organization"
     )
-    tag_ids: Optional[List[int]] = Field(
+    tag_ids: list[int] | None = Field(
         default_factory=list, description="List of tag IDs to associate"
     )
 
@@ -382,8 +380,8 @@ class TaskCreate(TaskBase):
 
 class Task(TaskBase):
     id: int = Field(..., description="Unique task ID")
-    goal_id: Optional[int] = Field(None, description="Associated goal ID")
-    project_id: Optional[int] = Field(None, description="Associated project ID")
+    goal_id: int | None = Field(None, description="Associated goal ID")
+    project_id: int | None = Field(None, description="Associated project ID")
     user_id: str = Field(..., description="Owner user ID")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
@@ -396,16 +394,16 @@ class LifeAreaBase(BaseModel):
     name: constr(min_length=1, max_length=100, strip_whitespace=True) = Field(
         ..., description="Name of the life area (1-100 characters)"
     )
-    weight: Optional[int] = Field(
+    weight: int | None = Field(
         10, ge=0, le=100, description="Importance weight as percentage (0-100)"
     )
-    icon: Optional[constr(max_length=50, strip_whitespace=True)] = Field(
+    icon: constr(max_length=50, strip_whitespace=True) | None = Field(
         None, description="UI icon identifier (max 50 characters)"
     )
-    color: Optional[constr(max_length=50, strip_whitespace=True)] = Field(
+    color: constr(max_length=50, strip_whitespace=True) | None = Field(
         None, description="UI color preference (hex or color name, max 50 characters)"
     )
-    description: Optional[constr(max_length=500, strip_whitespace=True)] = Field(
+    description: constr(max_length=500, strip_whitespace=True) | None = Field(
         None, description="Description of this life area (max 500 characters)"
     )
 
@@ -436,15 +434,15 @@ class LifeAreaCreate(LifeAreaBase):
 class LifeAreaUpdate(BaseModel):
     """Schema for updating a LifeArea (all fields optional)"""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         None, description="Name of the life area", min_length=1, max_length=100
     )
-    weight: Optional[int] = Field(
+    weight: int | None = Field(
         None, description="Importance weight as percentage (0-100)", ge=0, le=100
     )
-    icon: Optional[str] = Field(None, description="UI icon identifier", max_length=50)
-    color: Optional[str] = Field(None, description="UI color preference", max_length=50)
-    description: Optional[str] = Field(
+    icon: str | None = Field(None, description="UI icon identifier", max_length=50)
+    color: str | None = Field(None, description="UI color preference", max_length=50)
+    description: str | None = Field(
         None, description="Description of this life area", max_length=500
     )
 
@@ -481,13 +479,13 @@ class JournalEntryBase(BaseModel):
 class JournalEntryCreate(JournalEntryBase):
     """Schema for creating a new Journal Entry"""
 
-    project_id: Optional[int] = Field(
+    project_id: int | None = Field(
         None, gt=0, description="Associated project ID (positive integer)"
     )
-    goal_id: Optional[int] = Field(
+    goal_id: int | None = Field(
         None, gt=0, description="Associated goal ID (positive integer)"
     )
-    task_id: Optional[int] = Field(
+    task_id: int | None = Field(
         None, gt=0, description="Associated task ID (positive integer)"
     )
 
@@ -495,7 +493,7 @@ class JournalEntryCreate(JournalEntryBase):
 class JournalEntryUpdate(BaseModel):
     """Schema for updating a Journal Entry"""
 
-    content: Optional[constr(min_length=1, max_length=10000, strip_whitespace=True)] = (
+    content: constr(min_length=1, max_length=10000, strip_whitespace=True) | None = (
         Field(
             None,
             description="Updated content of the journal entry (1-10000 characters)",
@@ -514,9 +512,9 @@ class JournalEntryUpdate(BaseModel):
 class JournalEntry(JournalEntryBase):
     id: int = Field(..., description="Unique journal entry ID")
     user_id: str = Field(..., description="Owner user ID")
-    project_id: Optional[int] = Field(None, description="Associated project ID")
-    goal_id: Optional[int] = Field(None, description="Associated goal ID")
-    task_id: Optional[int] = Field(None, description="Associated task ID")
+    project_id: int | None = Field(None, description="Associated project ID")
+    goal_id: int | None = Field(None, description="Associated goal ID")
+    task_id: int | None = Field(None, description="Associated task ID")
     version: int = Field(..., description="Version for sync")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
@@ -550,10 +548,10 @@ class RecurrenceRule(BaseModel):
     )
 
     # Optional advanced settings
-    days_of_week: Optional[List[int]] = Field(
+    days_of_week: list[int] | None = Field(
         None, description="Specific days of week (0=Monday, 6=Sunday)"
     )
-    days_of_month: Optional[List[int]] = Field(
+    days_of_month: list[int] | None = Field(
         None, description="Specific days of month (1-31)"
     )
 
@@ -578,31 +576,31 @@ class HabitBase(BaseModel):
     title: constr(min_length=1, max_length=200, strip_whitespace=True) = Field(
         ..., description="Title of the habit (1-200 characters)"
     )
-    description: Optional[constr(max_length=1000, strip_whitespace=True)] = Field(
+    description: constr(max_length=1000, strip_whitespace=True) | None = Field(
         None, description="Description of the habit (max 1000 characters)"
     )
     recurrence_rule: RecurrenceRule = Field(
         ..., description="Recurrence configuration for the habit"
     )
-    is_active: Optional[bool] = Field(
+    is_active: bool | None = Field(
         True, description="Whether the habit is currently active"
     )
-    start_date: Optional[datetime] = Field(
+    start_date: datetime | None = Field(
         None, description="When to start tracking this habit (defaults to today)"
     )
-    end_date: Optional[datetime] = Field(
+    end_date: datetime | None = Field(
         None, description="Optional end date for temporary habits"
     )
-    icon: Optional[constr(max_length=50, strip_whitespace=True)] = Field(
+    icon: constr(max_length=50, strip_whitespace=True) | None = Field(
         None, description="UI icon identifier (max 50 characters)"
     )
-    color: Optional[constr(max_length=50, strip_whitespace=True)] = Field(
+    color: constr(max_length=50, strip_whitespace=True) | None = Field(
         None, description="UI color preference (hex or color name, max 50 characters)"
     )
-    goal_id: Optional[int] = Field(
+    goal_id: int | None = Field(
         None, gt=0, description="Associated goal ID (positive integer)"
     )
-    life_area_id: Optional[int] = Field(
+    life_area_id: int | None = Field(
         None, gt=0, description="Associated life area ID (positive integer)"
     )
 
@@ -670,28 +668,28 @@ class HabitCreate(HabitBase):
 class HabitUpdate(BaseModel):
     """Schema for updating a Habit (all fields optional)"""
 
-    title: Optional[str] = Field(
+    title: str | None = Field(
         None, description="Title of the habit", min_length=1, max_length=200
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None, description="Description of the habit", max_length=1000
     )
-    recurrence_rule: Optional[RecurrenceRule] = Field(
+    recurrence_rule: RecurrenceRule | None = Field(
         None, description="Recurrence configuration for the habit"
     )
-    is_active: Optional[bool] = Field(
+    is_active: bool | None = Field(
         None, description="Whether the habit is currently active"
     )
-    start_date: Optional[datetime] = Field(
+    start_date: datetime | None = Field(
         None, description="When to start tracking this habit"
     )
-    end_date: Optional[datetime] = Field(
+    end_date: datetime | None = Field(
         None, description="Optional end date for temporary habits"
     )
-    icon: Optional[str] = Field(None, description="UI icon identifier", max_length=50)
-    color: Optional[str] = Field(None, description="UI color preference", max_length=50)
-    goal_id: Optional[int] = Field(None, description="Associated goal ID")
-    life_area_id: Optional[int] = Field(None, description="Associated life area ID")
+    icon: str | None = Field(None, description="UI icon identifier", max_length=50)
+    color: str | None = Field(None, description="UI color preference", max_length=50)
+    goal_id: int | None = Field(None, description="Associated goal ID")
+    life_area_id: int | None = Field(None, description="Associated life area ID")
 
 
 class Habit(HabitBase):
@@ -711,16 +709,16 @@ class Habit(HabitBase):
 
 ## HabitCompletion Schemas
 class HabitCompletionBase(BaseModel):
-    completion_date: Optional[datetime] = Field(
+    completion_date: datetime | None = Field(
         None, description="Date when habit was completed (defaults to today)"
     )
-    notes: Optional[constr(max_length=500, strip_whitespace=True)] = Field(
+    notes: constr(max_length=500, strip_whitespace=True) | None = Field(
         None, description="Optional notes about the completion (max 500 characters)"
     )
-    duration_minutes: Optional[int] = Field(
+    duration_minutes: int | None = Field(
         None, ge=1, le=1440, description="Duration in minutes (1-1440, max 24 hours)"
     )
-    intensity_rating: Optional[int] = Field(
+    intensity_rating: int | None = Field(
         None, ge=1, le=10, description="Intensity rating 1-10"
     )
 
@@ -742,13 +740,13 @@ class HabitCompletionCreate(HabitCompletionBase):
 class HabitCompletionUpdate(BaseModel):
     """Schema for updating a habit completion"""
 
-    notes: Optional[str] = Field(
+    notes: str | None = Field(
         None, description="Optional notes about the completion", max_length=500
     )
-    duration_minutes: Optional[int] = Field(
+    duration_minutes: int | None = Field(
         None, ge=1, le=1440, description="Duration in minutes"
     )
-    intensity_rating: Optional[int] = Field(
+    intensity_rating: int | None = Field(
         None, ge=1, le=10, description="Intensity rating 1-10"
     )
 
@@ -776,7 +774,7 @@ class HabitProgress(BaseModel):
         ..., ge=0.0, le=1.0, description="Completion rate (0.0-1.0)"
     )
     is_completed: bool = Field(..., description="Whether target was met")
-    completions: List[HabitCompletion] = Field(
+    completions: list[HabitCompletion] = Field(
         default_factory=list, description="Individual completions"
     )
 
@@ -784,10 +782,10 @@ class HabitProgress(BaseModel):
 class HabitOut(Habit):
     """Enhanced habit output schema with progress information"""
 
-    current_period_progress: Optional[HabitProgress] = Field(
+    current_period_progress: HabitProgress | None = Field(
         None, description="Progress for current period"
     )
-    recent_completions: List[HabitCompletion] = Field(
+    recent_completions: list[HabitCompletion] = Field(
         default_factory=list, description="Recent completions"
     )
     goal: Optional["Goal"] = Field(None, description="Associated goal details")
@@ -817,25 +815,25 @@ class MediaAttachmentBase(BaseModel):
         description="File category: image, video, audio, document",
         alias="file_type",
     )
-    title: Optional[constr(max_length=200, strip_whitespace=True)] = Field(
+    title: constr(max_length=200, strip_whitespace=True) | None = Field(
         None, description="User-defined title for the attachment (max 200 characters)"
     )
-    description: Optional[constr(max_length=1000, strip_whitespace=True)] = Field(
+    description: constr(max_length=1000, strip_whitespace=True) | None = Field(
         None, description="User description for storytelling (max 1000 characters)"
     )
-    duration: Optional[int] = Field(
+    duration: int | None = Field(
         None,
         ge=0,
         le=86400,  # 24 hours max
         description="Duration in seconds for video/audio (max 24 hours)",
     )
-    width: Optional[int] = Field(
+    width: int | None = Field(
         None,
         ge=1,
         le=8192,  # 8K resolution max
         description="Width in pixels for images/videos (1-8192px)",
     )
-    height: Optional[int] = Field(
+    height: int | None = Field(
         None,
         ge=1,
         le=8192,  # 8K resolution max
@@ -888,39 +886,39 @@ class MediaAttachmentBase(BaseModel):
 class MediaAttachmentCreate(MediaAttachmentBase):
     """Schema for creating a new MediaAttachment"""
 
-    goal_id: Optional[int] = Field(None, description="ID of associated goal")
-    project_id: Optional[int] = Field(None, description="ID of associated project")
-    task_id: Optional[int] = Field(None, description="ID of associated task")
+    goal_id: int | None = Field(None, description="ID of associated goal")
+    project_id: int | None = Field(None, description="ID of associated project")
+    task_id: int | None = Field(None, description="ID of associated task")
 
 
 class MediaAttachmentUpdate(BaseModel):
     """Schema for updating a MediaAttachment (metadata only)"""
 
-    title: Optional[str] = Field(
+    title: str | None = Field(
         None, description="User-defined title for the attachment", max_length=200
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None, description="User description for storytelling", max_length=1000
     )
-    goal_id: Optional[int] = Field(None, description="ID of associated goal")
-    project_id: Optional[int] = Field(None, description="ID of associated project")
-    task_id: Optional[int] = Field(None, description="ID of associated task")
+    goal_id: int | None = Field(None, description="ID of associated goal")
+    project_id: int | None = Field(None, description="ID of associated project")
+    task_id: int | None = Field(None, description="ID of associated task")
 
 
 class MediaAttachment(MediaAttachmentBase):
     id: int = Field(..., description="Unique media attachment ID")
     user_id: str = Field(..., description="Owner user ID")
-    goal_id: Optional[int] = Field(None, description="Associated goal ID")
-    project_id: Optional[int] = Field(None, description="Associated project ID")
-    task_id: Optional[int] = Field(None, description="Associated task ID")
+    goal_id: int | None = Field(None, description="Associated goal ID")
+    project_id: int | None = Field(None, description="Associated project ID")
+    task_id: int | None = Field(None, description="Associated task ID")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
     # Additional fields for API backward compatibility
-    mime_type: Optional[str] = Field(
+    mime_type: str | None = Field(
         None, description="MIME type (alias for content_type)"
     )
-    file_type: Optional[str] = Field(
+    file_type: str | None = Field(
         None, description="File type category (alias for media_type)"
     )
 
@@ -941,49 +939,49 @@ class MemoryItem(BaseModel):
 ## UserPreferences Schemas
 class UserPreferencesBase(BaseModel):
     # Tone and communication preferences
-    tone: Optional[Literal["friendly", "coach", "minimal", "professional"]] = Field(
+    tone: Literal["friendly", "coach", "minimal", "professional"] | None = Field(
         "friendly", description="Communication tone preference"
     )
 
     # Notification preferences
-    notification_time: Optional[time] = Field(
+    notification_time: time | None = Field(
         None, description="Preferred time for daily notifications (HH:MM)"
     )
-    notifications_enabled: Optional[bool] = Field(
+    notifications_enabled: bool | None = Field(
         True, description="Enable/disable notifications"
     )
-    email_notifications: Optional[bool] = Field(
+    email_notifications: bool | None = Field(
         False, description="Enable/disable email notifications"
     )
 
     # Content and visualization preferences
-    prefers_video: Optional[bool] = Field(True, description="Prefers video content")
-    prefers_audio: Optional[bool] = Field(False, description="Prefers audio content")
-    default_view: Optional[Literal["list", "card", "timeline"]] = Field(
+    prefers_video: bool | None = Field(True, description="Prefers video content")
+    prefers_audio: bool | None = Field(False, description="Prefers audio content")
+    default_view: Literal["list", "card", "timeline"] | None = Field(
         "card", description="Default view mode"
     )
 
     # Feature preferences
-    mood_tracking_enabled: Optional[bool] = Field(
+    mood_tracking_enabled: bool | None = Field(
         False, description="Enable mood tracking feature"
     )
-    progress_charts_enabled: Optional[bool] = Field(
+    progress_charts_enabled: bool | None = Field(
         True, description="Enable progress charts"
     )
-    ai_suggestions_enabled: Optional[bool] = Field(
+    ai_suggestions_enabled: bool | None = Field(
         True, description="Enable AI suggestions"
     )
 
     # Default associations
-    default_life_area_id: Optional[int] = Field(
+    default_life_area_id: int | None = Field(
         None, description="Default life area ID for new goals/tasks"
     )
 
     # Privacy and data preferences
-    data_sharing_enabled: Optional[bool] = Field(
+    data_sharing_enabled: bool | None = Field(
         False, description="Allow data sharing for improvements"
     )
-    analytics_enabled: Optional[bool] = Field(
+    analytics_enabled: bool | None = Field(
         True, description="Enable analytics tracking"
     )
 
@@ -1028,9 +1026,9 @@ class LifeAreaOut(LifeArea):
 class ProjectOut(Project):
     """Enhanced project output schema with nested relationships"""
 
-    goals: List["Goal"] = Field(default_factory=list, description="Associated goals")
-    tasks: List["Task"] = Field(default_factory=list, description="Associated tasks")
-    media: List["MediaAttachmentOut"] = Field(
+    goals: list["Goal"] = Field(default_factory=list, description="Associated goals")
+    tasks: list["Task"] = Field(default_factory=list, description="Associated tasks")
+    media: list["MediaAttachmentOut"] = Field(
         default_factory=list, description="Associated media attachments"
     )
     life_area: Optional["LifeAreaOut"] = Field(
@@ -1038,11 +1036,11 @@ class ProjectOut(Project):
     )
 
     # Hierarchy fields (without circular references)
-    parent_id: Optional[int] = Field(None, description="Parent project ID")
-    hierarchy_level: Optional[int] = Field(
+    parent_id: int | None = Field(None, description="Parent project ID")
+    hierarchy_level: int | None = Field(
         None, ge=0, description="Hierarchy level (0 = root)"
     )
-    children_count: Optional[int] = Field(
+    children_count: int | None = Field(
         None, ge=0, description="Number of direct children"
     )
 
@@ -1050,7 +1048,7 @@ class ProjectOut(Project):
 class TaskOut(Task):
     """Enhanced task output schema with nested relationships"""
 
-    media: List["MediaAttachmentOut"] = Field(
+    media: list["MediaAttachmentOut"] = Field(
         default_factory=list, description="Associated media attachments"
     )
     life_area: Optional["LifeAreaOut"] = Field(
@@ -1061,11 +1059,11 @@ class TaskOut(Task):
     )
 
     # Hierarchy fields (without circular references)
-    parent_id: Optional[int] = Field(None, description="Parent task ID")
-    hierarchy_level: Optional[int] = Field(
+    parent_id: int | None = Field(None, description="Parent task ID")
+    hierarchy_level: int | None = Field(
         None, ge=0, description="Hierarchy level (0 = root)"
     )
-    children_count: Optional[int] = Field(
+    children_count: int | None = Field(
         None, ge=0, description="Number of direct children"
     )
 
@@ -1073,8 +1071,8 @@ class TaskOut(Task):
 class GoalOut(Goal):
     """Enhanced goal output schema with nested relationships"""
 
-    tasks: List["TaskOut"] = Field(default_factory=list, description="Associated tasks")
-    media: List["MediaAttachmentOut"] = Field(
+    tasks: list["TaskOut"] = Field(default_factory=list, description="Associated tasks")
+    media: list["MediaAttachmentOut"] = Field(
         default_factory=list, description="Associated media attachments"
     )
     life_area: Optional["LifeAreaOut"] = Field(
@@ -1085,11 +1083,11 @@ class GoalOut(Goal):
     )
 
     # Hierarchy fields (without circular references)
-    parent_id: Optional[int] = Field(None, description="Parent goal ID")
-    hierarchy_level: Optional[int] = Field(
+    parent_id: int | None = Field(None, description="Parent goal ID")
+    hierarchy_level: int | None = Field(
         None, ge=0, description="Hierarchy level (0 = root)"
     )
-    children_count: Optional[int] = Field(
+    children_count: int | None = Field(
         None, ge=0, description="Number of direct children"
     )
 
@@ -1108,8 +1106,8 @@ class UserPreferencesHistoryItem(BaseModel):
 
     id: str = Field(..., description="Unique history entry ID")
     preference_name: str = Field(..., description="Name of the preference that changed")
-    old_value: Optional[str] = Field(None, description="Previous value (as string)")
-    new_value: Optional[str] = Field(None, description="New value (as string)")
+    old_value: str | None = Field(None, description="Previous value (as string)")
+    new_value: str | None = Field(None, description="New value (as string)")
     changed_at: datetime = Field(..., description="When the change occurred")
 
     class Config:
@@ -1121,16 +1119,16 @@ class UserPreferencesChangeSummary(BaseModel):
 
     total_changes: int = Field(..., description="Total number of preference changes")
     days_analyzed: int = Field(..., description="Number of days analyzed")
-    preferences_changed: List[str] = Field(
+    preferences_changed: list[str] = Field(
         ..., description="List of preference names that were changed"
     )
-    change_counts: Dict[str, int] = Field(
+    change_counts: dict[str, int] = Field(
         ..., description="Count of changes per preference"
     )
-    most_changed_preference: Optional[Dict[str, Any]] = Field(
+    most_changed_preference: dict[str, Any] | None = Field(
         None, description="Most frequently changed preference"
     )
-    latest_change: Optional[Dict[str, Any]] = Field(
+    latest_change: dict[str, Any] | None = Field(
         None, description="Details of the most recent change"
     )
 
@@ -1141,7 +1139,7 @@ class UserOut(User):
     preferences: Optional["UserPreferencesOut"] = Field(
         None, description="User preferences"
     )
-    created_at: Optional[datetime] = Field(
+    created_at: datetime | None = Field(
         None, description="Account creation timestamp"
     )
 
@@ -1156,10 +1154,10 @@ class FeedbackLogBase(BaseModel):
         ...,
         description="Type of context (task, goal, plan, suggestion, ui_interaction, etc.)",
     )
-    context_id: Optional[constr(max_length=100, strip_whitespace=True)] = Field(
+    context_id: constr(max_length=100, strip_whitespace=True) | None = Field(
         None, description="ID of the related entity (goal_id, task_id, etc.)"
     )
-    context_data: Optional[Dict[str, Any]] = Field(
+    context_data: dict[str, Any] | None = Field(
         None, description="Additional context data (query, response, etc.)"
     )
 
@@ -1167,32 +1165,32 @@ class FeedbackLogBase(BaseModel):
     feedback_type: Literal["positive", "negative", "neutral"] = Field(
         ..., description="Type of feedback"
     )
-    feedback_value: Optional[float] = Field(
+    feedback_value: float | None = Field(
         None, ge=-1.0, le=1.0, description="Numeric feedback score (-1.0 to 1.0)"
     )
-    comment: Optional[constr(max_length=1000, strip_whitespace=True)] = Field(
+    comment: constr(max_length=1000, strip_whitespace=True) | None = Field(
         None, description="Optional user comment (max 1000 characters)"
     )
 
     # ML/RLHF specific fields
-    action_taken: Optional[Dict[str, Any]] = Field(
+    action_taken: dict[str, Any] | None = Field(
         None, description="What action was taken (for RL)"
     )
-    reward_signal: Optional[float] = Field(
+    reward_signal: float | None = Field(
         None, ge=-10.0, le=10.0, description="Computed reward signal (-10.0 to 10.0)"
     )
-    model_version: Optional[constr(max_length=50, strip_whitespace=True)] = Field(
+    model_version: constr(max_length=50, strip_whitespace=True) | None = Field(
         None, description="Version of model that generated the response"
     )
 
     # Metadata
-    session_id: Optional[constr(max_length=100, strip_whitespace=True)] = Field(
+    session_id: constr(max_length=100, strip_whitespace=True) | None = Field(
         None, description="Session identifier for grouping related feedback"
     )
-    device_info: Optional[Dict[str, Any]] = Field(
+    device_info: dict[str, Any] | None = Field(
         None, description="Device/platform information"
     )
-    feature_flags: Optional[Dict[str, Any]] = Field(
+    feature_flags: dict[str, Any] | None = Field(
         None, description="Active feature flags during interaction"
     )
 
@@ -1224,10 +1222,10 @@ class FeedbackLogCreate(FeedbackLogBase):
 class FeedbackLogUpdate(BaseModel):
     """Schema for updating feedback logs - limited fields"""
 
-    comment: Optional[str] = Field(
+    comment: str | None = Field(
         None, max_length=1000, description="Updated user comment"
     )
-    processed_at: Optional[datetime] = Field(
+    processed_at: datetime | None = Field(
         None, description="When feedback was processed for training"
     )
 
@@ -1236,7 +1234,7 @@ class FeedbackLog(FeedbackLogBase):
     id: str = Field(..., description="Unique feedback log ID")
     user_id: str = Field(..., description="Owner user ID")
     created_at: datetime = Field(..., description="Creation timestamp")
-    processed_at: Optional[datetime] = Field(
+    processed_at: datetime | None = Field(
         None, description="When feedback was processed for training"
     )
 
@@ -1251,11 +1249,11 @@ class FeedbackLogSummary(BaseModel):
     positive_count: int = Field(..., description="Number of positive feedback entries")
     negative_count: int = Field(..., description="Number of negative feedback entries")
     neutral_count: int = Field(..., description="Number of neutral feedback entries")
-    average_score: Optional[float] = Field(None, description="Average feedback score")
-    context_breakdown: Dict[str, int] = Field(
+    average_score: float | None = Field(None, description="Average feedback score")
+    context_breakdown: dict[str, int] = Field(
         ..., description="Breakdown by context type"
     )
-    recent_feedback: List[FeedbackLog] = Field(
+    recent_feedback: list[FeedbackLog] = Field(
         ..., description="Most recent feedback entries"
     )
 
@@ -1265,7 +1263,7 @@ class TagBase(BaseModel):
     name: constr(min_length=1, max_length=50, strip_whitespace=True) = Field(
         ..., description="Name of the tag (1-50 characters)"
     )
-    color: Optional[constr(max_length=7, strip_whitespace=True)] = Field(
+    color: constr(max_length=7, strip_whitespace=True) | None = Field(
         None, description="Hex color code for UI (e.g., '#FF5722')"
     )
 
@@ -1298,10 +1296,10 @@ class TagCreate(TagBase):
 class TagUpdate(BaseModel):
     """Schema for updating a Tag (all fields optional)"""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         None, description="Name of the tag", min_length=1, max_length=50
     )
-    color: Optional[str] = Field(
+    color: str | None = Field(
         None, description="Hex color code for UI", max_length=7
     )
 
@@ -1341,7 +1339,7 @@ class Tag(TagBase):
 class TagOut(Tag):
     """Enhanced tag output schema"""
 
-    usage_count: Optional[int] = Field(
+    usage_count: int | None = Field(
         None, description="Number of entities using this tag"
     )
 
@@ -1349,93 +1347,91 @@ class TagOut(Tag):
 ## StorySession Schemas
 class StorySessionBase(BaseModel):
     # Content information
-    title: Optional[str] = Field(
+    title: str | None = Field(
         None, max_length=200, description="User-defined title for the story session"
     )
-    generated_text: Optional[str] = Field(
+    generated_text: str | None = Field(
         None, description="AI-generated narrative text"
     )
-    video_url: Optional[str] = Field(None, description="URL to generated video")
-    audio_url: Optional[str] = Field(
+    video_url: str | None = Field(None, description="URL to generated video")
+    audio_url: str | None = Field(
         None, description="URL to generated audio/narration"
     )
-    thumbnail_url: Optional[str] = Field(None, description="URL to video thumbnail")
+    thumbnail_url: str | None = Field(None, description="URL to video thumbnail")
 
     # Generation parameters
-    summary_period: Optional[str] = Field(
+    summary_period: str | None = Field(
         None, description="Period type: weekly, monthly, project-based, custom"
     )
-    period_start: Optional[datetime] = Field(
+    period_start: datetime | None = Field(
         None, description="Start of the period being summarized"
     )
-    period_end: Optional[datetime] = Field(
+    period_end: datetime | None = Field(
         None, description="End of the period being summarized"
     )
-    content_type: Optional[Literal["summary", "story", "reflection", "achievement"]] = (
+    content_type: Literal["summary", "story", "reflection", "achievement"] | None = (
         Field("summary", description="Type of content generated")
     )
 
     # Social media and distribution
-    posted_to: Optional[List[str]] = Field(
+    posted_to: list[str] | None = Field(
         default_factory=list, description="Platforms where content was posted"
     )
-    posting_status: Optional[Literal["draft", "scheduled", "posted", "failed"]] = Field(
+    posting_status: Literal["draft", "scheduled", "posted", "failed"] | None = Field(
         "draft", description="Current posting status"
     )
-    scheduled_post_time: Optional[datetime] = Field(
+    scheduled_post_time: datetime | None = Field(
         None, description="When content is scheduled to be posted"
     )
 
     # Generation metadata
-    generation_prompt: Optional[str] = Field(
+    generation_prompt: str | None = Field(
         None, description="The prompt used for generation"
     )
-    model_version: Optional[str] = Field(None, description="AI model version used")
-    generation_params: Optional[Dict[str, Any]] = Field(
+    model_version: str | None = Field(None, description="AI model version used")
+    generation_params: dict[str, Any] | None = Field(
         None, description="Parameters used for generation"
     )
-    word_count: Optional[int] = Field(
+    word_count: int | None = Field(
         None, ge=0, description="Word count of generated text"
     )
-    estimated_read_time: Optional[int] = Field(
+    estimated_read_time: int | None = Field(
         None, ge=0, description="Estimated reading time in seconds"
     )
 
     # Related content
-    source_goals: Optional[List[int]] = Field(
+    source_goals: list[int] | None = Field(
         default_factory=list, description="Goal IDs that contributed to this story"
     )
-    source_tasks: Optional[List[int]] = Field(
+    source_tasks: list[int] | None = Field(
         default_factory=list, description="Task IDs that contributed to this story"
     )
-    source_life_areas: Optional[List[int]] = Field(
+    source_life_areas: list[int] | None = Field(
         default_factory=list, description="Life area IDs featured in this story"
     )
 
     # Engagement and analytics
-    view_count: Optional[int] = Field(0, ge=0, description="Number of times viewed")
-    like_count: Optional[int] = Field(0, ge=0, description="Number of likes")
-    share_count: Optional[int] = Field(0, ge=0, description="Number of shares")
-    engagement_data: Optional[Dict[str, Any]] = Field(
+    view_count: int | None = Field(0, ge=0, description="Number of times viewed")
+    like_count: int | None = Field(0, ge=0, description="Number of likes")
+    share_count: int | None = Field(0, ge=0, description="Number of shares")
+    engagement_data: dict[str, Any] | None = Field(
         None, description="Additional engagement metrics"
     )
 
     # Quality and user feedback
-    user_rating: Optional[float] = Field(
+    user_rating: float | None = Field(
         None, ge=1.0, le=5.0, description="User rating 1-5 stars"
     )
-    user_notes: Optional[str] = Field(
+    user_notes: str | None = Field(
         None, max_length=1000, description="User notes about the story"
     )
-    regeneration_count: Optional[int] = Field(
+    regeneration_count: int | None = Field(
         0, ge=0, description="How many times this was regenerated"
     )
 
     # Processing status
-    processing_status: Optional[
-        Literal["pending", "generating", "completed", "failed"]
-    ] = Field("pending", description="Current processing status")
-    error_message: Optional[str] = Field(
+    processing_status: Literal["pending", "generating", "completed", "failed"] | None = Field("pending", description="Current processing status")
+    error_message: str | None = Field(
         None, description="Error message if generation failed"
     )
 
@@ -1449,85 +1445,83 @@ class StorySessionCreate(StorySessionBase):
 class StorySessionUpdate(BaseModel):
     """Schema for updating story sessions - all fields optional"""
 
-    title: Optional[str] = Field(
+    title: str | None = Field(
         None, max_length=200, description="User-defined title for the story session"
     )
-    generated_text: Optional[str] = Field(
+    generated_text: str | None = Field(
         None, description="AI-generated narrative text"
     )
-    video_url: Optional[str] = Field(None, description="URL to generated video")
-    audio_url: Optional[str] = Field(
+    video_url: str | None = Field(None, description="URL to generated video")
+    audio_url: str | None = Field(
         None, description="URL to generated audio/narration"
     )
-    thumbnail_url: Optional[str] = Field(None, description="URL to video thumbnail")
-    summary_period: Optional[str] = Field(
+    thumbnail_url: str | None = Field(None, description="URL to video thumbnail")
+    summary_period: str | None = Field(
         None, description="Period type: weekly, monthly, project-based, custom"
     )
-    period_start: Optional[datetime] = Field(
+    period_start: datetime | None = Field(
         None, description="Start of the period being summarized"
     )
-    period_end: Optional[datetime] = Field(
+    period_end: datetime | None = Field(
         None, description="End of the period being summarized"
     )
-    content_type: Optional[Literal["summary", "story", "reflection", "achievement"]] = (
+    content_type: Literal["summary", "story", "reflection", "achievement"] | None = (
         Field(None, description="Type of content generated")
     )
-    posted_to: Optional[List[str]] = Field(
+    posted_to: list[str] | None = Field(
         None, description="Platforms where content was posted"
     )
-    posting_status: Optional[Literal["draft", "scheduled", "posted", "failed"]] = Field(
+    posting_status: Literal["draft", "scheduled", "posted", "failed"] | None = Field(
         None, description="Current posting status"
     )
-    scheduled_post_time: Optional[datetime] = Field(
+    scheduled_post_time: datetime | None = Field(
         None, description="When content is scheduled to be posted"
     )
-    generation_prompt: Optional[str] = Field(
+    generation_prompt: str | None = Field(
         None, description="The prompt used for generation"
     )
-    model_version: Optional[str] = Field(None, description="AI model version used")
-    generation_params: Optional[Dict[str, Any]] = Field(
+    model_version: str | None = Field(None, description="AI model version used")
+    generation_params: dict[str, Any] | None = Field(
         None, description="Parameters used for generation"
     )
-    word_count: Optional[int] = Field(
+    word_count: int | None = Field(
         None, ge=0, description="Word count of generated text"
     )
-    estimated_read_time: Optional[int] = Field(
+    estimated_read_time: int | None = Field(
         None, ge=0, description="Estimated reading time in seconds"
     )
-    source_goals: Optional[List[int]] = Field(
+    source_goals: list[int] | None = Field(
         None, description="Goal IDs that contributed to this story"
     )
-    source_tasks: Optional[List[int]] = Field(
+    source_tasks: list[int] | None = Field(
         None, description="Task IDs that contributed to this story"
     )
-    source_life_areas: Optional[List[int]] = Field(
+    source_life_areas: list[int] | None = Field(
         None, description="Life area IDs featured in this story"
     )
-    view_count: Optional[int] = Field(None, ge=0, description="Number of times viewed")
-    like_count: Optional[int] = Field(None, ge=0, description="Number of likes")
-    share_count: Optional[int] = Field(None, ge=0, description="Number of shares")
-    engagement_data: Optional[Dict[str, Any]] = Field(
+    view_count: int | None = Field(None, ge=0, description="Number of times viewed")
+    like_count: int | None = Field(None, ge=0, description="Number of likes")
+    share_count: int | None = Field(None, ge=0, description="Number of shares")
+    engagement_data: dict[str, Any] | None = Field(
         None, description="Additional engagement metrics"
     )
-    user_rating: Optional[float] = Field(
+    user_rating: float | None = Field(
         None, ge=1.0, le=5.0, description="User rating 1-5 stars"
     )
-    user_notes: Optional[str] = Field(
+    user_notes: str | None = Field(
         None, max_length=1000, description="User notes about the story"
     )
-    regeneration_count: Optional[int] = Field(
+    regeneration_count: int | None = Field(
         None, ge=0, description="How many times this was regenerated"
     )
-    processing_status: Optional[
-        Literal["pending", "generating", "completed", "failed"]
-    ] = Field(None, description="Current processing status")
-    error_message: Optional[str] = Field(
+    processing_status: Literal["pending", "generating", "completed", "failed"] | None = Field(None, description="Current processing status")
+    error_message: str | None = Field(
         None, description="Error message if generation failed"
     )
-    generated_at: Optional[datetime] = Field(
+    generated_at: datetime | None = Field(
         None, description="When generation was completed"
     )
-    posted_at: Optional[datetime] = Field(
+    posted_at: datetime | None = Field(
         None, description="When content was actually posted"
     )
 
@@ -1537,10 +1531,10 @@ class StorySession(StorySessionBase):
     user_id: str = Field(..., description="Owner user ID")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
-    generated_at: Optional[datetime] = Field(
+    generated_at: datetime | None = Field(
         None, description="When generation was completed"
     )
-    posted_at: Optional[datetime] = Field(
+    posted_at: datetime | None = Field(
         None, description="When content was actually posted"
     )
 
@@ -1552,18 +1546,18 @@ class StorySessionSummary(BaseModel):
     """Summary statistics for story sessions"""
 
     total_sessions: int = Field(..., description="Total number of story sessions")
-    by_content_type: Dict[str, int] = Field(
+    by_content_type: dict[str, int] = Field(
         ..., description="Breakdown by content type"
     )
-    by_posting_status: Dict[str, int] = Field(
+    by_posting_status: dict[str, int] = Field(
         ..., description="Breakdown by posting status"
     )
-    by_processing_status: Dict[str, int] = Field(
+    by_processing_status: dict[str, int] = Field(
         ..., description="Breakdown by processing status"
     )
     total_word_count: int = Field(..., description="Total words generated")
-    average_rating: Optional[float] = Field(None, description="Average user rating")
-    recent_sessions: List[StorySession] = Field(
+    average_rating: float | None = Field(None, description="Average user rating")
+    recent_sessions: list[StorySession] = Field(
         ..., description="Most recent story sessions"
     )
 
@@ -1571,30 +1565,30 @@ class StorySessionSummary(BaseModel):
 class GenerationRequest(BaseModel):
     """Schema for requesting story generation"""
 
-    title: Optional[str] = Field(
+    title: str | None = Field(
         None, max_length=200, description="Title for the story session"
     )
     summary_period: str = Field(
         ..., description="Period type: weekly, monthly, project-based, custom"
     )
-    period_start: Optional[datetime] = Field(
+    period_start: datetime | None = Field(
         None, description="Start of the period to summarize"
     )
-    period_end: Optional[datetime] = Field(
+    period_end: datetime | None = Field(
         None, description="End of the period to summarize"
     )
     content_type: Literal["summary", "story", "reflection", "achievement"] = Field(
         "summary", description="Type of content to generate"
     )
-    generation_prompt: Optional[str] = Field(
+    generation_prompt: str | None = Field(
         None, description="Custom prompt for generation"
     )
     include_goals: bool = Field(True, description="Include goals in the generation")
     include_tasks: bool = Field(True, description="Include tasks in the generation")
-    include_life_areas: Optional[List[int]] = Field(
+    include_life_areas: list[int] | None = Field(
         None, description="Specific life areas to focus on"
     )
-    generation_params: Optional[Dict[str, Any]] = Field(
+    generation_params: dict[str, Any] | None = Field(
         None, description="Custom generation parameters"
     )
 
@@ -1602,13 +1596,13 @@ class GenerationRequest(BaseModel):
 class PublishRequest(BaseModel):
     """Schema for publishing story content"""
 
-    platforms: List[str] = Field(
+    platforms: list[str] = Field(
         ..., min_items=1, description="Platforms to publish to"
     )
-    scheduled_time: Optional[datetime] = Field(
+    scheduled_time: datetime | None = Field(
         None, description="When to schedule the post"
     )
-    custom_message: Optional[str] = Field(
+    custom_message: str | None = Field(
         None, max_length=500, description="Custom message for the post"
     )
 
@@ -1621,12 +1615,12 @@ class HierarchyTreeNode(BaseModel):
     title: str = Field(..., description="Entity title")
     entity_type: Literal["goal", "project"] = Field(..., description="Type of entity")
     level: int = Field(..., ge=0, description="Hierarchy level (0 = root)")
-    parent_id: Optional[int] = Field(None, description="Parent entity ID")
-    children: List["HierarchyTreeNode"] = Field(
+    parent_id: int | None = Field(None, description="Parent entity ID")
+    children: list["HierarchyTreeNode"] = Field(
         default_factory=list, description="Child entities"
     )
-    status: Optional[str] = Field(None, description="Current status")
-    progress: Optional[float] = Field(
+    status: str | None = Field(None, description="Current status")
+    progress: float | None = Field(
         None, ge=0.0, le=100.0, description="Progress percentage"
     )
     created_at: datetime = Field(..., description="Creation timestamp")
@@ -1638,7 +1632,7 @@ class HierarchyTreeNode(BaseModel):
 class HierarchyMoveRequest(BaseModel):
     """Schema for moving entities in hierarchy"""
 
-    parent_id: Optional[int] = Field(
+    parent_id: int | None = Field(
         None, description="New parent ID (null for root level)"
     )
 
@@ -1664,10 +1658,10 @@ class HierarchyStats(BaseModel):
     total_items: int = Field(..., ge=0, description="Total items in hierarchy")
     max_depth: int = Field(..., ge=0, description="Maximum depth level")
     root_items: int = Field(..., ge=0, description="Number of root level items")
-    avg_children_per_parent: Optional[float] = Field(
+    avg_children_per_parent: float | None = Field(
         None, ge=0.0, description="Average children per parent"
     )
-    completion_rate_by_level: Dict[int, float] = Field(
+    completion_rate_by_level: dict[int, float] = Field(
         default_factory=dict, description="Completion rate by hierarchy level"
     )
 

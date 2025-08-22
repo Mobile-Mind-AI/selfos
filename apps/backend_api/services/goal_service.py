@@ -7,7 +7,6 @@ including CRUD operations, progress calculations, and goal-related workflows.
 
 import logging
 from datetime import datetime
-from typing import List, Optional
 
 import models
 import schemas
@@ -22,7 +21,7 @@ class GoalService:
 
     def get_goal(
         self, db: Session, user_id: str, goal_id: int
-    ) -> Optional[models.Goal]:
+    ) -> models.Goal | None:
         """
         Retrieve a single goal by ID for a specific user.
 
@@ -56,7 +55,7 @@ class GoalService:
             logger.error(f"Database error retrieving goal {goal_id}: {e}")
             raise
 
-    def list_goals(self, db: Session, user_id: str) -> List[models.Goal]:
+    def list_goals(self, db: Session, user_id: str) -> list[models.Goal]:
         """
         Retrieve all goals for a specific user.
 
@@ -138,7 +137,7 @@ class GoalService:
 
     def update_goal(
         self, db: Session, user_id: str, goal_id: int, goal_data: schemas.GoalCreate
-    ) -> Optional[models.Goal]:
+    ) -> models.Goal | None:
         """
         Update an existing goal.
 
@@ -256,7 +255,7 @@ class GoalService:
 
     def get_goals_by_life_area(
         self, db: Session, user_id: str, life_area_id: int
-    ) -> List[models.Goal]:
+    ) -> list[models.Goal]:
         """
         Retrieve all goals for a specific life area.
 
@@ -295,7 +294,7 @@ class GoalService:
 
     def get_goals_by_status(
         self, db: Session, user_id: str, status: str
-    ) -> List[models.Goal]:
+    ) -> list[models.Goal]:
         """
         Retrieve all goals with a specific status.
 
@@ -355,7 +354,7 @@ class GoalService:
 
     def get_goal_children(
         self, db: Session, user_id: str, parent_id: int
-    ) -> List[models.Goal]:
+    ) -> list[models.Goal]:
         """
         Get direct children of a goal.
 
@@ -393,7 +392,7 @@ class GoalService:
 
     def get_goal_descendants(
         self, db: Session, user_id: str, goal_id: int
-    ) -> List[models.Goal]:
+    ) -> list[models.Goal]:
         """
         Get all descendants (children, grandchildren, etc.) of a goal.
 
@@ -418,7 +417,7 @@ class GoalService:
 
     def get_goal_path(
         self, db: Session, user_id: str, goal_id: int
-    ) -> List[schemas.HierarchyPathItem]:
+    ) -> list[schemas.HierarchyPathItem]:
         """
         Get the full path from root to the specified goal.
 
@@ -459,7 +458,7 @@ class GoalService:
 
         return path
 
-    def get_root_goals(self, db: Session, user_id: str) -> List[models.Goal]:
+    def get_root_goals(self, db: Session, user_id: str) -> list[models.Goal]:
         """
         Get all root-level goals (goals without parents).
 
@@ -491,8 +490,8 @@ class GoalService:
             raise
 
     def move_goal(
-        self, db: Session, user_id: str, goal_id: int, new_parent_id: Optional[int]
-    ) -> Optional[models.Goal]:
+        self, db: Session, user_id: str, goal_id: int, new_parent_id: int | None
+    ) -> models.Goal | None:
         """
         Move a goal to a new parent in the hierarchy.
 
@@ -545,7 +544,7 @@ class GoalService:
 
     def get_goal_tree(
         self, db: Session, user_id: str
-    ) -> List[schemas.HierarchyTreeNode]:
+    ) -> list[schemas.HierarchyTreeNode]:
         """
         Get complete hierarchical tree of goals for a user.
 

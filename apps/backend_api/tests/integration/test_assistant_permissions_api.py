@@ -5,8 +5,6 @@ Tests the full API flow including authentication, permission checking,
 and CRUD operations for the assistant sharing system.
 """
 
-import json
-from datetime import datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient

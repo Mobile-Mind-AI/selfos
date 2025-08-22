@@ -13,7 +13,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from auth import MCPAuthProvider
-from security import ClientPermissions, MCPPermissions, PermissionLevel
+from security import MCPPermissions, PermissionLevel
 
 
 class TestMCPPermissions:

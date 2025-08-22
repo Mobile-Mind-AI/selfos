@@ -5,9 +5,7 @@ This module provides centralized configuration management using Pydantic BaseSet
 which automatically loads values from environment variables with type validation.
 """
 
-import os
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
 
 from pydantic import Field, PostgresDsn, validator
 from pydantic_settings import BaseSettings
@@ -70,12 +68,12 @@ class SecuritySettings(BaseSettings):
     )  # 24 hours
 
     # Firebase settings
-    firebase_credentials_path: Optional[str] = Field(
+    firebase_credentials_path: str | None = Field(
         default=None,
         env="GOOGLE_APPLICATION_CREDENTIALS",
         description="Path to Firebase service account JSON file",
     )
-    firebase_project_id: Optional[str] = Field(default=None, env="FIREBASE_PROJECT_ID")
+    firebase_project_id: str | None = Field(default=None, env="FIREBASE_PROJECT_ID")
 
     # Rate limiting
     rate_limit_requests_per_minute: int = Field(
@@ -85,7 +83,7 @@ class SecuritySettings(BaseSettings):
     rate_limit_burst_limit: int = Field(default=50, env="RATE_LIMIT_BURST")
 
     # CORS settings
-    cors_origins: List[str] = Field(
+    cors_origins: list[str] = Field(
         default=["*"], env="CORS_ORIGINS", description="Allowed CORS origins"
     )
     cors_allow_credentials: bool = Field(default=True, env="CORS_ALLOW_CREDENTIALS")
@@ -105,13 +103,13 @@ class AISettings(BaseSettings):
     """AI providers and services configuration."""
 
     # OpenAI settings
-    openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
+    openai_api_key: str | None = Field(default=None, env="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-3.5-turbo", env="OPENAI_MODEL")
     openai_max_tokens: int = Field(default=1000, env="OPENAI_MAX_TOKENS")
     openai_temperature: float = Field(default=0.7, env="OPENAI_TEMPERATURE")
 
     # Anthropic settings
-    anthropic_api_key: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
+    anthropic_api_key: str | None = Field(default=None, env="ANTHROPIC_API_KEY")
     anthropic_model: str = Field(
         default="claude-3-sonnet-20240229", env="ANTHROPIC_MODEL"
     )
@@ -126,8 +124,8 @@ class AISettings(BaseSettings):
     vector_db_provider: str = Field(
         default="local", env="VECTOR_DB_PROVIDER"
     )  # local, pinecone, weaviate
-    pinecone_api_key: Optional[str] = Field(default=None, env="PINECONE_API_KEY")
-    pinecone_environment: Optional[str] = Field(
+    pinecone_api_key: str | None = Field(default=None, env="PINECONE_API_KEY")
+    pinecone_environment: str | None = Field(
         default=None, env="PINECONE_ENVIRONMENT"
     )
 
@@ -150,8 +148,8 @@ class EmailSettings(BaseSettings):
     # SMTP settings
     smtp_host: str = Field(default="localhost", env="SMTP_HOST")
     smtp_port: int = Field(default=587, env="SMTP_PORT")
-    smtp_username: Optional[str] = Field(default=None, env="SMTP_USERNAME")
-    smtp_password: Optional[str] = Field(default=None, env="SMTP_PASSWORD")
+    smtp_username: str | None = Field(default=None, env="SMTP_USERNAME")
+    smtp_password: str | None = Field(default=None, env="SMTP_PASSWORD")
     smtp_use_tls: bool = Field(default=True, env="SMTP_USE_TLS")
     smtp_use_ssl: bool = Field(default=False, env="SMTP_USE_SSL")
 
@@ -213,13 +211,13 @@ class AppSettings(BaseSettings):
 
     # API settings
     api_prefix: str = Field(default="/api", env="API_PREFIX")
-    docs_url: Optional[str] = Field(default="/docs", env="DOCS_URL")
-    redoc_url: Optional[str] = Field(default="/redoc", env="REDOC_URL")
-    openapi_url: Optional[str] = Field(default="/openapi.json", env="OPENAPI_URL")
+    docs_url: str | None = Field(default="/docs", env="DOCS_URL")
+    redoc_url: str | None = Field(default="/redoc", env="REDOC_URL")
+    openapi_url: str | None = Field(default="/openapi.json", env="OPENAPI_URL")
 
     # File upload settings
     max_file_size: int = Field(default=10485760, env="MAX_FILE_SIZE")  # 10MB
-    allowed_file_types: List[str] = Field(
+    allowed_file_types: list[str] = Field(
         default=["image/jpeg", "image/png", "image/gif", "video/mp4", "audio/mpeg"],
         env="ALLOWED_FILE_TYPES",
     )
@@ -282,11 +280,11 @@ class Settings(BaseSettings):
         """Get the Redis URL as a string."""
         return self.redis.url
 
-    def get_cors_origins(self) -> List[str]:
+    def get_cors_origins(self) -> list[str]:
         """Get CORS origins list."""
         return self.security.cors_origins
 
-    def get_rate_limit_config(self) -> Dict[str, int]:
+    def get_rate_limit_config(self) -> dict[str, int]:
         """Get rate limiting configuration."""
         return {
             "requests_per_minute": self.security.rate_limit_requests_per_minute,
@@ -300,7 +298,7 @@ class Settings(BaseSettings):
         extra = "ignore"
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """
     Get application settings with caching.

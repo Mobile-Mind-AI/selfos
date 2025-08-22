@@ -11,7 +11,7 @@ import os
 # Import database dependencies from backend_api
 import sys
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # Add the backend_api path to sys.path
 backend_api_path = os.path.abspath(
@@ -20,7 +20,6 @@ backend_api_path = os.path.abspath(
 if backend_api_path not in sys.path:
     sys.path.insert(0, backend_api_path)
 
-from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +32,12 @@ class BaseToolsHandler(ABC):
         self.tool_prefix = ""
 
     @abstractmethod
-    async def list_tools(self) -> List[Dict]:
+    async def list_tools(self) -> list[dict]:
         """Return list of tools provided by this handler."""
         pass
 
     @abstractmethod
-    async def call_tool(self, name: str, arguments: Dict[str, Any]) -> Dict:
+    async def call_tool(self, name: str, arguments: dict[str, Any]) -> dict:
         """Execute a tool with given arguments."""
         pass
 
@@ -63,25 +62,25 @@ class BaseToolsHandler(ABC):
             logger.error(f"User validation error: {e}")
             return False
 
-    def handle_error(self, error: Exception, operation: str) -> Dict:
+    def handle_error(self, error: Exception, operation: str) -> dict:
         """Handle errors consistently across all tools."""
         logger.error(f"Error in {operation}: {error}")
         return {"error": str(error), "operation": operation, "success": False}
 
-    def format_success_response(self, data: Any, operation: str) -> Dict:
+    def format_success_response(self, data: Any, operation: str) -> dict:
         """Format successful response consistently."""
         return {"success": True, "operation": operation, "data": data}
 
     def validate_required_args(
-        self, arguments: Dict, required_args: List[str]
-    ) -> Optional[str]:
+        self, arguments: dict, required_args: list[str]
+    ) -> str | None:
         """Validate that required arguments are present."""
         missing_args = [arg for arg in required_args if arg not in arguments]
         if missing_args:
             return f"Missing required arguments: {', '.join(missing_args)}"
         return None
 
-    def sanitize_arguments(self, arguments: Dict) -> Dict:
+    def sanitize_arguments(self, arguments: dict) -> dict:
         """Sanitize arguments to prevent injection attacks."""
         # Basic sanitization - remove potentially dangerous characters
         sanitized = {}

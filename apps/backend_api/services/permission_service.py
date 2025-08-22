@@ -4,7 +4,6 @@ Permission Service for Assistant Sharing System
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
 
 from fastapi import HTTPException
 from models.onboarding import AssistantPermission, AssistantProfile
@@ -94,7 +93,7 @@ class PermissionService:
     @classmethod
     async def get_user_assistants(
         cls, user_id: str, db: Session
-    ) -> List[AssistantProfile]:
+    ) -> list[AssistantProfile]:
         """
         Get all assistants user has access to.
 
@@ -159,7 +158,7 @@ class PermissionService:
         permission_level: PermissionLevel,
         granted_by: str,
         db: Session,
-        expires_at: Optional[datetime] = None,
+        expires_at: datetime | None = None,
     ) -> None:
         """
         Share assistant with another user.
@@ -271,7 +270,7 @@ class PermissionService:
     @classmethod
     async def get_user_permission_level(
         cls, user_id: str, assistant_id: str, db: Session
-    ) -> Optional[PermissionLevel]:
+    ) -> PermissionLevel | None:
         """
         Get user's permission level for an assistant.
 
@@ -318,7 +317,7 @@ class PermissionService:
     @classmethod
     async def get_assistant_permissions(
         cls, assistant_id: str, db: Session
-    ) -> List[dict]:
+    ) -> list[dict]:
         """
         Get all permissions for an assistant.
 

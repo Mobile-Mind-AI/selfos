@@ -7,7 +7,7 @@ import time
 import traceback
 import uuid
 from collections import defaultdict, deque
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi import HTTPException, Request, Response
 from fastapi.responses import JSONResponse
@@ -241,7 +241,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
 
 def create_custom_http_exception(
-    status_code: int, message: str, details: Optional[Dict[str, Any]] = None
+    status_code: int, message: str, details: dict[str, Any] | None = None
 ) -> HTTPException:
     """
     Create a custom HTTP exception with structured error response.
@@ -308,9 +308,9 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         self.burst_limit = burst_limit
 
         # Storage for request tracking
-        self.minute_windows: Dict[str, deque] = defaultdict(deque)
-        self.hour_windows: Dict[str, deque] = defaultdict(deque)
-        self.burst_windows: Dict[str, deque] = defaultdict(deque)
+        self.minute_windows: dict[str, deque] = defaultdict(deque)
+        self.hour_windows: dict[str, deque] = defaultdict(deque)
+        self.burst_windows: dict[str, deque] = defaultdict(deque)
 
         # Cleanup tracking
         self.last_cleanup = time.time()
@@ -368,7 +368,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
 
     def _check_rate_limits(
         self, client_ip: str, current_time: float
-    ) -> Optional[JSONResponse]:
+    ) -> JSONResponse | None:
         """Check if client has exceeded rate limits."""
 
         # Check burst limit (50 requests in 10 seconds)

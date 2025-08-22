@@ -8,7 +8,7 @@ progress tracking, and timeline features.
 from datetime import datetime, timedelta
 
 import pytest
-from models import Goal, LifeArea, MediaAttachment, Project, Task, User
+from models import Goal, LifeArea, Project, Task, User
 
 
 @pytest.fixture

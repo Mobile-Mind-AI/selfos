@@ -8,7 +8,6 @@ This script provides utilities for database maintenance, archival, and optimizat
 import argparse
 import logging
 import sys
-from datetime import datetime
 
 # Setup logging
 logging.basicConfig(
@@ -59,7 +58,7 @@ def cmd_stats(args):
 
         # Story Sessions
         story = stats["story_sessions"]
-        print(f"\nSTORY SESSIONS:")
+        print("\nSTORY SESSIONS:")
         print(f"  Active Records:     {story['active_records']:,}")
         print(f"  Archivable Records: {story['archivable_records']:,}")
         print(f"  Archived Records:   {story['archived_records']:,}")
@@ -68,7 +67,7 @@ def cmd_stats(args):
 
         # Feedback Logs
         feedback = stats["feedback_logs"]
-        print(f"\nFEEDBACK LOGS:")
+        print("\nFEEDBACK LOGS:")
         print(f"  Active Records:     {feedback['active_records']:,}")
         print(f"  Archivable Records: {feedback['archivable_records']:,}")
         print(f"  Archived Records:   {feedback['archived_records']:,}")
@@ -76,7 +75,7 @@ def cmd_stats(args):
         print(f"  Needs Archival:     {'YES' if feedback['needs_archival'] else 'NO'}")
 
         # Totals
-        print(f"\nTOTALS:")
+        print("\nTOTALS:")
         print(f"  Total Active:       {stats['total_active_records']:,}")
         print(f"  Total Archivable:   {stats['total_archivable_records']:,}")
         print(f"  Total Archived:     {stats['total_archived_records']:,}")
@@ -87,7 +86,7 @@ def cmd_stats(args):
             )
             print("   Run 'python manage_db.py archive --dry-run' to see details")
         else:
-            print(f"\n✅ No records need archival at this time")
+            print("\n✅ No records need archival at this time")
 
     finally:
         db.close()
@@ -126,7 +125,7 @@ def cmd_archive(args):
 
             if not args.dry_run:
                 summary = results["summary"]
-                print(f"\nSUMMARY:")
+                print("\nSUMMARY:")
                 print(f"  Total Archived: {summary['total_records_archived']:,}")
                 print(f"  Successful:     {summary['successful_operations']}")
                 print(f"  Failed:         {summary['failed_operations']}")

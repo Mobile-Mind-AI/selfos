@@ -1,6 +1,5 @@
 """Life Areas API endpoints."""
 
-from typing import List, Optional
 
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -15,7 +14,7 @@ from sqlalchemy.orm import Session
 router = APIRouter(tags=["life_areas"])
 
 
-@router.get("/life-areas", response_model=List[LifeAreaOut])
+@router.get("/life-areas", response_model=list[LifeAreaOut])
 def get_life_areas(
     include_system: bool = True,
     current_user: dict = Depends(get_current_user),

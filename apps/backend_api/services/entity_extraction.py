@@ -3,10 +3,9 @@ Entity extraction service for automatic detection and extraction
 of entities from text using NLP techniques.
 """
 
-import json
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from models import (
     Entity,
@@ -65,9 +64,9 @@ class EntityExtractor:
     def extract_entities_from_text(
         self,
         text: str,
-        context_type: Optional[str] = None,
-        context_id: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+        context_type: str | None = None,
+        context_id: int | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Extract entities from text using pattern matching and NLP.
 
@@ -110,7 +109,7 @@ class EntityExtractor:
 
         return processed_entities
 
-    def _extract_people(self, text: str) -> List[Dict[str, Any]]:
+    def _extract_people(self, text: str) -> list[dict[str, Any]]:
         """Extract person names from text."""
         entities = []
 
@@ -139,7 +138,7 @@ class EntityExtractor:
 
         return entities
 
-    def _extract_places(self, text: str) -> List[Dict[str, Any]]:
+    def _extract_places(self, text: str) -> list[dict[str, Any]]:
         """Extract place names from text."""
         entities = []
 
@@ -181,7 +180,7 @@ class EntityExtractor:
 
         return entities
 
-    def _extract_organizations(self, text: str) -> List[Dict[str, Any]]:
+    def _extract_organizations(self, text: str) -> list[dict[str, Any]]:
         """Extract organization names from text."""
         entities = []
 
@@ -229,7 +228,7 @@ class EntityExtractor:
 
         return entities
 
-    def _extract_dates(self, text: str) -> List[Dict[str, Any]]:
+    def _extract_dates(self, text: str) -> list[dict[str, Any]]:
         """Extract dates and time references from text."""
         entities = []
 
@@ -251,7 +250,7 @@ class EntityExtractor:
 
         return entities
 
-    def _extract_urls(self, text: str) -> List[Dict[str, Any]]:
+    def _extract_urls(self, text: str) -> list[dict[str, Any]]:
         """Extract URLs from text."""
         entities = []
         url_pattern = r'https?://[^\s<>"{}|\\^`\[\]]+'
@@ -263,7 +262,7 @@ class EntityExtractor:
 
         return entities
 
-    def _extract_emails(self, text: str) -> List[Dict[str, Any]]:
+    def _extract_emails(self, text: str) -> list[dict[str, Any]]:
         """Extract email addresses from text."""
         entities = []
         email_pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
@@ -275,7 +274,7 @@ class EntityExtractor:
 
         return entities
 
-    def _extract_phone_numbers(self, text: str) -> List[Dict[str, Any]]:
+    def _extract_phone_numbers(self, text: str) -> list[dict[str, Any]]:
         """Extract phone numbers from text."""
         entities = []
 
@@ -294,7 +293,7 @@ class EntityExtractor:
 
         return entities
 
-    def _extract_hashtags(self, text: str) -> List[Dict[str, Any]]:
+    def _extract_hashtags(self, text: str) -> list[dict[str, Any]]:
         """Extract hashtags from text."""
         entities = []
         hashtag_pattern = r"#\w+"
@@ -306,7 +305,7 @@ class EntityExtractor:
 
         return entities
 
-    def _extract_mentions(self, text: str) -> List[Dict[str, Any]]:
+    def _extract_mentions(self, text: str) -> list[dict[str, Any]]:
         """Extract @mentions from text."""
         entities = []
         mention_pattern = r"@\w+"
@@ -345,10 +344,10 @@ class EntityExtractor:
 
     def _process_entity(
         self,
-        entity_data: Dict[str, Any],
-        context_type: Optional[str] = None,
-        context_id: Optional[int] = None,
-    ) -> Optional[Dict[str, Any]]:
+        entity_data: dict[str, Any],
+        context_type: str | None = None,
+        context_id: int | None = None,
+    ) -> dict[str, Any] | None:
         """
         Process extracted entity and store/update in database.
 
@@ -465,8 +464,8 @@ class EntityExtractor:
         self.db.commit()
 
     def extract_relationships_from_text(
-        self, text: str, entities: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, text: str, entities: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """
         Extract relationships between entities from text.
 
@@ -529,7 +528,7 @@ class EntityExtractor:
 
         return relationships
 
-    def _create_relationship(self, rel_data: Dict[str, Any]):
+    def _create_relationship(self, rel_data: dict[str, Any]):
         """Create or update relationship in database."""
         existing = (
             self.db.query(EntityRelationship)
@@ -654,7 +653,7 @@ class EntityExtractor:
             offset += batch_size
 
 
-def extract_entities_from_goal(goal: Goal, db: Session) -> List[Dict[str, Any]]:
+def extract_entities_from_goal(goal: Goal, db: Session) -> list[dict[str, Any]]:
     """Helper function to extract entities from a goal."""
     extractor = EntityExtractor(db, goal.user_id)
 
@@ -676,15 +675,15 @@ def extract_entities_from_goal(goal: Goal, db: Session) -> List[Dict[str, Any]]:
 class EntityExtractionService:
     """Service wrapper for entity extraction functionality."""
 
-    def extract_from_goal(self, goal: Goal, db: Session) -> List[Dict[str, Any]]:
+    def extract_from_goal(self, goal: Goal, db: Session) -> list[dict[str, Any]]:
         return extract_entities_from_goal(goal, db)
 
     def extract_from_project(
         self, project: Project, db: Session
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         return extract_entities_from_project(project, db)
 
-    def extract_from_task(self, task: Task, db: Session) -> List[Dict[str, Any]]:
+    def extract_from_task(self, task: Task, db: Session) -> list[dict[str, Any]]:
         return extract_entities_from_task(task, db)
 
     def create_extractor(self, db: Session, user_id: str) -> EntityExtractor:
@@ -697,7 +696,7 @@ entity_extraction_service = EntityExtractionService()
 
 def extract_entities_from_project(
     project: Project, db: Session
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Helper function to extract entities from a project."""
     extractor = EntityExtractor(db, project.user_id)
 
@@ -715,7 +714,7 @@ def extract_entities_from_project(
     return entities
 
 
-def extract_entities_from_task(task: Task, db: Session) -> List[Dict[str, Any]]:
+def extract_entities_from_task(task: Task, db: Session) -> list[dict[str, Any]]:
     """Helper function to extract entities from a task."""
     extractor = EntityExtractor(db, task.user_id)
 

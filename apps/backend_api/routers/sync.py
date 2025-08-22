@@ -9,8 +9,8 @@ This module implements efficient batch synchronization endpoints that:
 """
 
 from collections import defaultdict
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Optional
+from datetime import datetime
+from typing import Any, Literal
 
 import sqlalchemy as sa
 from dependencies import get_current_user, get_db
@@ -18,9 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from models.content import MediaAttachment
 from models.goals import Goal, LifeArea, Project, Task
 from models.onboarding import AssistantProfile, OnboardingState, PersonalProfile
-from models.user import User
 from pydantic import BaseModel, Field
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/sync", tags=["sync"])
@@ -36,9 +34,9 @@ class SyncOperation(BaseModel):
     operation: Literal["create", "update", "delete"] = Field(
         ..., description="Operation type"
     )
-    data: Dict[str, Any] = Field(..., description="Object data for the operation")
+    data: dict[str, Any] = Field(..., description="Object data for the operation")
     version: int = Field(..., description="Client version of the object")
-    if_match_version: Optional[int] = Field(
+    if_match_version: int | None = Field(
         None, description="Server version to match for conflict detection"
     )
 
@@ -46,7 +44,7 @@ class SyncOperation(BaseModel):
 class BatchSyncRequest(BaseModel):
     """Batch sync request containing multiple operations."""
 
-    operations: List[SyncOperation] = Field(..., description="List of sync operations")
+    operations: list[SyncOperation] = Field(..., description="List of sync operations")
     client_id: str = Field(..., description="Client identifier for tracking")
 
 
@@ -55,15 +53,15 @@ class SyncResult(BaseModel):
 
     object_id: str
     status: Literal["success", "conflict", "error"]
-    new_version: Optional[int] = None
-    server_data: Optional[Dict[str, Any]] = None
-    error_message: Optional[str] = None
+    new_version: int | None = None
+    server_data: dict[str, Any] | None = None
+    error_message: str | None = None
 
 
 class DeltaSyncResponse(BaseModel):
     """Response for delta sync requests."""
 
-    changes: List[Dict[str, Any]]
+    changes: list[dict[str, Any]]
     current_timestamp: int
     has_more: bool
 
@@ -71,7 +69,7 @@ class DeltaSyncResponse(BaseModel):
 class ConflictError(Exception):
     """Exception raised when a sync conflict is detected."""
 
-    def __init__(self, server_version: int, server_data: Dict[str, Any]):
+    def __init__(self, server_version: int, server_data: dict[str, Any]):
         self.server_version = server_version
         self.server_data = server_data
         super().__init__(f"Conflict detected - server version {server_version}")
@@ -101,7 +99,7 @@ def get_model_class(object_type: str):
     return MODEL_REGISTRY[object_type]
 
 
-@router.post("/batch", response_model=List[SyncResult])
+@router.post("/batch", response_model=list[SyncResult])
 async def sync_batch(
     request: BatchSyncRequest,
     current_user: dict = Depends(get_current_user),
@@ -165,7 +163,7 @@ async def sync_batch(
 
         # Commit the entire batch
         db.commit()
-        print(f"✅ SYNC: Batch committed successfully")
+        print("✅ SYNC: Batch committed successfully")
 
     except Exception as e:
         print(f"❌ SYNC: Batch transaction failed: {e}")
@@ -391,7 +389,7 @@ async def process_sync_operation(
 @router.get("/delta/{since_timestamp}", response_model=DeltaSyncResponse)
 async def get_delta_sync(
     since_timestamp: int,
-    object_types: Optional[str] = None,  # Comma-separated list
+    object_types: str | None = None,  # Comma-separated list
     limit: int = 100,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -504,7 +502,7 @@ async def get_sync_status(
     }
 
 
-def _obj_to_dict(obj) -> Dict[str, Any]:
+def _obj_to_dict(obj) -> dict[str, Any]:
     """Convert SQLAlchemy object to dictionary."""
     result = {}
     for column in obj.__table__.columns:
@@ -518,7 +516,7 @@ def _obj_to_dict(obj) -> Dict[str, Any]:
 @router.post("/resolve-conflict/{object_id}")
 async def resolve_conflict(
     object_id: str,
-    resolution_data: Dict[str, Any],
+    resolution_data: dict[str, Any],
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

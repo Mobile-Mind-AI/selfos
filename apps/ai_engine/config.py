@@ -7,7 +7,7 @@ Configuration settings for AI models, providers, and processing parameters.
 import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class AIProvider(Enum):
@@ -35,7 +35,7 @@ class ModelConfig:
     max_tokens: int
     temperature: float
     timeout: int = 30
-    cost_per_token: Optional[float] = None
+    cost_per_token: float | None = None
 
 
 class AIConfig:
@@ -130,7 +130,7 @@ class AIConfig:
         except ValueError:
             return AIProvider.OPENAI
 
-    def _load_api_keys(self) -> Dict[AIProvider, str]:
+    def _load_api_keys(self) -> dict[AIProvider, str]:
         """Load API keys from environment variables."""
         return {
             AIProvider.OPENAI: os.getenv("OPENAI_API_KEY", ""),
@@ -138,7 +138,7 @@ class AIConfig:
             AIProvider.LOCAL: "",  # No key needed for local models
         }
 
-    def _load_settings(self) -> Dict[str, Any]:
+    def _load_settings(self) -> dict[str, Any]:
         """Load additional settings from environment."""
         return {
             "enable_caching": os.getenv("AI_ENABLE_CACHING", "true").lower() == "true",
@@ -153,7 +153,7 @@ class AIConfig:
         }
 
     def get_model_config(
-        self, use_case: str, provider: Optional[AIProvider] = None
+        self, use_case: str, provider: AIProvider | None = None
     ) -> ModelConfig:
         """Get model configuration for a specific use case."""
         if provider is None:
@@ -190,7 +190,7 @@ class AIConfig:
         ]
 
     def estimate_cost(
-        self, use_case: str, token_count: int, provider: Optional[AIProvider] = None
+        self, use_case: str, token_count: int, provider: AIProvider | None = None
     ) -> float:
         """Estimate the cost for a specific request."""
         config = self.get_model_config(use_case, provider)

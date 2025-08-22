@@ -5,7 +5,7 @@ Tests the complete flow of using assistant personalities in conversations.
 
 import os
 import sys
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient

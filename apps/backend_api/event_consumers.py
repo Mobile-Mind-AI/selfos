@@ -7,7 +7,7 @@ and trigger appropriate services for AI-oriented data processing.
 
 import asyncio
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from dependencies import get_db
 from event_bus import EventType, publish, subscribe
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 @subscribe(EventType.TASK_COMPLETED)
-async def handle_task_completed(payload: Dict[str, Any]):
+async def handle_task_completed(payload: dict[str, Any]):
     """
     Handle task completion events by triggering all relevant services.
 
@@ -114,7 +114,7 @@ async def handle_task_completed(payload: Dict[str, Any]):
 
 
 @subscribe(EventType.GOAL_COMPLETED)
-async def handle_goal_completed(payload: Dict[str, Any]):
+async def handle_goal_completed(payload: dict[str, Any]):
     """
     Handle goal completion events.
 
@@ -148,7 +148,7 @@ async def handle_goal_completed(payload: Dict[str, Any]):
         logger.error(f"Failed to process goal completion event: {e}")
 
 
-async def _store_task_memory(task_data: Dict[str, Any]) -> Dict[str, Any]:
+async def _store_task_memory(task_data: dict[str, Any]) -> dict[str, Any]:
     """
     Store task completion in enhanced memory service.
 
@@ -233,7 +233,7 @@ async def _safe_service_call(service_name: str, service_coroutine):
 
 
 async def _handle_goal_completion(
-    db: Session, goal_id: int, user_id: str, progress_result: Dict[str, Any]
+    db: Session, goal_id: int, user_id: str, progress_result: dict[str, Any]
 ):
     """
     Handle goal completion by publishing a goal completion event.

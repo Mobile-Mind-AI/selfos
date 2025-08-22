@@ -5,7 +5,7 @@ MCP tools for managing tasks in the SelfOS system.
 Provides CRUD operations and dependency management for tasks.
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from mcp.types import Tool
 from tools.base_tools import BaseToolsHandler
@@ -18,7 +18,7 @@ class TasksToolsHandler(BaseToolsHandler):
         super().__init__()
         self.tool_prefix = "tasks_"
 
-    async def list_tools(self) -> List[Tool]:
+    async def list_tools(self) -> list[Tool]:
         """Return list of task-related tools."""
         return [
             Tool(
@@ -59,7 +59,7 @@ class TasksToolsHandler(BaseToolsHandler):
             ),
         ]
 
-    async def call_tool(self, name: str, arguments: Dict[str, Any]) -> Dict:
+    async def call_tool(self, name: str, arguments: dict[str, Any]) -> dict:
         """Execute a task-related tool."""
         # Placeholder implementation
         return {"message": f"Task tool {name} not yet implemented", "success": False}

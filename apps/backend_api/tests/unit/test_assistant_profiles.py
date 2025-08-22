@@ -2,10 +2,8 @@
 Unit tests for Assistant Profiles API endpoints and functionality.
 """
 
-import json
 import os
 import sys
-from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient

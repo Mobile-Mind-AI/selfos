@@ -1,14 +1,12 @@
-import asyncio
 import os
 import sys
-from typing import Any, Dict, Generator
 
 import httpx
 import pytest
-from fastapi import Depends, Request
+from fastapi import Request
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 # Add AI paths first (before backend_api) so AI models take precedence
@@ -26,37 +24,14 @@ backend_api_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if backend_api_dir not in sys.path:
     sys.path.append(backend_api_dir)  # Append so it comes after AI paths
 
-from dependencies import get_current_user, get_db, oauth2_scheme
+from dependencies import get_current_user, get_db
 from main import app
 
 # Import after path modification (AI models should take precedence for AI functionality)
 # Import all models to ensure tables are created in test database
 from models import (
-    AssistantProfile,
     Base,
-    ConversationLog,
-    ConversationSession,
-    Entity,
-    EntityRelationship,
-    EntityType,
-    FeedbackLog,
-    Goal,
-    GoalEntity,
-    Habit,
-    HabitCompletion,
-    IntentFeedback,
-    JournalEntry,
-    LifeArea,
-    MediaAttachment,
-    MemoryItem,
-    Project,
-    ProjectEntity,
-    StorySession,
-    Tag,
-    Task,
-    TaskEntity,
     User,
-    UserPreferences,
 )
 
 
@@ -121,7 +96,7 @@ def isolated_test_setup():
         }
 
     # Clear all existing overrides and set test ones
-    print(f"\n🔧 Setting test overrides in isolated_test_setup")
+    print("\n🔧 Setting test overrides in isolated_test_setup")
     app.dependency_overrides.clear()
     app.dependency_overrides[get_db] = override_get_db
     print(f"🔧 DB override set: {override_get_db}")
@@ -134,7 +109,7 @@ def isolated_test_setup():
         app.dependency_overrides[get_current_user] = override_get_current_user
         print(f"🔧 Auth override set: {override_get_current_user}")
     else:
-        print(f"🔧 Skipping auth override for auth test")
+        print("🔧 Skipping auth override for auth test")
 
     yield {
         "engine": engine,
@@ -232,7 +207,7 @@ def test_user_token(client, test_user) -> str:
 
 
 @pytest.fixture(scope="function")
-def get_test_user_headers(test_user_token) -> Dict[str, str]:
+def get_test_user_headers(test_user_token) -> dict[str, str]:
     """Get authentication headers for test requests."""
     # Since we're mocking authentication, headers don't matter
     # The actual user is provided by override_get_current_user

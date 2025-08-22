@@ -102,20 +102,20 @@ def run_module_by_module():
 
     # Overall summary
     print(f"\n{'='*80}")
-    print(f"🏁 OVERALL TEST SUMMARY")
+    print("🏁 OVERALL TEST SUMMARY")
     print(f"{'='*80}")
     print(f"Total tests run: {total_tests}")
     print(f"✅ Passed: {total_passed}")
     print(f"❌ Failed: {total_failed}")
 
     if failed_modules:
-        print(f"\n❌ Modules with failures:")
+        print("\n❌ Modules with failures:")
         for module in failed_modules:
             print(f"  • {module}")
-        print(f"\n💡 Note: Some failures may be due to test isolation issues.")
-        print(f"   Try running failing modules individually to verify functionality.")
+        print("\n💡 Note: Some failures may be due to test isolation issues.")
+        print("   Try running failing modules individually to verify functionality.")
     else:
-        print(f"\n🎉 All tests passed!")
+        print("\n🎉 All tests passed!")
 
     print(f"{'='*80}")
 

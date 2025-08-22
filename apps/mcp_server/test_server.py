@@ -26,7 +26,7 @@ async def test_server_initialization():
 
         # Create server
         server = SelfOSMcpServer(config)
-        print(f"✓ Server created successfully")
+        print("✓ Server created successfully")
 
         # Test capabilities
         capabilities = server.get_capabilities()

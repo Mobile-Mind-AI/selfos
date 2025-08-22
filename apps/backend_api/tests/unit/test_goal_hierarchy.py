@@ -6,11 +6,10 @@ tree navigation, cycle prevention, and data integrity.
 """
 
 from datetime import datetime
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
-from models import Goal, LifeArea, User
-from schemas import GoalCreate
+from models import Goal
 from services.goal_service import goal_service
 from sqlalchemy.orm import Session
 

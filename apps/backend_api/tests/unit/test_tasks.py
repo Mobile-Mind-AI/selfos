@@ -1,19 +1,11 @@
 import os
 import sys
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
-
 # Add parent directory to path for imports
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
-from dependencies import get_current_user, get_db
-from main import app
 
 
 def test_create_task(client, db):

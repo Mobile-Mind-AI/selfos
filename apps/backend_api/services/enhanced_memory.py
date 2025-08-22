@@ -7,13 +7,12 @@ semantic search, and AI-powered memory retrieval.
 
 import asyncio
 import hashlib
-import json
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +35,8 @@ class MemoryEntry:
     user_id: str
     content: str
     content_type: str
-    metadata: Dict[str, Any]
-    embedding: Optional[List[float]] = None
+    metadata: dict[str, Any]
+    embedding: list[float] | None = None
     created_at: datetime = None
     relevance_score: float = 0.0
 
@@ -63,7 +62,7 @@ class SearchResult:
 class EmbeddingProvider:
     """Abstract base for embedding providers."""
 
-    async def generate_embedding(self, text: str) -> List[float]:
+    async def generate_embedding(self, text: str) -> list[float]:
         """Generate embedding for text."""
         raise NotImplementedError
 
@@ -91,7 +90,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
                 raise ImportError("OpenAI package not installed")
         return self._client
 
-    async def generate_embedding(self, text: str) -> List[float]:
+    async def generate_embedding(self, text: str) -> list[float]:
         """Generate embedding using OpenAI."""
         client = self._get_client()
 
@@ -125,7 +124,7 @@ class LocalEmbeddingProvider(EmbeddingProvider):
                 raise ImportError("sentence-transformers package not installed")
         return self._model
 
-    async def generate_embedding(self, text: str) -> List[float]:
+    async def generate_embedding(self, text: str) -> list[float]:
         """Generate embedding using local model."""
         model = self._get_model()
 
@@ -147,7 +146,7 @@ class MockEmbeddingProvider(EmbeddingProvider):
     def __init__(self, dimension: int = 384):
         self.dimension = dimension
 
-    async def generate_embedding(self, text: str) -> List[float]:
+    async def generate_embedding(self, text: str) -> list[float]:
         """Generate mock embedding."""
         import hashlib
         import random
@@ -166,25 +165,25 @@ class MockEmbeddingProvider(EmbeddingProvider):
 class VectorStore:
     """Abstract base for vector stores."""
 
-    async def upsert(self, entries: List[MemoryEntry]) -> bool:
+    async def upsert(self, entries: list[MemoryEntry]) -> bool:
         """Insert or update memory entries."""
         raise NotImplementedError
 
     async def search(
         self,
-        query_embedding: List[float],
+        query_embedding: list[float],
         user_id: str,
         limit: int = 10,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[SearchResult]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[SearchResult]:
         """Search for similar entries."""
         raise NotImplementedError
 
-    async def delete(self, entry_ids: List[str], user_id: str) -> bool:
+    async def delete(self, entry_ids: list[str], user_id: str) -> bool:
         """Delete entries."""
         raise NotImplementedError
 
-    async def get_stats(self, user_id: str) -> Dict[str, Any]:
+    async def get_stats(self, user_id: str) -> dict[str, Any]:
         """Get storage statistics."""
         raise NotImplementedError
 
@@ -210,7 +209,7 @@ class PineconeVectorStore(VectorStore):
                 raise ImportError("pinecone-client package not installed")
         return self._index
 
-    async def upsert(self, entries: List[MemoryEntry]) -> bool:
+    async def upsert(self, entries: list[MemoryEntry]) -> bool:
         """Upsert entries to Pinecone."""
         index = self._get_index()
 
@@ -245,11 +244,11 @@ class PineconeVectorStore(VectorStore):
 
     async def search(
         self,
-        query_embedding: List[float],
+        query_embedding: list[float],
         user_id: str,
         limit: int = 10,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[SearchResult]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[SearchResult]:
         """Search Pinecone index."""
         index = self._get_index()
 
@@ -291,7 +290,7 @@ class PineconeVectorStore(VectorStore):
             logger.error(f"Pinecone search error: {e}")
             return []
 
-    async def delete(self, entry_ids: List[str], user_id: str) -> bool:
+    async def delete(self, entry_ids: list[str], user_id: str) -> bool:
         """Delete entries from Pinecone."""
         index = self._get_index()
 
@@ -302,7 +301,7 @@ class PineconeVectorStore(VectorStore):
             logger.error(f"Pinecone delete error: {e}")
             return False
 
-    async def get_stats(self, user_id: str) -> Dict[str, Any]:
+    async def get_stats(self, user_id: str) -> dict[str, Any]:
         """Get Pinecone statistics."""
         index = self._get_index()
 
@@ -322,10 +321,10 @@ class InMemoryVectorStore(VectorStore):
     """In-memory vector store for development and testing."""
 
     def __init__(self):
-        self.entries: Dict[str, MemoryEntry] = {}
+        self.entries: dict[str, MemoryEntry] = {}
         self._lock = asyncio.Lock()
 
-    async def upsert(self, entries: List[MemoryEntry]) -> bool:
+    async def upsert(self, entries: list[MemoryEntry]) -> bool:
         """Store entries in memory."""
         async with self._lock:
             for entry in entries:
@@ -335,11 +334,11 @@ class InMemoryVectorStore(VectorStore):
 
     async def search(
         self,
-        query_embedding: List[float],
+        query_embedding: list[float],
         user_id: str,
         limit: int = 10,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[SearchResult]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[SearchResult]:
         """Search entries using cosine similarity."""
         async with self._lock:
             results = []
@@ -368,7 +367,7 @@ class InMemoryVectorStore(VectorStore):
             results.sort(key=lambda x: x.combined_score, reverse=True)
             return results[:limit]
 
-    def _apply_filters(self, entry: MemoryEntry, filters: Dict[str, Any]) -> bool:
+    def _apply_filters(self, entry: MemoryEntry, filters: dict[str, Any]) -> bool:
         """Apply search filters to entry."""
         for key, value in filters.items():
             if key in entry.metadata:
@@ -379,11 +378,11 @@ class InMemoryVectorStore(VectorStore):
                     return False
         return True
 
-    def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
+    def _cosine_similarity(self, vec1: list[float], vec2: list[float]) -> float:
         """Calculate cosine similarity between vectors."""
         import math
 
-        dot_product = sum(a * b for a, b in zip(vec1, vec2))
+        dot_product = sum(a * b for a, b in zip(vec1, vec2, strict=False))
         magnitude1 = math.sqrt(sum(a * a for a in vec1))
         magnitude2 = math.sqrt(sum(a * a for a in vec2))
 
@@ -392,7 +391,7 @@ class InMemoryVectorStore(VectorStore):
 
         return dot_product / (magnitude1 * magnitude2)
 
-    async def delete(self, entry_ids: List[str], user_id: str) -> bool:
+    async def delete(self, entry_ids: list[str], user_id: str) -> bool:
         """Delete entries from memory."""
         async with self._lock:
             deleted = 0
@@ -407,7 +406,7 @@ class InMemoryVectorStore(VectorStore):
             logger.debug(f"Deleted {deleted} entries from memory")
             return True
 
-    async def get_stats(self, user_id: str) -> Dict[str, Any]:
+    async def get_stats(self, user_id: str) -> dict[str, Any]:
         """Get memory store statistics."""
         async with self._lock:
             user_entries = [e for e in self.entries.values() if e.user_id == user_id]
@@ -430,7 +429,7 @@ class EnhancedMemoryService:
     def __init__(
         self,
         vector_store_type: VectorStoreType = VectorStoreType.MEMORY,
-        embedding_provider: Optional[EmbeddingProvider] = None,
+        embedding_provider: EmbeddingProvider | None = None,
         **kwargs,
     ):
         self.vector_store_type = vector_store_type
@@ -465,7 +464,7 @@ class EnhancedMemoryService:
         else:
             raise ValueError(f"Unsupported vector store type: {self.vector_store_type}")
 
-    def _load_config(self) -> Dict[str, Any]:
+    def _load_config(self) -> dict[str, Any]:
         """Load memory service configuration."""
         return {
             "similarity_threshold": float(
@@ -484,7 +483,7 @@ class EnhancedMemoryService:
         user_id: str,
         content: str,
         content_type: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> str:
         """Store a new memory entry."""
         try:
@@ -524,10 +523,10 @@ class EnhancedMemoryService:
         self,
         user_id: str,
         query: str,
-        content_types: Optional[List[str]] = None,
+        content_types: list[str] | None = None,
         limit: int = 10,
-        min_similarity: Optional[float] = None,
-    ) -> List[SearchResult]:
+        min_similarity: float | None = None,
+    ) -> list[SearchResult]:
         """Search for relevant memories."""
         try:
             # Generate query embedding
@@ -566,10 +565,10 @@ class EnhancedMemoryService:
     async def get_recent_memories(
         self,
         user_id: str,
-        content_types: Optional[List[str]] = None,
+        content_types: list[str] | None = None,
         limit: int = 10,
         days_back: int = 30,
-    ) -> List[MemoryEntry]:
+    ) -> list[MemoryEntry]:
         """Get recent memories for context."""
         # This would be implemented with time-based filtering
         # For now, return empty list as placeholder
@@ -578,8 +577,8 @@ class EnhancedMemoryService:
     async def delete_memories(
         self,
         user_id: str,
-        entry_ids: Optional[List[str]] = None,
-        older_than_days: Optional[int] = None,
+        entry_ids: list[str] | None = None,
+        older_than_days: int | None = None,
     ) -> int:
         """Delete memories by IDs or age."""
         try:
@@ -598,7 +597,7 @@ class EnhancedMemoryService:
             logger.error(f"Failed to delete memories: {e}")
             return 0
 
-    async def get_memory_stats(self, user_id: str) -> Dict[str, Any]:
+    async def get_memory_stats(self, user_id: str) -> dict[str, Any]:
         """Get memory statistics for user."""
         try:
             stats = await self.vector_store.get_stats(user_id)
@@ -640,8 +639,8 @@ class EnhancedMemoryService:
         return content
 
     async def _enhance_context_relevance(
-        self, results: List[SearchResult], query: str
-    ) -> List[SearchResult]:
+        self, results: list[SearchResult], query: str
+    ) -> list[SearchResult]:
         """Enhance results with context relevance scoring."""
         # Simple enhancement - in production would use more sophisticated scoring
         for result in results:
@@ -663,7 +662,7 @@ class EnhancedMemoryService:
         results.sort(key=lambda x: x.combined_score, reverse=True)
         return results
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Check health of memory service."""
         health = {
             "status": "healthy",

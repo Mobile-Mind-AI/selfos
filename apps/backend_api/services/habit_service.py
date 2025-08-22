@@ -1,7 +1,6 @@
 """Service for managing habit tracking and completions."""
 
 from datetime import date, datetime, timedelta
-from typing import List, Optional
 
 import models
 import schemas
@@ -57,8 +56,8 @@ class HabitService:
 
     @staticmethod
     def list_habits(
-        db: Session, user_id: str, is_active: Optional[bool] = None
-    ) -> List[models.Habit]:
+        db: Session, user_id: str, is_active: bool | None = None
+    ) -> list[models.Habit]:
         """List all habits for a user, optionally filtered by active status."""
         query = db.query(models.Habit).filter(models.Habit.user_id == user_id)
 
@@ -68,7 +67,7 @@ class HabitService:
         return query.order_by(desc(models.Habit.created_at)).all()
 
     @staticmethod
-    def get_habit(db: Session, user_id: str, habit_id: int) -> Optional[models.Habit]:
+    def get_habit(db: Session, user_id: str, habit_id: int) -> models.Habit | None:
         """Get a specific habit by ID."""
         return (
             db.query(models.Habit)
@@ -79,7 +78,7 @@ class HabitService:
     @staticmethod
     def update_habit(
         db: Session, user_id: str, habit_id: int, habit_in: schemas.HabitUpdate
-    ) -> Optional[models.Habit]:
+    ) -> models.Habit | None:
         """Update an existing habit."""
         db_habit = HabitService.get_habit(db, user_id, habit_id)
         if not db_habit:
@@ -91,12 +90,8 @@ class HabitService:
         for field, value in update_data.items():
             if field == "recurrence_rule":
                 # Store recurrence rule as JSON
-                setattr(
-                    db_habit, "recurrence_rule", value.model_dump() if value else None
-                )
-                setattr(
-                    db_habit, "frequency_details", value.model_dump() if value else None
-                )
+                db_habit.recurrence_rule = value.model_dump() if value else None
+                db_habit.frequency_details = value.model_dump() if value else None
             elif hasattr(db_habit, field):
                 setattr(db_habit, field, value)
 
@@ -130,7 +125,7 @@ class HabitService:
         user_id: str,
         habit_id: int,
         completion: schemas.HabitCompletionCreate,
-    ) -> Optional[models.HabitCompletion]:
+    ) -> models.HabitCompletion | None:
         """Record a completion of a habit."""
         # Verify habit exists and is active
         db_habit = HabitService.get_habit(db, user_id, habit_id)
@@ -143,7 +138,7 @@ class HabitService:
         # For duplicate checking, we need to check by date only
         from datetime import date as date_type
 
-        from sqlalchemy import Date, cast, func
+        from sqlalchemy import func
 
         # Ensure we have a date object for comparison
         if isinstance(completion_date, datetime):
@@ -212,9 +207,9 @@ class HabitService:
         db: Session,
         user_id: str,
         habit_id: int,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-    ) -> List[models.HabitCompletion]:
+        start_date: date | None = None,
+        end_date: date | None = None,
+    ) -> list[models.HabitCompletion]:
         """Get completions for a habit within a date range."""
         # Verify habit belongs to user
         if not HabitService.get_habit(db, user_id, habit_id):
@@ -238,8 +233,8 @@ class HabitService:
 
     @staticmethod
     def get_habit_progress(
-        db: Session, user_id: str, habit_id: int, target_date: Optional[date] = None
-    ) -> Optional[schemas.HabitProgress]:
+        db: Session, user_id: str, habit_id: int, target_date: date | None = None
+    ) -> schemas.HabitProgress | None:
         """Get progress for a habit for the current period."""
         db_habit = HabitService.get_habit(db, user_id, habit_id)
         if not db_habit:

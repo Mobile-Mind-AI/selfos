@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
 
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -16,11 +15,11 @@ from sqlalchemy.orm import Session
 router = APIRouter(prefix="/feedback-logs", tags=["feedback-logs"])
 
 
-@router.get("", response_model=List[FeedbackLogSchema])
+@router.get("", response_model=list[FeedbackLogSchema])
 def get_feedback_logs(
-    context_type: Optional[str] = Query(None, description="Filter by context type"),
-    feedback_type: Optional[str] = Query(None, description="Filter by feedback type"),
-    session_id: Optional[str] = Query(None, description="Filter by session ID"),
+    context_type: str | None = Query(None, description="Filter by context type"),
+    feedback_type: str | None = Query(None, description="Filter by feedback type"),
+    session_id: str | None = Query(None, description="Filter by session ID"),
     limit: int = Query(
         50, ge=1, le=1000, description="Maximum number of records to return"
     ),
@@ -316,9 +315,9 @@ def get_context_type_options():
     }
 
 
-@router.post("/bulk", response_model=List[FeedbackLogSchema], status_code=201)
+@router.post("/bulk", response_model=list[FeedbackLogSchema], status_code=201)
 def create_bulk_feedback_logs(
-    feedback_entries: List[FeedbackLogCreate],
+    feedback_entries: list[FeedbackLogCreate],
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -353,7 +352,7 @@ from pydantic import BaseModel
 
 
 class BulkDeleteRequest(BaseModel):
-    feedback_ids: List[str]
+    feedback_ids: list[str]
 
 
 @router.post("/bulk-delete", status_code=status.HTTP_204_NO_CONTENT)

@@ -7,7 +7,6 @@ hierarchical organization: Life Area → Project → Goal → Task.
 """
 
 from datetime import datetime
-from typing import List, Optional
 
 import schemas
 from dependencies import get_current_user, get_db
@@ -17,28 +16,25 @@ from schemas import (
     GoalOut,
     HierarchyMoveRequest,
     HierarchyPathItem,
-    HierarchyTreeNode,
     LifeAreaOut,
     MediaAttachmentOut,
-)
-from schemas import Project as ProjectSchema
-from schemas import (
     ProjectCreate,
     ProjectOut,
     TaskOut,
 )
+from schemas import Project as ProjectSchema
 from services.project_service import project_service
-from sqlalchemy import and_, desc, func, or_
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy import and_, desc
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
-@router.get("/", response_model=List[ProjectOut])
+@router.get("/", response_model=list[ProjectOut])
 async def list_projects(
-    status: Optional[str] = Query(None, description="Filter by project status"),
-    life_area_id: Optional[int] = Query(None, description="Filter by life area"),
-    priority: Optional[str] = Query(None, description="Filter by priority"),
+    status: str | None = Query(None, description="Filter by project status"),
+    life_area_id: int | None = Query(None, description="Filter by life area"),
+    priority: str | None = Query(None, description="Filter by priority"),
     limit: int = Query(
         50, ge=1, le=100, description="Maximum number of projects to return"
     ),
@@ -173,7 +169,7 @@ async def create_project(
 
 
 # Hierarchy endpoints - MUST be before /{project_id}
-@router.get("/roots", response_model=List[ProjectOut])
+@router.get("/roots", response_model=list[ProjectOut])
 async def get_root_projects(
     current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
@@ -214,7 +210,7 @@ async def get_root_projects(
     return result
 
 
-@router.get("/tree", response_model=List[schemas.HierarchyTreeNode])
+@router.get("/tree", response_model=list[schemas.HierarchyTreeNode])
 async def get_project_tree(
     current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
@@ -440,7 +436,7 @@ async def get_project_progress(
     }
 
 
-@router.get("/{project_id}/timeline", response_model=List[dict])
+@router.get("/{project_id}/timeline", response_model=list[dict])
 async def get_project_timeline(
     project_id: int,
     current_user: dict = Depends(get_current_user),
@@ -516,7 +512,7 @@ async def get_project_timeline(
 
 
 # Additional hierarchy endpoints with individual IDs
-@router.get("/{project_id}/children", response_model=List[ProjectOut])
+@router.get("/{project_id}/children", response_model=list[ProjectOut])
 async def get_project_children(
     project_id: int,
     current_user: dict = Depends(get_current_user),
@@ -564,7 +560,7 @@ async def get_project_children(
     return result
 
 
-@router.get("/{project_id}/descendants", response_model=List[ProjectOut])
+@router.get("/{project_id}/descendants", response_model=list[ProjectOut])
 async def get_project_descendants(
     project_id: int,
     current_user: dict = Depends(get_current_user),
@@ -614,7 +610,7 @@ async def get_project_descendants(
     return result
 
 
-@router.get("/{project_id}/path", response_model=List[HierarchyPathItem])
+@router.get("/{project_id}/path", response_model=list[HierarchyPathItem])
 async def get_project_path(
     project_id: int,
     current_user: dict = Depends(get_current_user),

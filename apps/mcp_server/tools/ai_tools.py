@@ -5,7 +5,7 @@ MCP tools for AI-powered functionality in the SelfOS system.
 Provides goal decomposition, task suggestions, and progress analysis.
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from mcp.types import Tool
 from tools.base_tools import BaseToolsHandler
@@ -18,7 +18,7 @@ class AIToolsHandler(BaseToolsHandler):
         super().__init__()
         self.tool_prefix = "ai_"
 
-    async def list_tools(self) -> List[Tool]:
+    async def list_tools(self) -> list[Tool]:
         """Return list of AI-related tools."""
         return [
             Tool(
@@ -77,7 +77,7 @@ class AIToolsHandler(BaseToolsHandler):
             ),
         ]
 
-    async def call_tool(self, name: str, arguments: Dict[str, Any]) -> Dict:
+    async def call_tool(self, name: str, arguments: dict[str, Any]) -> dict:
         """Execute an AI-related tool."""
         # Placeholder implementation
         return {"message": f"AI tool {name} not yet implemented", "success": False}

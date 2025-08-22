@@ -38,7 +38,7 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.uid'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    
+
     # Create indexes for performance
     op.create_index(op.f('ix_assistant_profiles_id'), 'assistant_profiles', ['id'], unique=False)
     op.create_index('ix_assistant_profiles_user_default', 'assistant_profiles', ['user_id', 'is_default'], unique=False)

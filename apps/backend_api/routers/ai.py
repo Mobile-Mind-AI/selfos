@@ -5,13 +5,13 @@ API endpoints for AI-powered goal decomposition, task generation, and chat.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from dependencies import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from schemas import User as UserSchema
-from services.enhanced_memory import EnhancedMemoryService, create_memory_service
+from services.enhanced_memory import create_memory_service
 
 logger = logging.getLogger(__name__)
 
@@ -24,16 +24,16 @@ class GoalDecompositionRequest(BaseModel):
     goal_description: str = Field(
         ..., description="Description of the goal to decompose"
     )
-    life_areas: List[Dict[str, Any]] = Field(
+    life_areas: list[dict[str, Any]] = Field(
         default_factory=list, description="User's life areas"
     )
-    existing_goals: List[Dict[str, Any]] = Field(
+    existing_goals: list[dict[str, Any]] = Field(
         default_factory=list, description="Existing goals"
     )
-    user_preferences: Optional[Dict[str, Any]] = Field(
+    user_preferences: dict[str, Any] | None = Field(
         None, description="User preferences"
     )
-    additional_context: Optional[str] = Field(None, description="Additional context")
+    additional_context: str | None = Field(None, description="Additional context")
 
 
 class TaskSuggestion(BaseModel):
@@ -41,11 +41,11 @@ class TaskSuggestion(BaseModel):
 
     title: str
     description: str
-    estimated_duration: Optional[int] = None
-    priority: Optional[str] = None
-    timeline: Optional[str] = None
-    dependencies: List[str] = Field(default_factory=list)
-    resources_needed: List[str] = Field(default_factory=list)
+    estimated_duration: int | None = None
+    priority: str | None = None
+    timeline: str | None = None
+    dependencies: list[str] = Field(default_factory=list)
+    resources_needed: list[str] = Field(default_factory=list)
 
 
 class GoalDecompositionResponse(BaseModel):
@@ -54,26 +54,26 @@ class GoalDecompositionResponse(BaseModel):
     request_id: str
     status: str
     content: str
-    suggested_tasks: List[TaskSuggestion] = Field(default_factory=list)
-    overall_timeline: Optional[str] = None
-    potential_challenges: List[str] = Field(default_factory=list)
-    success_metrics: List[str] = Field(default_factory=list)
-    next_steps: List[str] = Field(default_factory=list)
-    confidence_score: Optional[float] = None
-    token_usage: Optional[Dict[str, int]] = None
-    cost_estimate: Optional[float] = None
-    processing_time: Optional[float] = None
-    model_used: Optional[str] = None
+    suggested_tasks: list[TaskSuggestion] = Field(default_factory=list)
+    overall_timeline: str | None = None
+    potential_challenges: list[str] = Field(default_factory=list)
+    success_metrics: list[str] = Field(default_factory=list)
+    next_steps: list[str] = Field(default_factory=list)
+    confidence_score: float | None = None
+    token_usage: dict[str, int] | None = None
+    cost_estimate: float | None = None
+    processing_time: float | None = None
+    model_used: str | None = None
 
 
 class ChatRequest(BaseModel):
     """Request for chat/conversation."""
 
     message: str = Field(..., description="User message")
-    conversation_history: List[Dict[str, str]] = Field(
+    conversation_history: list[dict[str, str]] = Field(
         default_factory=list, description="Previous conversation"
     )
-    user_context: Optional[Dict[str, Any]] = Field(None, description="User context")
+    user_context: dict[str, Any] | None = Field(None, description="User context")
 
 
 class ChatResponse(BaseModel):
@@ -82,22 +82,22 @@ class ChatResponse(BaseModel):
     request_id: str
     status: str
     content: str
-    intent_detected: Optional[str] = None
-    suggested_actions: List[Dict[str, Any]] = Field(default_factory=list)
-    follow_up_questions: List[str] = Field(default_factory=list)
-    extracted_goals: List[str] = Field(default_factory=list)
-    token_usage: Optional[Dict[str, int]] = None
-    processing_time: Optional[float] = None
-    model_used: Optional[str] = None
+    intent_detected: str | None = None
+    suggested_actions: list[dict[str, Any]] = Field(default_factory=list)
+    follow_up_questions: list[str] = Field(default_factory=list)
+    extracted_goals: list[str] = Field(default_factory=list)
+    token_usage: dict[str, int] | None = None
+    processing_time: float | None = None
+    model_used: str | None = None
 
 
 class HealthResponse(BaseModel):
     """AI service health response."""
 
     status: str
-    providers: Dict[str, str]
+    providers: dict[str, str]
     cache_size: int
-    metrics: Dict[str, Any]
+    metrics: dict[str, Any]
 
 
 # Initialize services
@@ -450,9 +450,9 @@ async def get_memory_stats(current_user: UserSchema = Depends(get_current_user))
 @router.post("/memory/search", status_code=200)
 async def search_memories(
     query: str,
-    content_types: Optional[List[str]] = None,
+    content_types: list[str] | None = None,
     limit: int = 10,
-    min_similarity: Optional[float] = None,
+    min_similarity: float | None = None,
     current_user: UserSchema = Depends(get_current_user),
 ):
     """

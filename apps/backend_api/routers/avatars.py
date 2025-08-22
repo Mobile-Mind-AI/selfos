@@ -6,14 +6,12 @@ import base64
 import io
 import uuid
 from datetime import datetime
-from typing import List, Optional
 
 import models
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import Response
 from PIL import Image
-from schemas.assistant_schemas import AssistantProfile
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/avatars", tags=["avatars"])

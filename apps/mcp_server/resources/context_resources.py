@@ -5,7 +5,6 @@ MCP resources for contextual data including goal contexts, project timelines,
 and other structured information for AI agents.
 """
 
-from typing import Dict, List
 
 from mcp.types import Resource
 
@@ -13,7 +12,7 @@ from mcp.types import Resource
 class ContextResourcesHandler:
     """Handler for context-related MCP resources."""
 
-    async def list_resources(self) -> List[Resource]:
+    async def list_resources(self) -> list[Resource]:
         """Return list of context-related resources."""
         return [
             Resource(

@@ -3,11 +3,9 @@
 from datetime import datetime, timedelta
 
 import pytest
-from dependencies import get_current_user, get_db
 from fastapi.testclient import TestClient
 from main import app
 from models import Goal, JournalEntry, LifeArea, Project, Task, User
-from sqlalchemy.orm import Session
 
 
 class TestJournalAPI:

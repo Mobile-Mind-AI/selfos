@@ -6,7 +6,6 @@ Configuration settings and environment variables for the SelfOS MCP server.
 
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 
 @dataclass
@@ -14,9 +13,9 @@ class TransportConfig:
     """Configuration for MCP transport layers."""
 
     enabled: bool = True
-    endpoint: Optional[str] = None
+    endpoint: str | None = None
     description: str = ""
-    options: Dict = field(default_factory=dict)
+    options: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -24,7 +23,7 @@ class SecurityConfig:
     """Security configuration for MCP server."""
 
     require_authentication: bool = True
-    allowed_origins: List[str] = field(default_factory=lambda: ["*"])
+    allowed_origins: list[str] = field(default_factory=lambda: ["*"])
     max_connections: int = 100
     rate_limit_requests_per_minute: int = 60
     rate_limit_requests_per_hour: int = 1000
@@ -49,7 +48,7 @@ class MCPConfig:
     )
 
     # Transport configurations
-    transports: Dict[str, TransportConfig] = field(
+    transports: dict[str, TransportConfig] = field(
         default_factory=lambda: {
             "stdio": TransportConfig(
                 enabled=True, description="Standard I/O transport for local AI agents"
@@ -71,7 +70,7 @@ class MCPConfig:
     security: SecurityConfig = field(default_factory=SecurityConfig)
 
     # Tool configurations
-    tools_config: Dict = field(
+    tools_config: dict = field(
         default_factory=lambda: {
             "goals": {
                 "max_results": 50,
@@ -97,7 +96,7 @@ class MCPConfig:
     )
 
     # Resource configurations
-    resources_config: Dict = field(
+    resources_config: dict = field(
         default_factory=lambda: {
             "user_profile": {"cache_ttl": 300, "include_sensitive_data": False},
             "goal_context": {
@@ -144,7 +143,7 @@ class MCPConfig:
 
         return config
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         """Validate configuration and return list of errors."""
         errors = []
 
@@ -164,7 +163,7 @@ class MCPConfig:
 
         return errors
 
-    def get_transport_config(self, transport_name: str) -> Optional[TransportConfig]:
+    def get_transport_config(self, transport_name: str) -> TransportConfig | None:
         """Get configuration for a specific transport."""
         return self.transports.get(transport_name)
 

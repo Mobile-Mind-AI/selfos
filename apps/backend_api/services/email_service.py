@@ -13,7 +13,6 @@ import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +29,7 @@ class EmailService:
         self.from_name = os.getenv("FROM_NAME", "SelfOS")
 
     def send_password_reset_email(
-        self, to_email: str, reset_link: str, user_name: Optional[str] = None
+        self, to_email: str, reset_link: str, user_name: str | None = None
     ) -> bool:
         """
         Send password reset email using available email service.
@@ -121,7 +120,7 @@ class EmailService:
             return False
 
     def _generate_password_reset_html(
-        self, reset_link: str, user_name: Optional[str], email: str
+        self, reset_link: str, user_name: str | None, email: str
     ) -> str:
         """Generate HTML email template for password reset"""
         greeting = f"Hello {user_name}," if user_name else "Hello,"
@@ -187,7 +186,7 @@ class EmailService:
         """
 
     def _generate_password_reset_text(
-        self, reset_link: str, user_name: Optional[str]
+        self, reset_link: str, user_name: str | None
     ) -> str:
         """Generate plain text email for password reset"""
         greeting = f"Hello {user_name}," if user_name else "Hello,"

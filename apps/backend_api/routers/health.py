@@ -5,10 +5,9 @@ Provides health check endpoints for all system components
 including database, event system, and AI services.
 """
 
-import asyncio
 import logging
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
 from dependencies import get_db
 from event_bus import EventType, publish
@@ -98,7 +97,7 @@ async def detailed_health_check(db: Session = Depends(get_db)):
     return health_status
 
 
-async def _check_ai_services(db: Session) -> Dict[str, Any]:
+async def _check_ai_services(db: Session) -> dict[str, Any]:
     """Check the health of all AI services."""
     services_status = {"status": "healthy", "services": {}}
 
@@ -173,7 +172,7 @@ async def _check_ai_services(db: Session) -> Dict[str, Any]:
     return services_status
 
 
-async def _check_database_tables(db: Session) -> Dict[str, Any]:
+async def _check_database_tables(db: Session) -> dict[str, Any]:
     """Check that all required database tables exist using ORM models."""
     tables_status = {"status": "healthy", "tables": {}}
 

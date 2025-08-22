@@ -9,7 +9,6 @@ import asyncio
 import json
 import logging
 import uuid
-from typing import Dict, Optional, Set
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
@@ -23,8 +22,8 @@ class WebSocketConnection:
         self.websocket = websocket
         self.connection_id = connection_id
         self.authenticated = False
-        self.user_id: Optional[str] = None
-        self.client_info: Dict = {}
+        self.user_id: str | None = None
+        self.client_info: dict = {}
 
     async def send_message(self, message: dict):
         """Send a message to the client."""
@@ -34,7 +33,7 @@ class WebSocketConnection:
             logger.error(f"Error sending WebSocket message: {e}")
             raise
 
-    async def receive_message(self) -> Optional[dict]:
+    async def receive_message(self) -> dict | None:
         """Receive a message from the client."""
         try:
             data = await self.websocket.receive_text()
@@ -54,7 +53,7 @@ class WebSocketTransport:
         """Initialize WebSocket transport with MCP server."""
         self.server = server
         self.running = False
-        self.connections: Dict[str, WebSocketConnection] = {}
+        self.connections: dict[str, WebSocketConnection] = {}
         self.app = FastAPI()
         self._setup_routes()
 
@@ -166,7 +165,7 @@ class WebSocketTransport:
 
     async def _process_message(
         self, connection: WebSocketConnection, message: dict
-    ) -> Optional[dict]:
+    ) -> dict | None:
         """Process an incoming JSON-RPC message."""
         try:
             method = message.get("method")

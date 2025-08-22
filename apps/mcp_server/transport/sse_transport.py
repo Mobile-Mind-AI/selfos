@@ -9,7 +9,6 @@ import asyncio
 import json
 import logging
 import uuid
-from typing import Dict, Optional, Set
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -24,7 +23,7 @@ class SSETransport:
         """Initialize SSE transport with MCP server."""
         self.server = server
         self.running = False
-        self.connections: Dict[str, asyncio.Queue] = {}
+        self.connections: dict[str, asyncio.Queue] = {}
         self.app = FastAPI()
         self._setup_routes()
 
@@ -148,7 +147,7 @@ class SSETransport:
             logger.info(f"Closing SSE connection: {connection_id}")
             del self.connections[connection_id]
 
-    async def _process_message(self, message: dict) -> Optional[dict]:
+    async def _process_message(self, message: dict) -> dict | None:
         """Process an incoming JSON-RPC message."""
         try:
             method = message.get("method")

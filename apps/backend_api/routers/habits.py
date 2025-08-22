@@ -6,7 +6,6 @@ including CRUD operations, completion tracking, and progress monitoring.
 """
 
 from datetime import date, timedelta
-from typing import List, Optional
 
 import models
 import schemas
@@ -28,9 +27,9 @@ def create_habit(
     return habit_service.create_habit(db, current_user["uid"], habit)
 
 
-@router.get("/habits", response_model=List[schemas.HabitOut])
+@router.get("/habits", response_model=list[schemas.HabitOut])
 def list_habits(
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    is_active: bool | None = Query(None, description="Filter by active status"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -217,14 +216,14 @@ def complete_habit(
 
 
 @router.get(
-    "/habits/{habit_id}/completions", response_model=List[schemas.HabitCompletion]
+    "/habits/{habit_id}/completions", response_model=list[schemas.HabitCompletion]
 )
 def get_habit_completions(
     habit_id: int,
-    start_date: Optional[date] = Query(
+    start_date: date | None = Query(
         None, description="Start date for completion range"
     ),
-    end_date: Optional[date] = Query(None, description="End date for completion range"),
+    end_date: date | None = Query(None, description="End date for completion range"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -238,7 +237,7 @@ def get_habit_completions(
 @router.get("/habits/{habit_id}/progress", response_model=schemas.HabitProgress)
 def get_habit_progress(
     habit_id: int,
-    target_date: Optional[date] = Query(
+    target_date: date | None = Query(
         None, description="Date to calculate progress for (defaults to today)"
     ),
     db: Session = Depends(get_db),

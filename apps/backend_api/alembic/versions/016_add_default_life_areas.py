@@ -20,9 +20,9 @@ depends_on = None
 def upgrade():
     """Add default life areas to the database."""
     connection = op.get_bind()
-    
+
     print("🔄 Adding default life areas...")
-    
+
     # First, create a system user if it doesn't exist
     result = connection.execute(sa.text("SELECT COUNT(*) FROM users WHERE uid = 'system'"))
     if result.scalar() == 0:
@@ -33,12 +33,12 @@ def upgrade():
         print("✅ Created system user")
     else:
         print("✅ System user already exists")
-    
+
     # Check if system life areas already exist
     result = connection.execute(sa.text("SELECT COUNT(*) FROM life_areas WHERE user_id = 'system'"))
     if result.scalar() == 0:
         print("🔄 Creating default life areas...")
-        
+
         # Default life areas data
         life_areas_data = [
             ('Health & Fitness', 'Physical health, exercise, nutrition, and overall well-being', '#FF6B6B', 'favorite', '["health", "fitness", "exercise", "nutrition", "wellness", "medical", "sport"]', 1),
@@ -50,7 +50,7 @@ def upgrade():
             ('Fun & Recreation', 'Hobbies, entertainment, leisure activities, and enjoyment', '#B4A7D6', 'music_note', '["fun", "recreation", "hobbies", "entertainment", "leisure", "play", "relaxation"]', 7),
             ('Environment', 'Living space, home environment, and physical surroundings', '#D4A5A5', 'home', '["home", "environment", "living space", "organization", "comfort", "surroundings"]', 8),
         ]
-        
+
         # Insert each life area
         now = datetime.utcnow()
         for name, description, color, icon, keywords, priority_order in life_areas_data:
@@ -72,11 +72,11 @@ def upgrade():
                 'created_at': now,
                 'updated_at': now,
             })
-        
+
         print(f"✅ Created {len(life_areas_data)} default life areas")
     else:
         print("✅ Default life areas already exist")
-    
+
     print("✅ Default life areas migration completed")
 
 
@@ -87,7 +87,7 @@ def downgrade():
         DELETE FROM life_areas 
         WHERE user_id = 'system' AND is_custom = false
     """)
-    
+
     # Optionally remove the system user if no other data depends on it
     op.execute("""
         DELETE FROM users 
@@ -105,5 +105,5 @@ def downgrade():
             SELECT 1 FROM projects WHERE user_id = 'system'
         )
     """)
-    
+
     print("✅ Removed default life areas and system user")
