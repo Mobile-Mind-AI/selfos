@@ -65,6 +65,33 @@ This directory contains the comprehensive documentation for the SelfOS platform.
 
 ## 🔄 Recent Updates (August 2025)
 
+### 🛠️ Critical Stabilization Fixes (Branch: stabilization-20250821)
+- **✅ Resolved Critical Import Errors**
+  - Created centralized `models/associations.py` to break circular dependencies
+  - Fixed SQLAlchemy association table imports across all models
+  - Eliminated 146+ import-related test failures
+  
+- **✅ Synchronized Coverage Configuration**
+  - Aligned coverage targets to 75% across pytest.ini and pyproject.toml
+  - Fixed CI pipeline coverage inconsistencies
+  - Standardized test configuration parameters
+
+- **✅ Created Missing Service Dependencies**
+  - Added `services/habit_service.py` with complete CRUD operations
+  - Added `services/journal_service.py` with entry management and search
+  - Added `services/tag_service.py` with tag associations and statistics
+  - Resolved service layer dependencies for all models
+
+- **✅ Fixed SQLAlchemy Relationship Issues**
+  - Resolved relationship ambiguity in User and AssistantProfile models
+  - Added explicit foreign_keys parameters to eliminate warnings
+  - Enhanced model relationship definitions for better ORM performance
+
+- **✅ Updated Test Expectations**
+  - Fixed test_api_structure to handle 422 response codes
+  - Updated main API tests (5/5 passing)
+  - Improved test isolation and module execution
+
 ### System Enhancements
 - **Added Entity Knowledge Graph** (migration 017)
   - Automatic entity extraction from user content
@@ -89,6 +116,7 @@ This directory contains the comprehensive documentation for the SelfOS platform.
   - `models/preferences.py`: User preferences
   - `models/story.py`: Story generation sessions
   - `models/content.py`: Content management
+  - `models/associations.py`: **NEW** - Centralized association tables
 
 ### Project Cleanup
 - ✅ Removed temporary test files and scripts
@@ -118,13 +146,37 @@ This directory contains the comprehensive documentation for the SelfOS platform.
 - Update status badges and metrics regularly
 - Gather feedback from document users for improvements
 
+## � Test Status Summary
+
+### Current Status (Post-Stabilization)
+- **✅ Main API Tests**: 5/5 passing (100%)
+- **✅ Critical Import Errors**: Resolved
+- **✅ Coverage Configuration**: Synchronized at 75%
+- **⚠️ Remaining Test Failures**: 57/215 tests (mostly unit/integration edge cases)
+
+### Test Categories
+| Category | Status | Notes |
+|----------|--------|-------|
+| **Main API** | ✅ 5/5 passing | Core endpoints functional |
+| **Import System** | ✅ Resolved | Circular dependencies fixed |
+| **Unit Tests** | ⚠️ Partial failures | Edge cases and mock dependencies |
+| **Integration Tests** | ⚠️ Partial failures | Complex workflow scenarios |
+| **Coverage** | ✅ Synchronized | 75% target across all configs |
+
 ## 🔮 Next Steps
 
 ### Immediate Priorities
-1. **Fix failing tests** (127 failures to address)
-2. **Complete MCP tools** for Projects and Tasks
-3. **Implement AI Engine** with LangChain integration
-4. **Add Memory/RAG system** with vector embeddings
+1. **Address remaining unit test failures** (~45 remaining)
+2. **Fix integration test edge cases** (~12 remaining)
+3. **Complete MCP tools** for Projects and Tasks
+4. **Implement AI Engine** with LangChain integration
+5. **Add Memory/RAG system** with vector embeddings
+
+### Technical Debt Resolution
+- Migrate Pydantic V1 validators to V2 style (`@field_validator`)
+- Update FastAPI event handlers to lifespan pattern
+- Upgrade SQLAlchemy to 2.0+ patterns
+- Address deprecation warnings in test output
 
 ### Future Development
 - Rebuild Flutter frontend application

@@ -8,124 +8,124 @@ This service provides:
 4. Development mode with console output
 """
 
-import smtplib
-import os
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from typing import Optional
 import logging
+import os
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 
 class EmailService:
     """Service for sending emails with Firebase and SMTP fallback"""
-    
+
     def __init__(self):
-        self.smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
-        self.smtp_port = int(os.getenv('SMTP_PORT', '587'))
-        self.smtp_username = os.getenv('SMTP_USERNAME')
-        self.smtp_password = os.getenv('SMTP_PASSWORD')
-        self.from_email = os.getenv('FROM_EMAIL', 'noreply@selfos.app')
-        self.from_name = os.getenv('FROM_NAME', 'SelfOS')
-        
-    def send_password_reset_email(self, 
-                                to_email: str, 
-                                reset_link: str, 
-                                user_name: Optional[str] = None) -> bool:
+        self.smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+        self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        self.smtp_username = os.getenv("SMTP_USERNAME")
+        self.smtp_password = os.getenv("SMTP_PASSWORD")
+        self.from_email = os.getenv("FROM_EMAIL", "noreply@selfos.app")
+        self.from_name = os.getenv("FROM_NAME", "SelfOS")
+
+    def send_password_reset_email(
+        self, to_email: str, reset_link: str, user_name: Optional[str] = None
+    ) -> bool:
         """
         Send password reset email using available email service.
-        
+
         Args:
             to_email: Recipient email address
             reset_link: Password reset URL
             user_name: Optional user display name
-            
+
         Returns:
             bool: True if email was sent successfully
         """
         try:
             subject = "Reset Your SelfOS Password"
-            
+
             # Generate email content
-            html_content = self._generate_password_reset_html(reset_link, user_name, to_email)
+            html_content = self._generate_password_reset_html(
+                reset_link, user_name, to_email
+            )
             text_content = self._generate_password_reset_text(reset_link, user_name)
-            
+
             # Always attempt SMTP email sending when credentials are provided
             if self.smtp_username and self.smtp_password:
-                return self._send_smtp_email(to_email, subject, text_content, html_content)
+                return self._send_smtp_email(
+                    to_email, subject, text_content, html_content
+                )
             else:
                 # No SMTP credentials - show console message with instructions
-                return self._send_development_email(to_email, subject, text_content, html_content)
-                
+                return self._send_development_email(
+                    to_email, subject, text_content, html_content
+                )
+
         except Exception as e:
             logger.error(f"Failed to send password reset email: {e}")
             return False
-    
-    def _send_development_email(self, 
-                              to_email: str, 
-                              subject: str, 
-                              text_content: str, 
-                              html_content: str) -> bool:
+
+    def _send_development_email(
+        self, to_email: str, subject: str, text_content: str, html_content: str
+    ) -> bool:
         """Print email to console in development mode"""
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("📧 DEVELOPMENT EMAIL SERVICE")
-        print("="*60)
+        print("=" * 60)
         print(f"To: {to_email}")
         print(f"From: {self.from_name} <{self.from_email}>")
         print(f"Subject: {subject}")
-        print("-"*60)
+        print("-" * 60)
         print("EMAIL CONTENT:")
         print(text_content)
-        print("="*60)
+        print("=" * 60)
         print("⚠️  NO SMTP CREDENTIALS CONFIGURED")
         print("📧 To enable real email sending, configure these environment variables:")
         print("   SMTP_USERNAME=your-email@gmail.com")
         print("   SMTP_PASSWORD=your-app-password")
         print("   (See .env file for example configuration)")
-        print("="*60 + "\n")
+        print("=" * 60 + "\n")
         return True
-    
-    def _send_smtp_email(self, 
-                        to_email: str, 
-                        subject: str, 
-                        text_content: str, 
-                        html_content: str) -> bool:
+
+    def _send_smtp_email(
+        self, to_email: str, subject: str, text_content: str, html_content: str
+    ) -> bool:
         """Send email via SMTP"""
         try:
             # Create message
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = subject
-            msg['From'] = f"{self.from_name} <{self.from_email}>"
-            msg['To'] = to_email
-            
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = f"{self.from_name} <{self.from_email}>"
+            msg["To"] = to_email
+
             # Attach text and HTML versions
-            text_part = MIMEText(text_content, 'plain')
-            html_part = MIMEText(html_content, 'html')
-            
+            text_part = MIMEText(text_content, "plain")
+            html_part = MIMEText(html_content, "html")
+
             msg.attach(text_part)
             msg.attach(html_part)
-            
+
             # Send email
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
                 server.starttls()
                 server.login(self.smtp_username, self.smtp_password)
                 server.send_message(msg)
-                
+
             logger.info(f"Password reset email sent successfully to {to_email}")
             return True
-            
+
         except Exception as e:
             logger.error(f"SMTP email sending failed: {e}")
             return False
-    
-    def _generate_password_reset_html(self, 
-                                    reset_link: str, 
-                                    user_name: Optional[str], 
-                                    email: str) -> str:
+
+    def _generate_password_reset_html(
+        self, reset_link: str, user_name: Optional[str], email: str
+    ) -> str:
         """Generate HTML email template for password reset"""
         greeting = f"Hello {user_name}," if user_name else "Hello,"
-        
+
         return f"""
         <!DOCTYPE html>
         <html>
@@ -185,13 +185,13 @@ class EmailService:
         </body>
         </html>
         """
-    
-    def _generate_password_reset_text(self, 
-                                    reset_link: str, 
-                                    user_name: Optional[str]) -> str:
+
+    def _generate_password_reset_text(
+        self, reset_link: str, user_name: Optional[str]
+    ) -> str:
         """Generate plain text email for password reset"""
         greeting = f"Hello {user_name}," if user_name else "Hello,"
-        
+
         return f"""
 {greeting}
 

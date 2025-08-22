@@ -5,15 +5,15 @@ Tests the full API flow including authentication, permission checking,
 and CRUD operations for the assistant sharing system.
 """
 
+import json
+from datetime import datetime, timedelta
+
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-import json
-
 from main import app
 from models.assistant import AssistantProfile
 from models.user import User
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture
@@ -29,15 +29,12 @@ def mock_users(test_db):
     """Create mock users for testing."""
     users = []
     for i in range(3):
-        user = User(
-            uid=f"test_user_{i}",
-            email=f"user{i}@example.com"
-        )
+        user = User(uid=f"test_user_{i}", email=f"user{i}@example.com")
         test_db.add(user)
         users.append(user)
-    
+
     test_db.commit()
-    
+
     # Return just the UIDs to avoid session issues
     return [u.uid for u in users]
 
@@ -58,12 +55,12 @@ def sample_assistant(test_db, mock_users):
             "directness": 70,
             "humor": 30,
             "empathy": 70,
-            "motivation": 60
+            "motivation": 60,
         },
         is_public=False,
-        is_active=True
+        is_active=True,
     )
-    
+
     test_db.add(assistant)
     test_db.commit()
     test_db.refresh(assistant)
@@ -81,21 +78,25 @@ class TestAssistantPermissionsAPI:
     @pytest.fixture
     def auth_headers(self):
         """Create mock authentication headers."""
+
         def _create_headers(user_uid: str):
             # In real implementation, this would be a proper Firebase token
             # For testing, we'll use a mock token that our test auth system recognizes
             return {
                 "Authorization": f"Bearer mock_token_{user_uid}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
+
         return _create_headers
 
-    def test_get_user_assistants_owner(self, client, mock_users, sample_assistant, auth_headers):
+    def test_get_user_assistants_owner(
+        self, client, mock_users, sample_assistant, auth_headers
+    ):
         """Test getting assistants for the owner."""
         headers = auth_headers(mock_users[0])
-        
+
         response = client.get("/api/assistants/", headers=headers)
-        
+
         assert response.status_code == 200
         assistants = response.json()
         assert len(assistants) == 1
@@ -105,223 +106,234 @@ class TestAssistantPermissionsAPI:
     def test_get_user_assistants_unauthorized(self, client):
         """Test getting assistants without authentication."""
         response = client.get("/api/assistants/")
-        
+
         assert response.status_code == 401
 
-    def test_get_user_assistants_no_access(self, client, mock_users, sample_assistant, auth_headers):
+    def test_get_user_assistants_no_access(
+        self, client, mock_users, sample_assistant, auth_headers
+    ):
         """Test getting assistants for user without access."""
         headers = auth_headers(mock_users[1])  # Different user
-        
+
         response = client.get("/api/assistants/", headers=headers)
-        
+
         assert response.status_code == 200
         assistants = response.json()
         assert len(assistants) == 0  # Should not see owner's private assistant
 
-    def test_get_specific_assistant_owner(self, client, mock_users, sample_assistant, auth_headers):
+    def test_get_specific_assistant_owner(
+        self, client, mock_users, sample_assistant, auth_headers
+    ):
         """Test getting a specific assistant as owner."""
         headers = auth_headers(mock_users[0])
-        
+
         response = client.get(f"/api/assistants/{sample_assistant.id}", headers=headers)
-        
+
         assert response.status_code == 200
         assistant_data = response.json()
         assert assistant_data["name"] == "Test Assistant"
         assert assistant_data["id"] == sample_assistant.id
 
-    def test_get_specific_assistant_forbidden(self, client, mock_users, sample_assistant, auth_headers):
+    def test_get_specific_assistant_forbidden(
+        self, client, mock_users, sample_assistant, auth_headers
+    ):
         """Test getting a specific assistant without permission."""
         headers = auth_headers(mock_users[1])  # Different user
-        
+
         response = client.get(f"/api/assistants/{sample_assistant.id}", headers=headers)
-        
+
         assert response.status_code == 403
         error_data = response.json()
         assert "Insufficient permissions" in error_data["detail"]
 
-    def test_share_assistant_success(self, client, mock_users, sample_assistant, auth_headers):
+    def test_share_assistant_success(
+        self, client, mock_users, sample_assistant, auth_headers
+    ):
         """Test successfully sharing an assistant."""
         owner_headers = auth_headers(mock_users[0])
-        share_data = {
-            "target_user_id": mock_users[1],
-            "permission_level": "edit"
-        }
-        
+        share_data = {"target_user_id": mock_users[1], "permission_level": "edit"}
+
         response = client.post(
             f"/api/assistants/{sample_assistant.id}/share",
             headers=owner_headers,
-            json=share_data
+            json=share_data,
         )
-        
+
         assert response.status_code == 200
         result = response.json()
         assert "message" in result
         assert "shared successfully" in result["message"]
         assert "shared successfully" in result["message"]
 
-    def test_share_assistant_insufficient_permissions(self, client, mock_users, sample_assistant, auth_headers):
+    def test_share_assistant_insufficient_permissions(
+        self, client, mock_users, sample_assistant, auth_headers
+    ):
         """Test sharing assistant without sufficient permissions."""
         non_owner_headers = auth_headers(mock_users[1])
-        share_data = {
-            "target_user_id": mock_users[2],
-            "permission_level": "read"
-        }
-        
+        share_data = {"target_user_id": mock_users[2], "permission_level": "read"}
+
         response = client.post(
             f"/api/assistants/{sample_assistant.id}/share",
             headers=non_owner_headers,
-            json=share_data
+            json=share_data,
         )
-        
+
         assert response.status_code == 403  # Forbidden
         # In a real implementation, this should be 403
 
-    def test_update_assistant_owner(self, client, mock_users, sample_assistant, auth_headers):
+    def test_update_assistant_owner(
+        self, client, mock_users, sample_assistant, auth_headers
+    ):
         """Test updating assistant as owner."""
         headers = auth_headers(mock_users[0])
         update_data = {
             "name": "Updated Assistant Name",
-            "description": "Updated description"
+            "description": "Updated description",
         }
-        
+
         response = client.put(
-            f"/api/assistants/{sample_assistant.id}",
-            headers=headers,
-            json=update_data
+            f"/api/assistants/{sample_assistant.id}", headers=headers, json=update_data
         )
-        
+
         assert response.status_code == 200
         updated_assistant = response.json()
         assert updated_assistant["name"] == "Updated Assistant Name"
         assert updated_assistant["description"] == "Updated description"
 
-    def test_update_assistant_forbidden(self, client, mock_users, sample_assistant, auth_headers):
+    def test_update_assistant_forbidden(
+        self, client, mock_users, sample_assistant, auth_headers
+    ):
         """Test updating assistant without edit permission."""
         non_owner_headers = auth_headers(mock_users[1])
-        update_data = {
-            "name": "Unauthorized Update"
-        }
-        
+        update_data = {"name": "Unauthorized Update"}
+
         response = client.put(
             f"/api/assistants/{sample_assistant.id}",
             headers=non_owner_headers,
-            json=update_data
+            json=update_data,
         )
-        
+
         assert response.status_code == 403
         error_data = response.json()
         assert "Insufficient permissions" in error_data["detail"]
 
-    def test_revoke_permission(self, client, db, mock_users, sample_assistant, auth_headers):
+    def test_revoke_permission(
+        self, client, db, mock_users, sample_assistant, auth_headers
+    ):
         """Test revoking permission for an assistant."""
         # First share the assistant
         owner_headers = auth_headers(mock_users[0])
-        share_data = {
-            "target_user_id": mock_users[1],
-            "permission_level": "edit"
-        }
-        
+        share_data = {"target_user_id": mock_users[1], "permission_level": "edit"}
+
         share_response = client.post(
             f"/api/assistants/{sample_assistant.id}/share",
             headers=owner_headers,
-            json=share_data
+            json=share_data,
         )
         assert share_response.status_code == 200
 
         # Then revoke the permission
         revoke_response = client.delete(
             f"/api/assistants/{sample_assistant.id}/permissions/{mock_users[1]}",
-            headers=owner_headers
+            headers=owner_headers,
         )
-        
+
         assert revoke_response.status_code == 204
 
         # Verify the user no longer has access
         user_headers = auth_headers(mock_users[1])
-        access_response = client.get(f"/api/assistants/{sample_assistant.id}", headers=user_headers)
+        access_response = client.get(
+            f"/api/assistants/{sample_assistant.id}", headers=user_headers
+        )
         assert access_response.status_code == 403
 
-    def test_get_assistant_permissions(self, client, db, mock_users, sample_assistant, auth_headers):
+    def test_get_assistant_permissions(
+        self, client, db, mock_users, sample_assistant, auth_headers
+    ):
         """Test getting all permissions for an assistant."""
         # Share with a user first
         owner_headers = auth_headers(mock_users[0])
-        share_data = {
-            "target_user_id": mock_users[1],
-            "permission_level": "edit"
-        }
-        
+        share_data = {"target_user_id": mock_users[1], "permission_level": "edit"}
+
         share_response = client.post(
             f"/api/assistants/{sample_assistant.id}/share",
             headers=owner_headers,
-            json=share_data
+            json=share_data,
         )
         assert share_response.status_code == 200
 
         # Get permissions
         permissions_response = client.get(
-            f"/api/assistants/{sample_assistant.id}/permissions",
-            headers=owner_headers
+            f"/api/assistants/{sample_assistant.id}/permissions", headers=owner_headers
         )
-        
+
         assert permissions_response.status_code == 200
         permissions = permissions_response.json()
         assert isinstance(permissions, list)
 
-    def test_get_assistant_permissions_forbidden(self, client, mock_users, sample_assistant, auth_headers):
+    def test_get_assistant_permissions_forbidden(
+        self, client, mock_users, sample_assistant, auth_headers
+    ):
         """Test getting permissions without admin access."""
         non_admin_headers = auth_headers(mock_users[1])
-        
+
         response = client.get(
             f"/api/assistants/{sample_assistant.id}/permissions",
-            headers=non_admin_headers
+            headers=non_admin_headers,
         )
-        
+
         assert response.status_code == 403
 
-    def test_get_assistant_versions(self, client, mock_users, sample_assistant, auth_headers):
+    def test_get_assistant_versions(
+        self, client, mock_users, sample_assistant, auth_headers
+    ):
         """Test getting assistant version information."""
         headers = auth_headers(mock_users[0])
-        
+
         response = client.get("/api/assistants/versions/", headers=headers)
-        
+
         assert response.status_code == 200
         versions = response.json()
         assert isinstance(versions, list)
 
-    def test_get_specific_assistant_versions(self, client, mock_users, sample_assistant, auth_headers):
+    def test_get_specific_assistant_versions(
+        self, client, mock_users, sample_assistant, auth_headers
+    ):
         """Test getting version info for specific assistants."""
         headers = auth_headers(mock_users[0])
-        
+
         # Test with query parameter (this depends on your API design)
         response = client.get(
             f"/api/assistants/versions?assistant_ids={sample_assistant.id}",
-            headers=headers
+            headers=headers,
         )
-        
+
         assert response.status_code == 404  # Endpoint not found
 
-    def test_get_user_permission_level(self, client, mock_users, sample_assistant, auth_headers):
+    def test_get_user_permission_level(
+        self, client, mock_users, sample_assistant, auth_headers
+    ):
         """Test getting user's permission level for an assistant."""
         headers = auth_headers(mock_users[0])
-        
+
         response = client.get(
-            f"/api/assistants/{sample_assistant.id}/permission-level",
-            headers=headers
+            f"/api/assistants/{sample_assistant.id}/permission-level", headers=headers
         )
-        
+
         assert response.status_code == 200
         permission_info = response.json()
         assert isinstance(permission_info, dict)
 
-    def test_permission_level_no_access(self, client, mock_users, sample_assistant, auth_headers):
+    def test_permission_level_no_access(
+        self, client, mock_users, sample_assistant, auth_headers
+    ):
         """Test getting permission level when user has no access."""
         headers = auth_headers(mock_users[1])  # Different user
-        
+
         response = client.get(
-            f"/api/assistants/{sample_assistant.id}/permission-level",
-            headers=headers
+            f"/api/assistants/{sample_assistant.id}/permission-level", headers=headers
         )
-        
+
         assert response.status_code == 200
         permission_info = response.json()
         assert isinstance(permission_info, dict)
@@ -329,9 +341,9 @@ class TestAssistantPermissionsAPI:
     def test_cleanup_expired_permissions(self, client, mock_users, auth_headers):
         """Test cleanup endpoint for expired permissions."""
         headers = auth_headers(mock_users[0])
-        
+
         response = client.post("/api/assistants/permissions/cleanup/", headers=headers)
-        
+
         assert response.status_code == 200
         result = response.json()
         assert isinstance(result, dict)
@@ -351,10 +363,10 @@ class TestAssistantPermissionsAPI:
                 "directness": 50,
                 "humor": 30,
                 "empathy": 70,
-                "motivation": 60
+                "motivation": 60,
             },
             is_public=True,
-            version=1000
+            version=1000,
         )
         db.add(public_assistant)
         db.commit()
@@ -362,16 +374,20 @@ class TestAssistantPermissionsAPI:
 
         # Different user should be able to access public assistant
         user_headers = auth_headers(mock_users[1])
-        
+
         # Should appear in user's assistant list
         list_response = client.get("/api/assistants/", headers=user_headers)
         assert list_response.status_code == 200
         assistants = list_response.json()
-        public_assistant_found = any(a["name"] == "Public Assistant" for a in assistants)
+        public_assistant_found = any(
+            a["name"] == "Public Assistant" for a in assistants
+        )
         assert public_assistant_found, "Public assistant should appear in user's list"
 
         # Should be able to get specific public assistant
-        get_response = client.get(f"/api/assistants/{public_assistant.id}", headers=user_headers)
+        get_response = client.get(
+            f"/api/assistants/{public_assistant.id}", headers=user_headers
+        )
         assert get_response.status_code == 200
         assistant_data = get_response.json()
         assert assistant_data["name"] == "Public Assistant"
@@ -380,7 +396,7 @@ class TestAssistantPermissionsAPI:
         update_response = client.put(
             f"/api/assistants/{public_assistant.id}",
             headers=user_headers,
-            json={"name": "Hacked Name"}
+            json={"name": "Hacked Name"},
         )
         assert update_response.status_code == 403
 
@@ -392,7 +408,7 @@ class TestAssistantSharingWorkflow:
     def client(self):
         return TestClient(app)
 
-    @pytest.fixture  
+    @pytest.fixture
     def users_and_assistant(self, db: Session):
         """Set up users and assistant for workflow testing."""
         # Create users
@@ -401,7 +417,7 @@ class TestAssistantSharingWorkflow:
             user = User(uid=f"workflow_user_{i}", email=f"workflow{i}@example.com")
             db.add(user)
             users.append(user)
-        
+
         # Create assistant
         assistant = AssistantProfile(
             user_id=users[0].uid,
@@ -409,16 +425,22 @@ class TestAssistantSharingWorkflow:
             name="Workflow Test Assistant",
             ai_model="gpt-3.5-turbo",
             language="en",
-            style={"formality": 50, "directness": 50, "humor": 30, "empathy": 70, "motivation": 60},
-            version=1000
+            style={
+                "formality": 50,
+                "directness": 50,
+                "humor": 30,
+                "empathy": 70,
+                "motivation": 60,
+            },
+            version=1000,
         )
         db.add(assistant)
         db.commit()
-        
+
         for user in users:
             db.refresh(user)
         db.refresh(assistant)
-        
+
         return users, assistant
 
     @pytest.fixture
@@ -426,8 +448,9 @@ class TestAssistantSharingWorkflow:
         def _create_headers(user_uid: str):
             return {
                 "Authorization": f"Bearer mock_token_{user_uid}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
+
         return _create_headers
 
     def test_complete_sharing_workflow(self, client, users_and_assistant, auth_headers):
@@ -441,10 +464,7 @@ class TestAssistantSharingWorkflow:
         share_response = client.post(
             f"/api/assistants/{assistant.id}/share",
             headers=owner_headers,
-            json={
-                "target_user_id": users[1].uid,
-                "permission_level": "edit"
-            }
+            json={"target_user_id": users[1].uid, "permission_level": "edit"},
         )
         assert share_response.status_code == 200
 
@@ -456,7 +476,7 @@ class TestAssistantSharingWorkflow:
         edit_response = client.put(
             f"/api/assistants/{assistant.id}",
             headers=user1_headers,
-            json={"description": "Updated by User1"}
+            json={"description": "Updated by User1"},
         )
         assert edit_response.status_code == 200
 
@@ -464,10 +484,7 @@ class TestAssistantSharingWorkflow:
         share_attempt = client.post(
             f"/api/assistants/{assistant.id}/share",
             headers=user1_headers,
-            json={
-                "target_user_id": users[2].uid,
-                "permission_level": "read"
-            }
+            json={"target_user_id": users[2].uid, "permission_level": "read"},
         )
         assert share_attempt.status_code == 403  # Forbidden
 
@@ -475,10 +492,7 @@ class TestAssistantSharingWorkflow:
         upgrade_response = client.post(
             f"/api/assistants/{assistant.id}/share",
             headers=owner_headers,
-            json={
-                "target_user_id": users[1].uid,
-                "permission_level": "admin"
-            }
+            json={"target_user_id": users[1].uid, "permission_level": "admin"},
         )
         assert upgrade_response.status_code == 200
 
@@ -486,10 +500,7 @@ class TestAssistantSharingWorkflow:
         share_to_user2 = client.post(
             f"/api/assistants/{assistant.id}/share",
             headers=user1_headers,
-            json={
-                "target_user_id": users[2].uid,
-                "permission_level": "read"
-            }
+            json={"target_user_id": users[2].uid, "permission_level": "read"},
         )
         assert share_to_user2.status_code == 200
 
@@ -500,21 +511,25 @@ class TestAssistantSharingWorkflow:
         user2_edit_attempt = client.put(
             f"/api/assistants/{assistant.id}",
             headers=user2_headers,
-            json={"description": "Unauthorized edit"}
+            json={"description": "Unauthorized edit"},
         )
         assert user2_edit_attempt.status_code == 403
 
         # Step 7: Owner revokes User1's permission
         revoke_response = client.delete(
             f"/api/assistants/{assistant.id}/permissions/{users[1].uid}",
-            headers=owner_headers
+            headers=owner_headers,
         )
         assert revoke_response.status_code == 204  # No Content
 
         # Step 8: User1 no longer has access
-        user1_access_check = client.get(f"/api/assistants/{assistant.id}", headers=user1_headers)
+        user1_access_check = client.get(
+            f"/api/assistants/{assistant.id}", headers=user1_headers
+        )
         assert user1_access_check.status_code == 403
 
         # Step 9: User2 still has read access (granted by User1 before revocation)
-        user2_access_check = client.get(f"/api/assistants/{assistant.id}", headers=user2_headers)
+        user2_access_check = client.get(
+            f"/api/assistants/{assistant.id}", headers=user2_headers
+        )
         assert user2_access_check.status_code == 200

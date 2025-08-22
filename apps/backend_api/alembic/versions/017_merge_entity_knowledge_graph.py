@@ -5,9 +5,8 @@ Revises: 016, 001_add_entity_knowledge_graph
 Create Date: 2025-08-22 18:02:15.269086
 
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '017'

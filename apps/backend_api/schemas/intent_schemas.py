@@ -2,14 +2,16 @@
 Pydantic schemas for intent classification and conversation management.
 """
 
-from typing import Dict, Any, List, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field, validator
 
 
 class IntentType(str, Enum):
     """Supported intent types."""
+
     CREATE_GOAL = "create_goal"
     CREATE_TASK = "create_task"
     CREATE_PROJECT = "create_project"
@@ -22,6 +24,7 @@ class IntentType(str, Enum):
 
 class EntityType(str, Enum):
     """Supported entity types."""
+
     TITLE = "title"
     DUE_DATE = "due_date"
     LIFE_AREA = "life_area"
@@ -33,6 +36,7 @@ class EntityType(str, Enum):
 
 class LifeAreaType(str, Enum):
     """Standard life area categories."""
+
     HEALTH = "Health"
     CAREER = "Career"
     RELATIONSHIPS = "Relationships"
@@ -45,6 +49,7 @@ class LifeAreaType(str, Enum):
 
 class PriorityLevel(str, Enum):
     """Priority levels for tasks and goals."""
+
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
@@ -52,22 +57,31 @@ class PriorityLevel(str, Enum):
 
 # Request/Response Schemas
 
+
 class ConversationMessageRequest(BaseModel):
     """Request schema for processing a conversation message."""
-    message: str = Field(..., min_length=1, max_length=1000, description="User's message")
+
+    message: str = Field(
+        ..., min_length=1, max_length=1000, description="User's message"
+    )
     session_id: Optional[str] = Field(None, description="Conversation session ID")
-    assistant_id: Optional[str] = Field(None, description="Specific assistant profile ID (uses default if not provided)")
-    include_context: bool = Field(True, description="Include user context in classification")
-    
-    @validator('message')
+    assistant_id: Optional[str] = Field(
+        None, description="Specific assistant profile ID (uses default if not provided)"
+    )
+    include_context: bool = Field(
+        True, description="Include user context in classification"
+    )
+
+    @validator("message")
     def validate_message(cls, v):
         if not v.strip():
-            raise ValueError('Message cannot be empty or whitespace only')
+            raise ValueError("Message cannot be empty or whitespace only")
         return v.strip()
 
 
 class EntityExtraction(BaseModel):
     """Extracted entity with metadata."""
+
     type: EntityType
     value: str
     confidence: float = Field(..., ge=0.0, le=1.0)
@@ -76,6 +90,7 @@ class EntityExtraction(BaseModel):
 
 class IntentClassificationResult(BaseModel):
     """Result of intent classification."""
+
     intent: IntentType
     confidence: float = Field(..., ge=0.0, le=1.0)
     entities: Dict[str, Any] = Field(default_factory=dict)
@@ -86,7 +101,10 @@ class IntentClassificationResult(BaseModel):
 
 class NextAction(BaseModel):
     """Recommended next action based on intent classification."""
-    type: str = Field(..., description="Action type (execute_action, clarification_request, etc.)")
+
+    type: str = Field(
+        ..., description="Action type (execute_action, clarification_request, etc.)"
+    )
     message: Optional[str] = None
     required_entity: Optional[str] = None
     action: Optional[str] = None
@@ -97,6 +115,7 @@ class NextAction(BaseModel):
 
 class ConversationState(BaseModel):
     """Current state of conversation session."""
+
     current_intent: Optional[str] = None
     incomplete_entities: List[str] = Field(default_factory=list)
     turn_count: int = 0
@@ -107,6 +126,7 @@ class ConversationState(BaseModel):
 
 class ConversationMessageResponse(BaseModel):
     """Response from conversation message processing."""
+
     intent_result: IntentClassificationResult
     conversation_state: ConversationState
     next_actions: List[NextAction]
@@ -116,10 +136,12 @@ class ConversationMessageResponse(BaseModel):
 
 # Entity-specific schemas
 
+
 class TaskEntitySet(BaseModel):
     """Entities required/optional for task creation."""
+
     title: str = Field(..., min_length=1, max_length=200)
-    due_date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')
+    due_date: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
     life_area: Optional[LifeAreaType] = None
     priority: Optional[PriorityLevel] = PriorityLevel.MEDIUM
     duration: Optional[str] = None
@@ -128,24 +150,27 @@ class TaskEntitySet(BaseModel):
 
 class GoalEntitySet(BaseModel):
     """Entities required/optional for goal creation."""
+
     title: str = Field(..., min_length=1, max_length=200)
     life_area: Optional[LifeAreaType] = None
     description: Optional[str] = Field(None, max_length=1000)
-    target_date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')
+    target_date: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
 
 
 class ProjectEntitySet(BaseModel):
     """Entities required/optional for project creation."""
+
     title: str = Field(..., min_length=1, max_length=200)
     life_area: Optional[LifeAreaType] = None
     description: Optional[str] = Field(None, max_length=1000)
-    start_date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')
-    target_date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')
+    start_date: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    target_date: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
     priority: Optional[PriorityLevel] = PriorityLevel.MEDIUM
 
 
 class SettingsEntitySet(BaseModel):
     """Entities for settings updates."""
+
     setting_type: str = Field(..., description="Type of setting to update")
     setting_value: str = Field(..., description="New setting value")
     preference_category: Optional[str] = None
@@ -153,6 +178,7 @@ class SettingsEntitySet(BaseModel):
 
 class LifeAreaRatingEntitySet(BaseModel):
     """Entities for life area rating."""
+
     life_area: LifeAreaType
     rating: int = Field(..., ge=1, le=10, description="Rating from 1-10")
     comment: Optional[str] = Field(None, max_length=500)
@@ -160,8 +186,10 @@ class LifeAreaRatingEntitySet(BaseModel):
 
 # Database model schemas
 
+
 class ConversationLogCreate(BaseModel):
     """Schema for creating conversation log entries."""
+
     user_message: str
     intent: str
     confidence: float
@@ -177,6 +205,7 @@ class ConversationLogCreate(BaseModel):
 
 class ConversationLogOut(BaseModel):
     """Schema for conversation log output."""
+
     id: int
     user_id: str
     session_id: Optional[str]
@@ -190,13 +219,14 @@ class ConversationLogOut(BaseModel):
     conversation_turn: int
     previous_intent: Optional[str]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 class ConversationSessionCreate(BaseModel):
     """Schema for creating conversation sessions."""
+
     session_type: str = "chat"
     current_intent: Optional[str] = None
     incomplete_entities: Dict[str, Any] = Field(default_factory=dict)
@@ -205,6 +235,7 @@ class ConversationSessionCreate(BaseModel):
 
 class ConversationSessionOut(BaseModel):
     """Schema for conversation session output."""
+
     id: str
     user_id: str
     session_type: str
@@ -219,32 +250,36 @@ class ConversationSessionOut(BaseModel):
     started_at: datetime
     last_activity: datetime
     completed_at: Optional[datetime]
-    
+
     class Config:
         from_attributes = True
 
 
 class IntentFeedbackCreate(BaseModel):
     """Schema for creating intent feedback."""
+
     conversation_log_id: int
     original_intent: str
     original_confidence: float
     original_entities: Dict[str, Any] = Field(default_factory=dict)
     corrected_intent: str
     corrected_entities: Dict[str, Any] = Field(default_factory=dict)
-    feedback_type: str = Field(..., pattern=r'^(wrong_intent|missing_entity|wrong_entity)$')
+    feedback_type: str = Field(
+        ..., pattern=r"^(wrong_intent|missing_entity|wrong_entity)$"
+    )
     user_comment: Optional[str] = Field(None, max_length=1000)
-    
-    @validator('corrected_intent')
+
+    @validator("corrected_intent")
     def validate_corrected_intent(cls, v):
         valid_intents = [intent.value for intent in IntentType]
         if v not in valid_intents:
-            raise ValueError(f'Invalid intent. Must be one of: {valid_intents}')
+            raise ValueError(f"Invalid intent. Must be one of: {valid_intents}")
         return v
 
 
 class IntentFeedbackOut(BaseModel):
     """Schema for intent feedback output."""
+
     id: int
     user_id: str
     conversation_log_id: int
@@ -257,15 +292,17 @@ class IntentFeedbackOut(BaseModel):
     user_comment: Optional[str]
     feedback_quality: Optional[str]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 # Analytics and reporting schemas
 
+
 class IntentAnalytics(BaseModel):
     """Analytics data for intent classification performance."""
+
     total_messages: int
     intent_distribution: Dict[str, int]
     avg_confidence: float
@@ -277,6 +314,7 @@ class IntentAnalytics(BaseModel):
 
 class ConversationAnalytics(BaseModel):
     """Analytics data for conversation sessions."""
+
     total_sessions: int
     avg_session_length: float
     completion_rate: float
@@ -288,6 +326,7 @@ class ConversationAnalytics(BaseModel):
 
 class EntityExtractionAccuracy(BaseModel):
     """Analytics for entity extraction accuracy."""
+
     entity_type: str
     total_extractions: int
     correct_extractions: int
@@ -298,8 +337,10 @@ class EntityExtractionAccuracy(BaseModel):
 
 # Configuration schemas
 
+
 class IntentClassifierConfig(BaseModel):
     """Configuration for intent classifier."""
+
     confidence_threshold: float = Field(0.85, ge=0.0, le=1.0)
     enable_fallback: bool = True
     enable_logging: bool = True
@@ -311,6 +352,7 @@ class IntentClassifierConfig(BaseModel):
 
 class ConversationFlowConfig(BaseModel):
     """Configuration for conversation flow management."""
+
     max_clarification_attempts: int = 3
     entity_collection_timeout_minutes: int = 5
     auto_complete_sessions: bool = True

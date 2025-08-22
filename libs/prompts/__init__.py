@@ -10,8 +10,4 @@ from .task_generation import TaskGenerationPrompts
 from .conversation import ConversationPrompts
 
 __version__ = "0.1.0"
-__all__ = [
-    "GoalDecompositionPrompts",
-    "TaskGenerationPrompts", 
-    "ConversationPrompts"
-]
+__all__ = ["GoalDecompositionPrompts", "TaskGenerationPrompts", "ConversationPrompts"]

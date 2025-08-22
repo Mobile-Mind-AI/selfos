@@ -9,50 +9,54 @@ Handles personal configuration endpoints for enhanced onboarding:
 
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from dependencies import get_db
-from models import User, PersonalProfile, OnboardingAnalytics
+from dependencies import get_current_user, get_db
+from fastapi import APIRouter, Depends, HTTPException, status
+from models import OnboardingAnalytics, PersonalProfile, User
 from models.goals import LifeArea
-from dependencies import get_current_user
 from schemas.personal_config_schemas import (
-    PersonalProfileCreate,
-    PersonalProfileOut,
-    PersonalProfileUpdate,
     CustomLifeAreaCreate,
     CustomLifeAreaOut,
     CustomLifeAreaUpdate,
+    LifeAreaSuggestionOut,
     OnboardingAnalyticsCreate,
     OnboardingAnalyticsOut,
-    LifeAreaSuggestionOut
+    PersonalProfileCreate,
+    PersonalProfileOut,
+    PersonalProfileUpdate,
 )
+from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["personal-config"])
+
 
 # Personal Profile Endpoints
 @router.post("/profile", response_model=PersonalProfileOut)
 async def create_personal_profile(
-        profile_data: PersonalProfileCreate,
-        current_user: dict = Depends(get_current_user),
-        db: Session = Depends(get_db)
+    profile_data: PersonalProfileCreate,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Create or update user's personal profile with story and preferences."""
-    
+
     try:
-        print(f"🔍 PERSONAL_CONFIG: Received profile data: {profile_data.dict()}")
+        print(f"🔍 PERSONAL_CONFIG: Received profile data: {profile_data.model_dump()}")
         print(f"🔍 PERSONAL_CONFIG: User ID: {current_user['uid']}")
 
         # Check if profile already exists
-        existing_profile = db.query(PersonalProfile).filter(
-            PersonalProfile.user_id == current_user["uid"]
-        ).first()
+        existing_profile = (
+            db.query(PersonalProfile)
+            .filter(PersonalProfile.user_id == current_user["uid"])
+            .first()
+        )
 
         if existing_profile:
-            print(f"🔄 PERSONAL_CONFIG: Updating existing profile for user {current_user['uid']}")
+            print(
+                f"🔄 PERSONAL_CONFIG: Updating existing profile for user {current_user['uid']}"
+            )
             # Update existing profile
             for field, value in profile_data.dict(exclude_unset=True).items():
                 print(f"🔄 PERSONAL_CONFIG: Setting {field} = {value}")
@@ -65,14 +69,14 @@ async def create_personal_profile(
             return existing_profile
 
         # Create new profile
-        print(f"🆕 PERSONAL_CONFIG: Creating new profile for user {current_user['uid']}")
-        profile_dict = profile_data.dict()
+        print(
+            f"🆕 PERSONAL_CONFIG: Creating new profile for user {current_user['uid']}"
+        )
+        profile_dict = profile_data.model_dump()
         print(f"🆕 PERSONAL_CONFIG: Profile dict: {profile_dict}")
-        
+
         new_profile = PersonalProfile(
-            id=str(uuid.uuid4()),
-            user_id=current_user["uid"],
-            **profile_dict
+            id=str(uuid.uuid4()), user_id=current_user["uid"], **profile_dict
         )
 
         db.add(new_profile)
@@ -81,43 +85,48 @@ async def create_personal_profile(
         print(f"✅ PERSONAL_CONFIG: New profile created successfully")
 
         return new_profile
-        
+
     except Exception as e:
         print(f"🔴 PERSONAL_CONFIG: Error creating/updating profile: {e}")
         print(f"🔴 PERSONAL_CONFIG: Profile data: {profile_data}")
         db.rollback()
         raise HTTPException(
-            status_code=422,
-            detail=f"Failed to create/update profile: {str(e)}"
+            status_code=422, detail=f"Failed to create/update profile: {str(e)}"
         )
 
 
 @router.get("/profile", response_model=Optional[PersonalProfileOut])
 async def get_personal_profile(
-        current_user: dict = Depends(get_current_user),
-        db: Session = Depends(get_db)
+    current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Get user's personal profile."""
-    
+
     print("🚨🚨🚨 GET_PROFILE ENDPOINT CALLED! 🚨🚨🚨")
 
-    profile = db.query(PersonalProfile).filter(
-        PersonalProfile.user_id == current_user["uid"]
-    ).first()
-    
+    profile = (
+        db.query(PersonalProfile)
+        .filter(PersonalProfile.user_id == current_user["uid"])
+        .first()
+    )
+
     if profile:
         print(f"🔍 GET_PROFILE: Found profile for user {current_user['uid']}")
         print(f"🔍 GET_PROFILE: avatar_id = {repr(profile.avatar_id)}")
         print(f"🔍 GET_PROFILE: selected_life_areas = {profile.selected_life_areas}")
         print(f"🔍 GET_PROFILE: Full profile dict: {profile.__dict__}")
-        
+
         # Test direct serialization
         from schemas.personal_config_schemas import PersonalProfileOut
+
         try:
             # Use Pydantic v2 method
             serialized = PersonalProfileOut.model_validate(profile)
-            print(f"🔍 GET_PROFILE: Serialized avatar_id = {repr(serialized.avatar_id)}")
-            print(f"🔍 GET_PROFILE: Serialized selected_life_areas = {serialized.selected_life_areas}")
+            print(
+                f"🔍 GET_PROFILE: Serialized avatar_id = {repr(serialized.avatar_id)}"
+            )
+            print(
+                f"🔍 GET_PROFILE: Serialized selected_life_areas = {serialized.selected_life_areas}"
+            )
         except Exception as e:
             print(f"🔍 GET_PROFILE: Serialization error: {e}")
     else:
@@ -128,20 +137,21 @@ async def get_personal_profile(
 
 @router.put("/profile", response_model=PersonalProfileOut)
 async def update_personal_profile(
-        profile_update: PersonalProfileUpdate,
-        current_user: dict = Depends(get_current_user),
-        db: Session = Depends(get_db)
+    profile_update: PersonalProfileUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Update user's personal profile."""
 
-    profile = db.query(PersonalProfile).filter(
-        PersonalProfile.user_id == current_user["uid"]
-    ).first()
+    profile = (
+        db.query(PersonalProfile)
+        .filter(PersonalProfile.user_id == current_user["uid"])
+        .first()
+    )
 
     if not profile:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Personal profile not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Personal profile not found"
         )
 
     # Update fields
@@ -158,43 +168,38 @@ async def update_personal_profile(
 # Custom Life Areas Endpoints
 @router.get("/life-areas", response_model=List[CustomLifeAreaOut])
 async def get_custom_life_areas(
-        current_user: dict = Depends(get_current_user),
-        db: Session = Depends(get_db)
+    current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Get user's custom life areas ordered by priority."""
 
-    # Only return custom life areas (is_custom=True)
-    life_areas = db.query(LifeArea).filter(
-        LifeArea.user_id == current_user["uid"],
-        LifeArea.is_custom == True
-    ).order_by(LifeArea.priority_order).all()
+    # Return user's life areas
+    life_areas = (
+        db.query(LifeArea)
+        .filter(LifeArea.user_id == current_user["uid"])
+        .order_by(LifeArea.weight.desc())
+        .all()
+    )
 
-    print(f"📥 GET_CUSTOM_LIFE_AREAS: Found {len(life_areas)} custom life areas for user {current_user['uid']}")
+    print(
+        f"📥 GET_CUSTOM_LIFE_AREAS: Found {len(life_areas)} custom life areas for user {current_user['uid']}"
+    )
     for area in life_areas:
-        print(f"📥 - {area.name} (ID: {area.id}, icon: {area.icon}, color: {area.color})")
+        print(
+            f"📥 - {area.name} (ID: {area.id}, icon: {area.icon}, color: {area.color})"
+        )
 
     return life_areas
 
 
 @router.post("/life-areas", response_model=CustomLifeAreaOut)
 async def create_custom_life_area(
-        life_area_data: CustomLifeAreaCreate,
-        current_user: dict = Depends(get_current_user),
-        db: Session = Depends(get_db)
+    life_area_data: CustomLifeAreaCreate,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Create a new custom life area."""
 
-    # Get next priority order
-    max_priority = db.query(LifeArea).filter(
-        LifeArea.user_id == current_user["uid"]
-    ).count()
-
-    new_life_area = LifeArea(
-        user_id=current_user["uid"],
-        priority_order=max_priority + 1,
-        is_custom=True,  # Always mark as custom when created via this endpoint
-        **life_area_data.dict()
-    )
+    new_life_area = LifeArea(user_id=current_user["uid"], **life_area_data.model_dump())
 
     db.add(new_life_area)
     db.commit()
@@ -205,23 +210,22 @@ async def create_custom_life_area(
 
 @router.put("/life-areas/{life_area_id}", response_model=CustomLifeAreaOut)
 async def update_custom_life_area(
-        life_area_id: int,
-        life_area_update: CustomLifeAreaUpdate,
-        current_user: dict = Depends(get_current_user),
-        db: Session = Depends(get_db)
+    life_area_id: int,
+    life_area_update: CustomLifeAreaUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Update a custom life area."""
 
-    life_area = db.query(LifeArea).filter(
-        LifeArea.id == life_area_id,
-        LifeArea.user_id == current_user["uid"],
-        LifeArea.is_custom == True  # Only allow updating custom areas
-    ).first()
+    life_area = (
+        db.query(LifeArea)
+        .filter(LifeArea.id == life_area_id, LifeArea.user_id == current_user["uid"])
+        .first()
+    )
 
     if not life_area:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Life area not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Life area not found"
         )
 
     # Update fields
@@ -237,22 +241,21 @@ async def update_custom_life_area(
 
 @router.delete("/life-areas/{life_area_id}")
 async def delete_custom_life_area(
-        life_area_id: int,
-        current_user: dict = Depends(get_current_user),
-        db: Session = Depends(get_db)
+    life_area_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Delete a custom life area."""
 
-    life_area = db.query(LifeArea).filter(
-        LifeArea.id == life_area_id,
-        LifeArea.user_id == current_user["uid"],
-        LifeArea.is_custom == True  # Only allow deleting custom areas
-    ).first()
+    life_area = (
+        db.query(LifeArea)
+        .filter(LifeArea.id == life_area_id, LifeArea.user_id == current_user["uid"])
+        .first()
+    )
 
     if not life_area:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Life area not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Life area not found"
         )
 
     db.delete(life_area)
@@ -263,31 +266,30 @@ async def delete_custom_life_area(
 
 @router.put("/life-areas/reorder")
 async def reorder_life_areas(
-        area_ids: List[int],
-        current_user: dict = Depends(get_current_user),
-        db: Session = Depends(get_db)
+    area_ids: List[int],
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Reorder life areas by priority."""
 
     # Validate all areas belong to user
-    user_areas = db.query(LifeArea).filter(
-        LifeArea.user_id == current_user["uid"],
-        LifeArea.id.in_(area_ids),
-        LifeArea.is_custom == True
-    ).all()
+    user_areas = (
+        db.query(LifeArea)
+        .filter(LifeArea.user_id == current_user["uid"], LifeArea.id.in_(area_ids))
+        .all()
+    )
 
     if len(user_areas) != len(area_ids):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Some life areas not found or don't belong to user"
+            detail="Some life areas not found or don't belong to user",
         )
 
-    # Update priority order
+    # Update weight for ordering
     for index, area_id in enumerate(area_ids):
         db.query(LifeArea).filter(
-            LifeArea.id == area_id,
-            LifeArea.user_id == current_user["uid"]
-        ).update({"priority_order": index + 1})
+            LifeArea.id == area_id, LifeArea.user_id == current_user["uid"]
+        ).update({"weight": 100 - (index * 10)})
 
     db.commit()
 
@@ -297,9 +299,9 @@ async def reorder_life_areas(
 # Life Area Suggestions
 @router.get("/life-areas/suggestions", response_model=List[LifeAreaSuggestionOut])
 async def get_life_area_suggestions(
-        interests: Optional[str] = None,
-        current_user: dict = Depends(get_current_user),
-        db: Session = Depends(get_db)
+    interests: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Get AI-powered life area suggestions based on user interests."""
 
@@ -312,46 +314,47 @@ async def get_life_area_suggestions(
             icon="fitness_center",
             color="#ef4444",
             description="Physical health, mental wellness, and self-care",
-            keywords=["fitness", "nutrition", "mental health", "wellness"]
+            keywords=["fitness", "nutrition", "mental health", "wellness"],
         ),
         LifeAreaSuggestionOut(
             name="Work & Career",
             icon="work",
             color="#3b82f6",
             description="Professional development and career growth",
-            keywords=["career", "professional", "work", "skills"]
+            keywords=["career", "professional", "work", "skills"],
         ),
         LifeAreaSuggestionOut(
             name="Relationships",
             icon="people",
             color="#ec4899",
             description="Family, friends, and social connections",
-            keywords=["family", "friends", "social", "relationships"]
+            keywords=["family", "friends", "social", "relationships"],
         ),
         LifeAreaSuggestionOut(
             name="Personal Growth",
             icon="psychology",
             color="#8b5cf6",
             description="Learning, self-improvement, and personal development",
-            keywords=["learning", "growth", "development", "skills"]
+            keywords=["learning", "growth", "development", "skills"],
         ),
         LifeAreaSuggestionOut(
             name="Finances",
             icon="account_balance",
             color="#10b981",
             description="Financial planning, budgeting, and investments",
-            keywords=["money", "budget", "savings", "investments"]
+            keywords=["money", "budget", "savings", "investments"],
         ),
     ]
 
     # Filter out areas user already has
-    existing_areas = db.query(LifeArea.name).filter(
-        LifeArea.user_id == current_user["uid"]
-    ).all()
+    existing_areas = (
+        db.query(LifeArea.name).filter(LifeArea.user_id == current_user["uid"]).all()
+    )
     existing_names = {area.name for area in existing_areas}
 
     suggestions = [
-        suggestion for suggestion in base_suggestions
+        suggestion
+        for suggestion in base_suggestions
         if suggestion.name not in existing_names
     ]
 
@@ -361,16 +364,14 @@ async def get_life_area_suggestions(
 # Analytics Endpoints
 @router.post("/analytics", response_model=OnboardingAnalyticsOut)
 async def track_onboarding_event(
-        analytics_data: OnboardingAnalyticsCreate,
-        current_user: dict = Depends(get_current_user),
-        db: Session = Depends(get_db)
+    analytics_data: OnboardingAnalyticsCreate,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Track onboarding analytics event."""
 
     analytics_event = OnboardingAnalytics(
-        id=str(uuid.uuid4()),
-        user_id=current_user["uid"],
-        **analytics_data.dict()
+        id=str(uuid.uuid4()), user_id=current_user["uid"], **analytics_data.model_dump()
     )
 
     db.add(analytics_event)
@@ -382,14 +383,15 @@ async def track_onboarding_event(
 
 @router.get("/analytics/summary")
 async def get_analytics_summary(
-        current_user: dict = Depends(get_current_user),
-        db: Session = Depends(get_db)
+    current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Get onboarding analytics summary for current user."""
 
-    analytics = db.query(OnboardingAnalytics).filter(
-        OnboardingAnalytics.user_id == current_user["uid"]
-    ).all()
+    analytics = (
+        db.query(OnboardingAnalytics)
+        .filter(OnboardingAnalytics.user_id == current_user["uid"])
+        .all()
+    )
 
     # Calculate summary metrics
     total_events = len(analytics)
@@ -406,16 +408,16 @@ async def get_analytics_summary(
         "total_events": total_events,
         "step_counts": step_counts,
         "total_time_seconds": total_time,
-        "average_time_per_step": total_time / max(total_events, 1)
+        "average_time_per_step": total_time / max(total_events, 1),
     }
 
 
 # Story Analysis (Future AI Integration)
 @router.post("/story/analyze")
 async def analyze_personal_story(
-        story: str,
-        current_user: dict = Depends(get_current_user),
-        db: Session = Depends(get_db)
+    story: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Analyze personal story for insights and suggestions."""
 
@@ -426,19 +428,19 @@ async def analyze_personal_story(
         "personality_insights": {
             "dominant_traits": ["goal-oriented", "analytical", "growth-minded"],
             "communication_style": "direct",
-            "motivation_type": "achievement"
+            "motivation_type": "achievement",
         },
         "suggested_life_areas": [
             "Personal Growth",
             "Work & Career",
-            "Health & Wellness"
+            "Health & Wellness",
         ],
         "potential_goals": [
             "Develop leadership skills",
             "Improve work-life balance",
-            "Learn new technical skills"
+            "Learn new technical skills",
         ],
-        "confidence_score": 0.85
+        "confidence_score": 0.85,
     }
 
     return mock_analysis
@@ -451,10 +453,5 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "personal-config",
-        "endpoints": [
-            "profile",
-            "life-areas",
-            "analytics",
-            "story/analyze"
-        ]
+        "endpoints": ["profile", "life-areas", "analytics", "story/analyze"],
     }
