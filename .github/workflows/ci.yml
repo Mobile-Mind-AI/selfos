@@ -138,6 +138,7 @@ jobs:
         with:
           name: coverage-backend-py${{ matrix.python-version }}
           path: |
+            apps/backend_api/.coverage*
             apps/backend_api/coverage-backend.xml
             apps/backend_api/htmlcov-backend/
             apps/backend_api/pytest-backend.xml
@@ -198,6 +199,7 @@ jobs:
         with:
           name: coverage-mcp-py${{ matrix.python-version }}
           path: |
+            apps/mcp_server/.coverage*
             apps/mcp_server/coverage-mcp.xml
             apps/mcp_server/htmlcov-mcp/
             apps/mcp_server/pytest-mcp.xml
@@ -343,13 +345,20 @@ jobs:
 
       - name: Combine coverage reports
         run: |
-          # Find and copy coverage files
-          find coverage-artifacts -name "coverage-*.xml" -exec cp {} . \;
-
-          # Create combined coverage report
-          coverage combine coverage-backend.xml coverage-mcp.xml || true
-          coverage report --format=markdown > coverage-summary.md || true
-          coverage html -d htmlcov-combined || true
+          # Find and copy .coverage data files (not XML)
+          find coverage-artifacts -name ".coverage*" -exec cp {} . \; || true
+          
+          # If we found .coverage files, combine them
+          if ls .coverage* 1> /dev/null 2>&1; then
+            coverage combine || true
+            coverage report --format=markdown > coverage-summary.md || true
+            coverage html -d htmlcov-combined || true
+          else
+            echo "No .coverage data files found, skipping combine" > coverage-summary.md
+          fi
+          
+          # Also copy XML files for reference
+          find coverage-artifacts -name "coverage-*.xml" -exec cp {} . \; || true
 
       - name: Upload combined coverage
         uses: actions/upload-artifact@v4
