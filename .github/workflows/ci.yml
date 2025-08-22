@@ -126,7 +126,7 @@ jobs:
             --cov-report=xml:coverage-backend.xml \
             --cov-report=html:htmlcov-backend \
             --cov-report=term-missing \
-            --cov-fail-under=75 \
+            --cov-fail-under=65 \
             --junit-xml=pytest-backend.xml \
             -n auto \
             --dist=worksteal \

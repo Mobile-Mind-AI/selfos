@@ -252,7 +252,7 @@ class JournalService:
             .filter(
                 and_(
                     models.JournalEntry.user_id == user_id,
-                    models.JournalEntry.project_id is not None,
+                    models.JournalEntry.project_id.isnot(None),
                 )
             )
             .scalar()
@@ -264,7 +264,7 @@ class JournalService:
             .filter(
                 and_(
                     models.JournalEntry.user_id == user_id,
-                    models.JournalEntry.goal_id is not None,
+                    models.JournalEntry.goal_id.isnot(None),
                 )
             )
             .scalar()
@@ -276,7 +276,7 @@ class JournalService:
             .filter(
                 and_(
                     models.JournalEntry.user_id == user_id,
-                    models.JournalEntry.task_id is not None,
+                    models.JournalEntry.task_id.isnot(None),
                 )
             )
             .scalar()
@@ -289,9 +289,9 @@ class JournalService:
             .filter(
                 and_(
                     models.JournalEntry.user_id == user_id,
-                    models.JournalEntry.project_id is None,
-                    models.JournalEntry.goal_id is None,
-                    models.JournalEntry.task_id is None,
+                    models.JournalEntry.project_id.is_(None),
+                    models.JournalEntry.goal_id.is_(None),
+                    models.JournalEntry.task_id.is_(None),
                 )
             )
             .scalar()

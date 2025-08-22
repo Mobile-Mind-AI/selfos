@@ -11,18 +11,14 @@ import importlib.util
 import os
 
 from .models import (
-    ChatContext,
-    ChatMessage,
-    ChatResponse,
-    GoalDecomposition,
-    HierarchicalTask,
-    Intent,
-    IntentClassification,
-    MemoryItem,
-    MemorySearchResult,
-    PromptTemplate,
-    RecurrenceRule,
-    TaskSuggestion,
+    AIRequest,
+    AIResponse,
+    GoalDecompositionRequest,
+    GoalDecompositionResponse,
+    RequestType,
+    ResponseStatus,
+    TaskGenerationRequest,
+    TaskGenerationResponse,
 )
 from .orchestrator import AIOrchestrator
 
