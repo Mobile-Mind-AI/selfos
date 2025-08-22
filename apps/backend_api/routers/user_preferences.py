@@ -4,10 +4,7 @@ from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, status
 from models import UserPreferences
 from schemas import UserPreferences as UserPreferencesSchema
-from schemas import (
-    UserPreferencesCreate,
-    UserPreferencesUpdate,
-)
+from schemas import UserPreferencesCreate, UserPreferencesUpdate
 from services.preferences_service import update_user_preferences_with_history
 from sqlalchemy.orm import Session
 

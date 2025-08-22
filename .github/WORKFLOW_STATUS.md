@@ -67,7 +67,7 @@ infra/k8s/production/
 ```bash
 # Required secrets:
 GCP_SA_KEY_STAGING          # Google Cloud service account
-GCP_SA_KEY_PRODUCTION       # Google Cloud service account  
+GCP_SA_KEY_PRODUCTION       # Google Cloud service account
 GCP_PROJECT_ID_STAGING      # GCP project ID
 GCP_PROJECT_ID_PRODUCTION   # GCP project ID
 SLACK_WEBHOOK               # Slack notifications
@@ -88,8 +88,8 @@ CODECOV_TOKEN               # Code coverage (optional)
    ```bash
    # Backend API Dockerfile
    apps/backend_api/Dockerfile
-   
-   # AI Engine Dockerfile  
+
+   # AI Engine Dockerfile
    apps/ai_engine/Dockerfile
    ```
 

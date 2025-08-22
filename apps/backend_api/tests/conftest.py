@@ -29,10 +29,7 @@ from main import app
 
 # Import after path modification (AI models should take precedence for AI functionality)
 # Import all models to ensure tables are created in test database
-from models import (
-    Base,
-    User,
-)
+from models import Base, User
 
 
 @pytest.fixture(scope="function", autouse=True)

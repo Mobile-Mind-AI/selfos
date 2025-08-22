@@ -136,9 +136,9 @@ class TestAssistantProfilesCRUD:
 
     def test_create_assistant_profile(self, mock_user):
         """Test creating a new assistant profile"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
 
         response = client.post("/api/assistant_profiles/", json=SAMPLE_PROFILE_DATA)
 
@@ -167,9 +167,9 @@ class TestAssistantProfilesCRUD:
 
     def test_list_assistant_profiles(self, mock_user):
         """Test listing assistant profiles"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
 
         # Create a few profiles first
         client.post("/api/assistant_profiles/", json=SAMPLE_PROFILE_DATA)
@@ -191,9 +191,9 @@ class TestAssistantProfilesCRUD:
 
     def test_get_assistant_profile_by_id(self, mock_user):
         """Test getting a specific assistant profile by ID"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
 
         # Create profile first
         create_response = client.post(
@@ -211,9 +211,9 @@ class TestAssistantProfilesCRUD:
 
     def test_get_nonexistent_profile(self, mock_user):
         """Test getting a profile that doesn't exist"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
 
         response = client.get("/api/assistant_profiles/nonexistent-id/")
 
@@ -222,9 +222,9 @@ class TestAssistantProfilesCRUD:
 
     def test_update_assistant_profile(self, mock_user):
         """Test updating an assistant profile"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
 
         # Create profile first
         create_response = client.post(
@@ -257,9 +257,9 @@ class TestAssistantProfilesCRUD:
 
     def test_delete_assistant_profile(self, mock_user):
         """Test deleting an assistant profile"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
 
         # Create two profiles first (can't delete if only one exists)
         create_response_1 = client.post(
@@ -285,9 +285,9 @@ class TestAssistantProfilesCRUD:
 
     def test_cannot_delete_only_profile(self, mock_user):
         """Test that you cannot delete the only assistant profile"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
 
         # Create only one profile
         create_response = client.post(
@@ -303,27 +303,27 @@ class TestAssistantProfilesCRUD:
     def test_user_isolation(self, mock_user, mock_user_2):
         """Test that users can only see their own profiles"""
         # Create profile for user 1
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
         create_response = client.post(
             "/api/assistant_profiles/", json=SAMPLE_PROFILE_DATA
         )
         profile_id = create_response.json()["id"]
 
         # Switch to user 2 and try to access user 1's profile
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user_2)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user_2)
         response = client.get(f"/api/assistant_profiles/{profile_id}")
 
         assert response.status_code == 404
 
     def test_default_profile_management(self, mock_user):
         """Test default profile logic"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
 
         # Create first profile (should be default)
         response_1 = client.post("/api/assistant_profiles/", json=SAMPLE_PROFILE_DATA)
@@ -364,9 +364,9 @@ class TestAssistantProfilesOnboarding:
 
     def test_onboarding_flow(self, mock_user):
         """Test the complete onboarding flow"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
 
         response = client.post(
             "/api/assistant_profiles/onboarding/", json=ONBOARDING_DATA
@@ -386,9 +386,9 @@ class TestAssistantProfilesOnboarding:
 
     def test_get_default_profile(self, mock_user):
         """Test getting the default assistant profile"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
 
         # Create a default profile
         client.post("/api/assistant_profiles/", json=SAMPLE_PROFILE_DATA)
@@ -403,9 +403,9 @@ class TestAssistantProfilesOnboarding:
 
     def test_get_default_profile_not_found(self, mock_user):
         """Test getting default profile when none exists"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
 
         response = client.get("/api/assistant_profiles/default/")
 
@@ -427,9 +427,9 @@ class TestAssistantProfilesPersonality:
 
     def test_personality_preview(self, mock_user):
         """Test personality preview functionality"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
 
         preview_data = {
             "style": {
@@ -522,9 +522,9 @@ class TestAssistantProfilesValidation:
 
     def test_invalid_style_values(self, mock_user):
         """Test validation of personality style values"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
 
         invalid_data = SAMPLE_PROFILE_DATA.copy()
         invalid_data["style"] = {
@@ -541,9 +541,9 @@ class TestAssistantProfilesValidation:
 
     def test_missing_required_fields(self, mock_user):
         """Test validation of required fields"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
 
         incomplete_data = {"description": "Missing name field"}
 
@@ -553,9 +553,9 @@ class TestAssistantProfilesValidation:
 
     def test_profile_limit_enforcement(self, mock_user):
         """Test that users cannot create more than 5 profiles"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_assistant_profiles(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_assistant_profiles(mock_user)
 
         # Create 5 profiles
         for i in range(5):

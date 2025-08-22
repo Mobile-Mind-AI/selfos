@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS user_preferences_history (
     old_value VARCHAR,
     new_value VARCHAR,
     changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
+
     FOREIGN KEY (user_id) REFERENCES users(uid) ON DELETE CASCADE
 );
 

@@ -317,7 +317,7 @@ curl -X POST "http://localhost:8000/auth/forgot-password" \
    ```python
    def _generate_welcome_email_html(self, user_name, login_link):
        # HTML template
-   
+
    def _generate_welcome_email_text(self, user_name, login_link):
        # Plain text template
    ```
@@ -331,7 +331,7 @@ curl -X POST "http://localhost:8000/auth/forgot-password" \
 3. **Integrate with Router**:
    ```python
    from services.email_service import email_service
-   
+
    email_service.send_welcome_email(...)
    ```
 
@@ -407,8 +407,8 @@ Initializes the email service with environment configuration.
 #### send_password_reset_email()
 ```python
 send_password_reset_email(
-    to_email: str, 
-    reset_link: str, 
+    to_email: str,
+    reset_link: str,
     user_name: Optional[str] = None
 ) -> bool
 ```

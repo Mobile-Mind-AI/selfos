@@ -23,7 +23,7 @@ class TestPermissionService:
         """Create sample users for testing."""
         setup = isolated_test_setup
         session = setup["session_local"]()
-        
+
         users = []
         for i in range(3):
             user = User(
@@ -32,11 +32,11 @@ class TestPermissionService:
             )
             session.add(user)
             users.append(user)
-        
+
         session.commit()
         for user in users:
             session.refresh(user)
-        
+
         try:
             yield users
         finally:
@@ -47,7 +47,7 @@ class TestPermissionService:
         """Create a sample assistant profile owned by user_0."""
         setup = isolated_test_setup
         session = setup["session_local"]()
-        
+
         assistant = AssistantProfile(
             user_id=sample_users[0].uid,
             owner_id=sample_users[0].uid,
@@ -67,7 +67,7 @@ class TestPermissionService:
         session.add(assistant)
         session.commit()
         session.refresh(assistant)
-        
+
         try:
             yield assistant
         finally:
@@ -116,7 +116,7 @@ class TestPermissionService:
         assistant = db_session.query(AssistantProfile).filter(
             AssistantProfile.id == assistant_id
         ).first()
-        
+
         assistant.is_public = True
         db_session.commit()
 
@@ -177,7 +177,7 @@ class TestPermissionService:
 
         # Grant permission that expires in the past
         expired_time = datetime.utcnow() - timedelta(hours=1)
-        
+
         await PermissionService.share_assistant(
             assistant_id=assistant_id,
             target_user_id=grantee_id,
@@ -219,7 +219,7 @@ class TestPermissionService:
                 granted_by=editor_id,
                 db=db_session
             )
-        
+
         assert exc_info.value.status_code == 403
         assert "Insufficient permissions" in str(exc_info.value.detail)
 
@@ -249,7 +249,7 @@ class TestPermissionService:
                 granted_by=admin_id,
                 db=db_session
             )
-        
+
         assert exc_info.value.status_code == 403
         assert "Cannot grant higher permission" in str(exc_info.value.detail)
 
@@ -305,7 +305,7 @@ class TestPermissionService:
             style={"formality": 50, "directness": 50, "humor": 30, "empathy": 70, "motivation": 60},
             version=1000
         )
-        
+
         public_assistant = AssistantProfile(
             user_id=user2_id,
             owner_id=user2_id,
@@ -316,7 +316,7 @@ class TestPermissionService:
             is_public=True,
             version=1000
         )
-        
+
         shared_assistant = AssistantProfile(
             user_id=user2_id,
             owner_id=user2_id,
@@ -344,11 +344,11 @@ class TestPermissionService:
 
         # Get all assistants for user1
         user1_assistants = await PermissionService.get_user_assistants(user1_id, db_session)
-        
+
         # Should have access to: owned, public, and shared assistants
         assistant_names = {a.name for a in user1_assistants}
         expected_names = {"Owned Assistant", "Public Assistant", "Shared Assistant"}
-        
+
         assert assistant_names == expected_names, f"Expected {expected_names}, got {assistant_names}"
 
     @pytest.mark.asyncio
@@ -398,7 +398,7 @@ class TestPermissionService:
             AssistantPermission.assistant_id == assistant_id,
             AssistantPermission.user_id == grantee_id
         ).all()
-        
+
         assert len(permissions) == 1, "Should have only one permission record per user"
 
     @pytest.mark.asyncio
@@ -502,12 +502,12 @@ class TestAssistantVersioning:
         """Create a sample user."""
         setup = isolated_test_setup
         session = setup["session_local"]()
-        
+
         user = User(uid="test_user", email="test@example.com")
         session.add(user)
         session.commit()
         session.refresh(user)
-        
+
         try:
             yield user
         finally:
@@ -518,7 +518,7 @@ class TestAssistantVersioning:
         """Create a sample assistant."""
         setup = isolated_test_setup
         session = setup["session_local"]()
-        
+
         assistant = AssistantProfile(
             user_id=sample_user.uid,
             owner_id=sample_user.uid,
@@ -531,7 +531,7 @@ class TestAssistantVersioning:
         session.add(assistant)
         session.commit()
         session.refresh(assistant)
-        
+
         try:
             yield assistant
         finally:
@@ -550,20 +550,20 @@ class TestAssistantVersioning:
     def test_version_update(self, db_session: Session, sample_assistant):
         """Test that version is updated when assistant is modified."""
         original_version = sample_assistant.version
-        
+
         # Simulate update
         sample_assistant.update_version()
         db_session.commit()
-        
+
         assert sample_assistant.version > original_version, "Version should be updated"
 
     def test_version_is_timestamp(self, db_session: Session, sample_assistant):
         """Test that version is based on timestamp."""
         import time
-        
+
         # Update version and check it's close to current timestamp
         sample_assistant.update_version()
         current_timestamp_ms = int(datetime.utcnow().timestamp() * 1000)
-        
+
         # Allow for small timing differences (within 1 second)
         assert abs(sample_assistant.version - current_timestamp_ms) < 1000

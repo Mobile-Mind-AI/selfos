@@ -621,9 +621,9 @@ class AIOrchestrator:
 
     def __init__(self, config: AIConfig | None = None):
         self.config = config or AIConfig()
-        self.clients: dict[str, ProviderClient] = (
-            {}
-        )  # Use string keys instead of enum objects
+        self.clients: dict[
+            str, ProviderClient
+        ] = {}  # Use string keys instead of enum objects
         self.cache = ResponseCache(ttl=self.config.settings["cache_ttl"])
         self.metrics = ProcessingMetrics()
         self._initialize_clients()

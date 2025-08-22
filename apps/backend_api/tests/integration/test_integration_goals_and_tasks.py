@@ -313,9 +313,9 @@ class TestGoalsAndTasksIntegration:
         assert task_response.status_code == 404
 
         # Restore original user
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_integration
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_integration
 
     def test_data_consistency(self):
         """Test data consistency across operations"""

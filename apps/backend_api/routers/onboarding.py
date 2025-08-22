@@ -120,9 +120,7 @@ def update_onboarding_step(
     else:
         state.onboarding_completed = True
         state.completed_at = datetime.utcnow()
-        print(
-            f"🎯 ONBOARDING: Marked onboarding as completed (step {step_number} >= 6)"
-        )
+        print(f"🎯 ONBOARDING: Marked onboarding as completed (step {step_number} >= 6)")
 
     db.commit()
     db.refresh(state)
@@ -182,9 +180,7 @@ async def complete_onboarding(
                     break
 
         if assistant:
-            print(
-                "🎯 ONBOARDING: Found assistant profile, creating onboarding state..."
-            )
+            print("🎯 ONBOARDING: Found assistant profile, creating onboarding state...")
             # Create onboarding state since user has completed setup
             state = OnboardingState(
                 user_id=current_user["uid"],

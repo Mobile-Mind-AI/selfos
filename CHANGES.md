@@ -115,7 +115,7 @@
 - `base_tools.py` - Abstract base class for all tool handlers
 - `goals_tools.py` - Complete Goals API tools (6 operations)
 - `projects_tools.py` - Projects API tools framework
-- `tasks_tools.py` - Tasks API tools framework  
+- `tasks_tools.py` - Tasks API tools framework
 - `ai_tools.py` - AI-specific tools (goal decomposition, suggestions)
 
 ##### 📁 `/apps/mcp_server/transport/` - MCP Transport Layers
@@ -151,7 +151,7 @@
 
 ###### 📁 `/apps/selfos/lib/models/` - Data Models
 - `auth_request.dart` & `auth_request.g.dart` - Authentication request models
-- `auth_response.dart` & `auth_response.g.dart` - Authentication response models  
+- `auth_response.dart` & `auth_response.g.dart` - Authentication response models
 - `user.dart` & `user.g.dart` - User data models with JSON serialization
 
 ###### 📁 `/apps/selfos/lib/screens/` - UI Screens
@@ -268,7 +268,7 @@
 ### 📁 `/scripts/` - Project Automation
 **Purpose**: Development workflow automation scripts
 - `fix-and-start.sh` - Complete system startup with health checks and error recovery
-- `quick-test.sh` - Comprehensive testing with coverage reporting  
+- `quick-test.sh` - Comprehensive testing with coverage reporting
 - `setup_ai_providers.sh` - AI provider configuration and validation
 - `start-services.sh` - Unified service startup (backend + MCP server + frontend options)
 
@@ -374,7 +374,7 @@ apps/selfos/lib/widgets/welcome/    # Animated Welcome Components
 - **Component Isolation**: Each welcome widget is self-contained with proper interface design
 - **Build Validation**: Flutter web build passes successfully with all components
 
-#### ✅ **Router & State Management Improvements**  
+#### ✅ **Router & State Management Improvements**
 - **Router Interference Fix**: Prevented aggressive redirects when users are actively in onboarding
 - **State Refresh Optimization**: Removed unnecessary `checkOnboardingStatus()` calls during step transitions
 - **Step Progress Tracking**: Fixed data field mismatches between Flutter and backend schemas
@@ -481,7 +481,7 @@ apps/mcp_server/tools/onboarding_tools.py # MCP tools for onboarding operations
 - Visual progress indicators during API calls
 - Automatic retry for 429 errors after 3-second delay
 
-// Backend Validation Updates  
+// Backend Validation Updates
 - Data-presence validation instead of step-number checking
 - Auto-marking of combined steps (personality + language)
 - Flexible completion criteria based on assistant + life areas
@@ -671,7 +671,7 @@ apps/backend_api/
 {
   "personality_traits": {
     "formality": 60,     // 0=formal, 100=casual
-    "directness": 70,    // 0=diplomatic, 100=direct  
+    "directness": 70,    // 0=diplomatic, 100=direct
     "humor": 40,         // 0=serious, 100=playful
     "empathy": 80,       // 0=analytical, 100=warm
     "motivation": 75     // 0=calm, 100=energetic
@@ -721,7 +721,7 @@ apps/backend_api/
 ```
 apps/mcp_server/
 ├── server.py              # Main MCP server implementation
-├── auth.py                 # Firebase authentication provider  
+├── auth.py                 # Firebase authentication provider
 ├── security.py            # Permission engine and rate limiting
 ├── config.py              # Environment configuration
 ├── fastapi_integration.py  # Web server integration

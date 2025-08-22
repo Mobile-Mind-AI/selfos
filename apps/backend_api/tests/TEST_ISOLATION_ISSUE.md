@@ -8,7 +8,7 @@ The test `test_unit_test_goals.py::test_get_goal` experiences intermittent failu
   - Individually: `pytest tests/unit/test_goals.py::test_get_goal`
   - With its test file: `pytest tests/unit/test_goals.py`
   - With specific other test files
-  
+
 - Test **fails** when run:
   - After `test_goal_hierarchy.py` tests
   - As part of the full test suite: `pytest tests/`

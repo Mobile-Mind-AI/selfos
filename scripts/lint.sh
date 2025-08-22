@@ -122,7 +122,7 @@ OVERALL_SUCCESS=true
 print_status "🔧 Running SelfOS code quality checks..."
 echo "Configuration:"
 echo "  Format: $RUN_FORMAT"
-echo "  Lint: $RUN_LINT" 
+echo "  Lint: $RUN_LINT"
 echo "  Security: $RUN_SECURITY"
 echo "  Type Check: $RUN_TYPE_CHECK"
 echo "  Auto Fix: $AUTO_FIX"
@@ -132,12 +132,12 @@ echo ""
 # Code formatting with Black
 if [[ "$RUN_FORMAT" == "true" ]]; then
     print_status "🎨 Running Black (code formatter)..."
-    
+
     BLACK_ARGS="--line-length 88"
     if [[ "$CHECK_ONLY" == "true" ]]; then
         BLACK_ARGS="$BLACK_ARGS --check --diff"
     fi
-    
+
     if black $BLACK_ARGS apps/; then
         print_success "✅ Black formatting passed"
     else
@@ -150,12 +150,12 @@ fi
 # Import sorting with isort
 if [[ "$RUN_FORMAT" == "true" ]]; then
     print_status "📦 Running isort (import sorting)..."
-    
+
     ISORT_ARGS="--profile black --line-length 88"
     if [[ "$CHECK_ONLY" == "true" ]]; then
         ISORT_ARGS="$ISORT_ARGS --check-only --diff"
     fi
-    
+
     if isort $ISORT_ARGS apps/; then
         print_success "✅ isort import sorting passed"
     else
@@ -168,12 +168,12 @@ fi
 # Linting with ruff
 if [[ "$RUN_LINT" == "true" ]]; then
     print_status "🔍 Running Ruff (linter)..."
-    
+
     RUFF_ARGS=""
     if [[ "$AUTO_FIX" == "true" && "$CHECK_ONLY" != "true" ]]; then
         RUFF_ARGS="--fix"
     fi
-    
+
     if ruff check $RUFF_ARGS apps/; then
         print_success "✅ Ruff linting passed"
     else
@@ -186,7 +186,7 @@ fi
 # Security scanning with bandit
 if [[ "$RUN_SECURITY" == "true" ]]; then
     print_status "🔒 Running Bandit (security scanner)..."
-    
+
     if command -v bandit >/dev/null 2>&1; then
         if bandit -r apps/ --skip B101 -f screen; then
             print_success "✅ Bandit security scan passed"
@@ -203,7 +203,7 @@ fi
 # Type checking with mypy
 if [[ "$RUN_TYPE_CHECK" == "true" ]]; then
     print_status "🏷️ Running MyPy (type checker)..."
-    
+
     if command -v mypy >/dev/null 2>&1; then
         # Run mypy on specific directories to avoid overwhelming output
         MYPY_SUCCESS=true
@@ -215,7 +215,7 @@ if [[ "$RUN_TYPE_CHECK" == "true" ]]; then
                 fi
             fi
         done
-        
+
         if [[ "$MYPY_SUCCESS" == "true" ]]; then
             print_success "✅ MyPy type checking passed"
         else

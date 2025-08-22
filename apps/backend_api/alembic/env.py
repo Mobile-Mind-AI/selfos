@@ -20,6 +20,7 @@ from db import Base  # noqa
 
 target_metadata = Base.metadata
 
+
 def run_migrations_offline():
     """
     Run migrations in 'offline' mode.
@@ -34,6 +35,7 @@ def run_migrations_offline():
     with context.begin_transaction():
         context.run_migrations()
 
+
 def run_migrations_online():
     """
     Run migrations in 'online' mode.
@@ -45,12 +47,10 @@ def run_migrations_online():
         url=os.environ.get("DATABASE_URL"),
     )
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

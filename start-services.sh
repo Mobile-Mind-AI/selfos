@@ -29,27 +29,27 @@ case "${1:-all}" in
         echo "📦 Starting Backend + MCP Server..."
         docker-compose up --build backend mcp-server
         ;;
-        
+
     "backend")
         echo "📦 Starting Backend API..."
         docker-compose up --build backend
         ;;
-        
+
     "frontend")
         echo "📦 Starting Full Stack (Backend + MCP + Frontend)..."
         docker-compose --profile frontend up --build
         ;;
-        
+
     "mcp")
         echo "🤖 Using MCP Server startup script..."
         echo "See apps/mcp_server/start_mcp_server.sh for all MCP options"
         ./apps/mcp_server/start_mcp_server.sh
         ;;
-        
+
     "help"|"-h"|"--help")
         show_usage
         ;;
-        
+
     *)
         echo "❌ Unknown option: $1"
         echo ""

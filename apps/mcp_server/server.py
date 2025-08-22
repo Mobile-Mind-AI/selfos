@@ -14,12 +14,7 @@ from typing import Any
 from auth import MCPAuthProvider
 from config import MCPConfig
 from mcp.server import Server
-from mcp.types import (
-    Prompt,
-    Resource,
-    TextContent,
-    Tool,
-)
+from mcp.types import Prompt, Resource, TextContent, Tool
 from resources.context_resources import ContextResourcesHandler
 
 # from tools.onboarding_tools import OnboardingToolsHandler  # TODO: Create when needed

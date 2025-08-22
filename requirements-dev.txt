@@ -1,0 +1,18 @@
+# Development dependencies with exact versions for consistency
+# These match the versions in .pre-commit-config.yaml
+
+# Formatters
+black==23.12.1
+isort==5.13.2
+
+# Linters
+ruff==0.1.9
+bandit==1.7.6
+mypy==1.8.0
+
+# Type stubs
+types-requests
+types-PyYAML
+
+# Pre-commit
+pre-commit==3.6.0

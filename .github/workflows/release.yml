@@ -27,7 +27,7 @@ jobs:
     outputs:
       version: ${{ steps.get-version.outputs.version }}
       tag: ${{ steps.get-version.outputs.tag }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,10 +42,10 @@ jobs:
           else
             VERSION="${GITHUB_REF#refs/tags/}"
           fi
-          
+
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "tag=${VERSION}" >> $GITHUB_OUTPUT
-          
+
           # Validate version format
           if [[ ! $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
             echo "❌ Invalid version format: $VERSION"
@@ -78,7 +78,7 @@ jobs:
     name: Test Release
     runs-on: ubuntu-latest
     needs: validate-release
-    
+
     services:
       postgres:
         image: postgres:15
@@ -140,7 +140,7 @@ jobs:
         run: |
           cd apps/backend_api
           export $(cat .env.test | xargs)
-          
+
           # Run all test suites
           alembic upgrade head
           pytest tests/ -v --cov=. --cov-report=xml --cov-fail-under=85
@@ -155,7 +155,7 @@ jobs:
     outputs:
       backend-image: ${{ steps.build-backend.outputs.image }}
       ai-engine-image: ${{ steps.build-ai-engine.outputs.image }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -228,7 +228,7 @@ jobs:
     needs: validate-release
     outputs:
       changelog: ${{ steps.changelog.outputs.changelog }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -240,7 +240,7 @@ jobs:
         run: |
           # Get the previous tag
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          
+
           if [ -z "$PREVIOUS_TAG" ]; then
             echo "No previous tag found, generating changelog from beginning"
             COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges)
@@ -248,30 +248,30 @@ jobs:
             echo "Generating changelog from $PREVIOUS_TAG to ${{ needs.validate-release.outputs.version }}"
             COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
           fi
-          
+
           # Create changelog
           cat > changelog.md << EOF
           ## What's Changed
-          
+
           ### 🚀 Features
           $(echo "$COMMITS" | grep -i "feat\|add\|new" || echo "- No new features")
-          
+
           ### 🐛 Bug Fixes
           $(echo "$COMMITS" | grep -i "fix\|bug" || echo "- No bug fixes")
-          
+
           ### 📚 Documentation
           $(echo "$COMMITS" | grep -i "doc\|readme" || echo "- No documentation changes")
-          
+
           ### 🔧 Other Changes
           $(echo "$COMMITS" | grep -v -i "feat\|add\|new\|fix\|bug\|doc\|readme" || echo "- No other changes")
-          
+
           ### 🏗️ Technical Details
           - Backend API: \`ghcr.io/${{ github.repository }}/backend:${{ needs.validate-release.outputs.version }}\`
           - AI Engine: \`ghcr.io/${{ github.repository }}/ai-engine:${{ needs.validate-release.outputs.version }}\`
-          
+
           **Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${{ needs.validate-release.outputs.version }}
           EOF
-          
+
           # Output for GitHub Actions
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           cat changelog.md >> $GITHUB_OUTPUT
@@ -288,7 +288,7 @@ jobs:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     needs: [validate-release, test-release, build-release, generate-changelog]
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -341,7 +341,7 @@ jobs:
     name: Post-Release Tasks
     runs-on: ubuntu-latest
     needs: [create-release, deploy-production]
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -361,7 +361,7 @@ jobs:
           title: "chore: bump version to ${{ needs.validate-release.outputs.version }}"
           body: |
             Automated version bump after release ${{ needs.validate-release.outputs.version }}
-            
+
             - Updated version files
             - Generated automatically by release workflow
           branch: chore/version-bump-${{ needs.validate-release.outputs.version }}

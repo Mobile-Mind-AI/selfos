@@ -9,8 +9,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = '017'
-down_revision = ('016', '001_add_entity_knowledge_graph')
+revision = "017"
+down_revision = ("016", "001_add_entity_knowledge_graph")
 branch_labels = None
 depends_on = None
 

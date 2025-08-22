@@ -5,7 +5,7 @@ repos:
     rev: 23.12.1
     hooks:
       - id: black
-        language_version: python3.11
+        language_version: python3
         args: [--line-length=88]
 
   # Import sorting
@@ -73,7 +73,7 @@ repos:
 
 # Global configuration
 default_language_version:
-  python: python3.11
+  python: python3
 
 # Minimum pre-commit version
 minimum_pre_commit_version: 3.0.0
@@ -82,7 +82,7 @@ minimum_pre_commit_version: 3.0.0
 ci:
   autofix_commit_msg: |
     [pre-commit.ci] auto fixes from pre-commit hooks
-    
+
     for more information, see https://pre-commit.ci
   autofix_prs: true
   autoupdate_branch: ''

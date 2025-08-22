@@ -25,9 +25,7 @@ is_testing = (
 if not is_testing:
     try:
         if cred_path:
-            print(
-                f"🔥 FIREBASE: Attempting to initialize with credentials: {cred_path}"
-            )
+            print(f"🔥 FIREBASE: Attempting to initialize with credentials: {cred_path}")
             import os.path
 
             if os.path.exists(cred_path):

@@ -29,7 +29,7 @@ from dependencies import get_db, get_current_user
 # Test database - isolated in-memory SQLite for this module
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, 
+    SQLALCHEMY_DATABASE_URL,
     connect_args={"check_same_thread": False},
     poolclass=StaticPool
 )
@@ -73,7 +73,7 @@ def auth_headers():
 
 class TestBatchSync:
     """Test batch synchronization operations."""
-    
+
     def test_batch_sync_create_goal(self, auth_headers):
         """Test creating a goal through batch sync."""
         batch_request = {
@@ -93,11 +93,11 @@ class TestBatchSync:
             ],
             "client_id": "test_client"
         }
-        
-        response = client.post("/api/sync/batch", 
-                             json=batch_request, 
+
+        response = client.post("/api/sync/batch",
+                             json=batch_request,
                              headers=auth_headers)
-        
+
         assert response.status_code == 200
         results = response.json()
         assert len(results) == 1
@@ -126,15 +126,15 @@ class TestBatchSync:
             ],
             "client_id": "test_client"
         }
-        
-        response = client.post("/api/sync/batch", 
-                             json=create_request, 
+
+        response = client.post("/api/sync/batch",
+                             json=create_request,
                              headers=auth_headers)
         assert response.status_code == 200
         create_results = response.json()
         # Get the actual database ID returned from create
         created_id = create_results[0]["object_id"]
-        
+
         # Now update the goal using the actual database ID
         update_request = {
             "operations": [
@@ -152,11 +152,11 @@ class TestBatchSync:
             ],
             "client_id": "test_client"
         }
-        
-        response = client.post("/api/sync/batch", 
-                             json=update_request, 
+
+        response = client.post("/api/sync/batch",
+                             json=update_request,
                              headers=auth_headers)
-        
+
         assert response.status_code == 200
         results = response.json()
         assert len(results) == 1
@@ -183,12 +183,12 @@ class TestBatchSync:
             ],
             "client_id": "test_client"
         }
-        
-        response = client.post("/api/sync/batch", 
-                             json=create_request, 
+
+        response = client.post("/api/sync/batch",
+                             json=create_request,
                              headers=auth_headers)
         assert response.status_code == 200
-        
+
         # Now delete the goal
         delete_request = {
             "operations": [
@@ -202,11 +202,11 @@ class TestBatchSync:
             ],
             "client_id": "test_client"
         }
-        
-        response = client.post("/api/sync/batch", 
-                             json=delete_request, 
+
+        response = client.post("/api/sync/batch",
+                             json=delete_request,
                              headers=auth_headers)
-        
+
         assert response.status_code == 200
         results = response.json()
         assert len(results) == 1
@@ -232,21 +232,21 @@ class TestBatchSync:
             ],
             "client_id": "test_client"
         }
-        
-        response = client.post("/api/sync/batch", 
-                             json=create_request, 
+
+        response = client.post("/api/sync/batch",
+                             json=create_request,
                              headers=auth_headers)
         assert response.status_code == 200
         create_results = response.json()
         # Get the actual database ID returned from create
         created_id = create_results[0]["object_id"]
-        
+
         # Try to update with wrong version (simulating conflict)
         conflict_request = {
             "operations": [
                 {
                     "object_id": created_id,
-                    "object_type": "goal", 
+                    "object_type": "goal",
                     "operation": "update",
                     "data": {
                         "title": "Updated Title"
@@ -257,11 +257,11 @@ class TestBatchSync:
             ],
             "client_id": "test_client"
         }
-        
-        response = client.post("/api/sync/batch", 
-                             json=conflict_request, 
+
+        response = client.post("/api/sync/batch",
+                             json=conflict_request,
                              headers=auth_headers)
-        
+
         assert response.status_code == 200
         results = response.json()
         assert len(results) == 1
@@ -291,7 +291,7 @@ class TestBatchSync:
                     "operation": "create",
                     "data": {
                         "title": "Goal 2",
-                        "status": "active", 
+                        "status": "active",
                         "progress": 25.0
                     },
                     "version": 1
@@ -299,15 +299,15 @@ class TestBatchSync:
             ],
             "client_id": "test_client"
         }
-        
-        response = client.post("/api/sync/batch", 
-                             json=batch_request, 
+
+        response = client.post("/api/sync/batch",
+                             json=batch_request,
                              headers=auth_headers)
-        
+
         assert response.status_code == 200
         results = response.json()
         assert len(results) == 2
-        
+
         # Check both operations succeeded
         success_count = sum(1 for r in results if r["status"] == "success")
         assert success_count == 2
@@ -326,11 +326,11 @@ class TestBatchSync:
             ],
             "client_id": "test_client"
         }
-        
-        response = client.post("/api/sync/batch", 
-                             json=batch_request, 
+
+        response = client.post("/api/sync/batch",
+                             json=batch_request,
                              headers=auth_headers)
-        
+
         assert response.status_code == 200
         results = response.json()
         assert len(results) == 1
@@ -340,7 +340,7 @@ class TestBatchSync:
 
 class TestDeltaSync:
     """Test delta synchronization functionality."""
-    
+
     def test_delta_sync_basic(self, auth_headers):
         """Test basic delta sync functionality."""
         # Create some test data first
@@ -360,25 +360,25 @@ class TestDeltaSync:
             ],
             "client_id": "test_client"
         }
-        
-        create_response = client.post("/api/sync/batch", 
-                                    json=create_request, 
+
+        create_response = client.post("/api/sync/batch",
+                                    json=create_request,
                                     headers=auth_headers)
         assert create_response.status_code == 200
-        
+
         # Get delta sync from beginning of time
         since_timestamp = 0
-        response = client.get(f"/api/sync/delta/{since_timestamp}", 
+        response = client.get(f"/api/sync/delta/{since_timestamp}",
                             headers=auth_headers)
-        
+
         assert response.status_code == 200
         delta_data = response.json()
-        
+
         assert "changes" in delta_data
         assert "current_timestamp" in delta_data
         assert "has_more" in delta_data
         assert isinstance(delta_data["changes"], list)
-        
+
         # Should have at least our created goal
         changes = delta_data["changes"]
         goal_changes = [c for c in changes if c["object_type"] == "goal"]
@@ -387,12 +387,12 @@ class TestDeltaSync:
     def test_delta_sync_with_filter(self, auth_headers):
         """Test delta sync with object type filtering."""
         # Test filtering by object type
-        response = client.get("/api/sync/delta/0?object_types=goal", 
+        response = client.get("/api/sync/delta/0?object_types=goal",
                             headers=auth_headers)
-        
+
         assert response.status_code == 200
         delta_data = response.json()
-        
+
         # All changes should be goals
         changes = delta_data["changes"]
         for change in changes:
@@ -402,27 +402,27 @@ class TestDeltaSync:
         """Test delta sync with future timestamp (should be empty)."""
         # Use future timestamp
         future_timestamp = int(datetime.now(timezone.utc).timestamp() * 1000) + 86400000  # +1 day
-        response = client.get(f"/api/sync/delta/{future_timestamp}", 
+        response = client.get(f"/api/sync/delta/{future_timestamp}",
                             headers=auth_headers)
-        
+
         assert response.status_code == 200
         delta_data = response.json()
         assert len(delta_data["changes"]) == 0
 
 class TestSyncStatus:
     """Test sync status endpoint."""
-    
+
     def test_sync_status(self, auth_headers):
         """Test sync status endpoint returns proper statistics."""
         response = client.get("/api/sync/status", headers=auth_headers)
-        
+
         assert response.status_code == 200
         status_data = response.json()
-        
+
         assert "user_id" in status_data
         assert "sync_timestamp" in status_data
         assert "object_stats" in status_data
-        
+
         # Check that we have stats for known object types
         object_stats = status_data["object_stats"]
         for object_type in ["goal"]:  # Test known types
@@ -435,7 +435,7 @@ class TestSyncStatus:
 
 class TestConflictResolution:
     """Test conflict resolution functionality."""
-    
+
     def test_resolve_conflict(self, auth_headers):
         """Test manual conflict resolution."""
         # First create a goal that we'll resolve conflicts for
@@ -455,15 +455,15 @@ class TestConflictResolution:
             ],
             "client_id": "test_client"
         }
-        
-        response = client.post("/api/sync/batch", 
-                             json=create_request, 
+
+        response = client.post("/api/sync/batch",
+                             json=create_request,
                              headers=auth_headers)
         assert response.status_code == 200
         create_results = response.json()
         # Get the actual database ID returned from create
         created_id = create_results[0]["object_id"]
-        
+
         # Now resolve a "conflict" by providing resolution data
         resolution_data = {
             "object_type": "goal",
@@ -473,21 +473,21 @@ class TestConflictResolution:
                 "status": "completed"
             }
         }
-        
+
         response = client.post(f"/api/sync/resolve-conflict/{created_id}",
                              json=resolution_data,
                              headers=auth_headers)
-        
+
         assert response.status_code == 200
         result = response.json()
-        
+
         assert result["object_id"] == created_id
         assert result["status"] == "resolved"
         assert result["new_version"] == 2  # Should increment version
 
 class TestSyncValidation:
     """Test input validation for sync endpoints."""
-    
+
     def test_batch_sync_missing_fields(self, auth_headers):
         """Test validation of required fields in batch sync."""
         # Missing object_id
@@ -502,11 +502,11 @@ class TestSyncValidation:
             ],
             "client_id": "test_client"
         }
-        
-        response = client.post("/api/sync/batch", 
-                             json=invalid_request, 
+
+        response = client.post("/api/sync/batch",
+                             json=invalid_request,
                              headers=auth_headers)
-        
+
         assert response.status_code == 422  # Validation error
 
     def test_batch_sync_invalid_operation_type(self, auth_headers):
@@ -523,11 +523,11 @@ class TestSyncValidation:
             ],
             "client_id": "test_client"
         }
-        
-        response = client.post("/api/sync/batch", 
-                             json=invalid_request, 
+
+        response = client.post("/api/sync/batch",
+                             json=invalid_request,
                              headers=auth_headers)
-        
+
         assert response.status_code == 422  # Validation error
 
     def test_unauthorized_access(self):
@@ -535,20 +535,20 @@ class TestSyncValidation:
         # Temporarily clear auth overrides to test unauthorized access
         original_user_override = app.dependency_overrides.get(get_current_user)
         app.dependency_overrides.pop(get_current_user, None)
-        
+
         try:
             # Test without auth headers
             batch_request = {
                 "operations": [],
                 "client_id": "test_client"
             }
-            
+
             response = client.post("/api/sync/batch", json=batch_request)
             assert response.status_code == 401
-            
+
             response = client.get("/api/sync/delta/0")
             assert response.status_code == 401
-            
+
             response = client.get("/api/sync/status")
             assert response.status_code == 401
         finally:

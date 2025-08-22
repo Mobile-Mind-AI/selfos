@@ -2,12 +2,7 @@ import models
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException
 from firebase_admin import auth as firebase_auth
-from schemas import (
-    AuthResponse,
-    LoginRequest,
-    RegisterRequest,
-    User,
-)
+from schemas import AuthResponse, LoginRequest, RegisterRequest, User
 from services.email_service import email_service
 from sqlalchemy.orm import Session
 

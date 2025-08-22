@@ -1,7 +1,7 @@
 name: Dependency Updates
 
 on:
-  # Disabled until basic CI is working  
+  # Disabled until basic CI is working
   workflow_dispatch:
     inputs:
       update_type:
@@ -20,7 +20,7 @@ jobs:
   update-python-deps:
     name: Update Python Dependencies
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,10 +44,10 @@ jobs:
       - name: Update dependencies
         run: |
           cd apps/backend_api
-          
+
           # Backup current requirements
           cp requirements.txt requirements.txt.backup
-          
+
           # Update dependencies based on input
           case "${{ github.event.inputs.update_type || 'all' }}" in
             "security")
@@ -94,19 +94,19 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS=/tmp/dummy-firebase.json
           EOF
           echo '{"type": "service_account", "project_id": "test"}' > /tmp/dummy-firebase.json
-          
+
           export $(cat .env.test | xargs)
           pytest tests/unit/ -x --tb=short
 
       - name: Check for breaking changes
         run: |
           cd apps/backend_api
-          
+
           # Compare old and new requirements
           if ! diff -u requirements.txt.backup requirements.txt > requirements.diff; then
             echo "Dependencies changed:"
             cat requirements.diff
-            
+
             # Check for major version changes
             MAJOR_CHANGES=$(grep "^-.*==" requirements.diff | sed 's/^-//' | while read old_dep; do
               package_name=$(echo "$old_dep" | cut -d'=' -f1)
@@ -121,7 +121,7 @@ jobs:
                 fi
               fi
             done)
-            
+
             if [ -n "$MAJOR_CHANGES" ]; then
               echo "⚠️ Major version changes detected:"
               echo "$MAJOR_CHANGES"
@@ -146,7 +146,7 @@ jobs:
           echo "# Dependency Update Summary" > dependency-update-summary.md
           echo "" >> dependency-update-summary.md
           echo "## Backend API Changes" >> dependency-update-summary.md
-          
+
           cd apps/backend_api
           if [ -f requirements.diff ]; then
             echo "\`\`\`diff" >> ../../dependency-update-summary.md
@@ -155,21 +155,21 @@ jobs:
           else
             echo "No changes" >> ../../dependency-update-summary.md
           fi
-          
+
           echo "" >> ../../dependency-update-summary.md
           echo "## Security Scan Results" >> ../../dependency-update-summary.md
-          
+
           if [ -f safety-report.json ]; then
             VULN_COUNT=$(jq '.vulnerabilities | length' safety-report.json)
             echo "Found $VULN_COUNT vulnerabilities" >> ../../dependency-update-summary.md
-            
+
             if [ "$VULN_COUNT" -gt 0 ]; then
               echo "" >> ../../dependency-update-summary.md
               echo "### Vulnerabilities:" >> ../../dependency-update-summary.md
               jq -r '.vulnerabilities[] | "- **\(.package_name)** \(.installed_version): \(.vulnerability_id) - \(.advisory)"' safety-report.json >> ../../dependency-update-summary.md
             fi
           fi
-          
+
           cd ../..
 
       - name: Create Pull Request
@@ -193,7 +193,7 @@ jobs:
   update-actions:
     name: Update GitHub Actions
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -215,7 +215,7 @@ jobs:
             echo "No GitHub Actions updates needed"
             exit 0
           fi
-          
+
           echo "GitHub Actions updated:"
           git diff --name-only
 
@@ -227,15 +227,15 @@ jobs:
           title: "chore: update GitHub Actions to latest versions"
           body: |
             Automated update of GitHub Actions to their latest versions.
-            
+
             ## Changes
             - Updated action versions in workflow files
             - Maintained compatibility with existing configurations
-            
+
             ## Testing
             - [ ] Verify CI pipeline still works
             - [ ] Check for any breaking changes in updated actions
-            
+
             Generated automatically by dependency update workflow.
           branch: chore/update-github-actions
           base: main
@@ -249,7 +249,7 @@ jobs:
     name: Update Renovate Configuration
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -327,19 +327,19 @@ jobs:
           title: "chore: add/update Renovate configuration"
           body: |
             Add or update Renovate configuration for automated dependency updates.
-            
+
             ## Features
             - Automatic patch and dev dependency updates
             - Grouped minor and major updates
             - Security vulnerability alerts
             - GitHub Actions updates
             - Python package management
-            
+
             ## Schedule
             - Minor updates: Weekly on Mondays
             - Major updates: Monthly
             - Security updates: Immediate
-            
+
             This will help keep dependencies up to date automatically.
           branch: chore/add-renovate-config
           base: main
@@ -354,7 +354,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [update-python-deps]
     if: always() && (needs.update-python-deps.result == 'failure' || github.event.inputs.update_type == 'security')
-    
+
     steps:
       - name: Notify security team
         uses: 8398a7/action-slack@v3

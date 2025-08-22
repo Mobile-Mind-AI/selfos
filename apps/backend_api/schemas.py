@@ -2,13 +2,7 @@ import re
 from datetime import datetime, time
 from typing import TYPE_CHECKING, Any, Literal, Optional
 
-from pydantic import (
-    BaseModel,
-    Field,
-    constr,
-    root_validator,
-    validator,
-)
+from pydantic import BaseModel, Field, constr, root_validator, validator
 
 # Forward references for nested schemas
 if TYPE_CHECKING:
@@ -491,11 +485,11 @@ class JournalEntryCreate(JournalEntryBase):
 class JournalEntryUpdate(BaseModel):
     """Schema for updating a Journal Entry"""
 
-    content: constr(min_length=1, max_length=10000, strip_whitespace=True) | None = (
-        Field(
-            None,
-            description="Updated content of the journal entry (1-10000 characters)",
-        )
+    content: constr(
+        min_length=1, max_length=10000, strip_whitespace=True
+    ) | None = Field(
+        None,
+        description="Updated content of the journal entry (1-10000 characters)",
     )
 
     @validator("content")
@@ -796,9 +790,9 @@ class MediaAttachmentBase(BaseModel):
     filename: constr(min_length=1, max_length=255, strip_whitespace=True) = Field(
         ..., description="System filename for the attachment (1-255 characters)"
     )
-    original_filename: constr(min_length=1, max_length=255, strip_whitespace=True) = (
-        Field(..., description="Original filename from upload (1-255 characters)")
-    )
+    original_filename: constr(
+        min_length=1, max_length=255, strip_whitespace=True
+    ) = Field(..., description="Original filename from upload (1-255 characters)")
     file_path: constr(min_length=1, max_length=1000, strip_whitespace=True) = Field(
         ..., description="Full path to the stored file (1-1000 characters)"
     )
@@ -1359,9 +1353,9 @@ class StorySessionBase(BaseModel):
     period_end: datetime | None = Field(
         None, description="End of the period being summarized"
     )
-    content_type: Literal["summary", "story", "reflection", "achievement"] | None = (
-        Field("summary", description="Type of content generated")
-    )
+    content_type: Literal[
+        "summary", "story", "reflection", "achievement"
+    ] | None = Field("summary", description="Type of content generated")
 
     # Social media and distribution
     posted_to: list[str] | None = Field(
@@ -1453,9 +1447,9 @@ class StorySessionUpdate(BaseModel):
     period_end: datetime | None = Field(
         None, description="End of the period being summarized"
     )
-    content_type: Literal["summary", "story", "reflection", "achievement"] | None = (
-        Field(None, description="Type of content generated")
-    )
+    content_type: Literal[
+        "summary", "story", "reflection", "achievement"
+    ] | None = Field(None, description="Type of content generated")
     posted_to: list[str] | None = Field(
         None, description="Platforms where content was posted"
     )

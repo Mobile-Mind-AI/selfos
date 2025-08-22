@@ -70,7 +70,7 @@ This directory contains the comprehensive documentation for the SelfOS platform.
   - Created centralized `models/associations.py` to break circular dependencies
   - Fixed SQLAlchemy association table imports across all models
   - Eliminated 146+ import-related test failures
-  
+
 - **✅ Synchronized Coverage Configuration**
   - Aligned coverage targets to 75% across pytest.ini and pyproject.toml
   - Fixed CI pipeline coverage inconsistencies

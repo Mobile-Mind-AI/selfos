@@ -25,7 +25,7 @@ jobs:
     outputs:
       backend-image: ${{ steps.backend-meta.outputs.tags }}
       ai-engine-image: ${{ steps.ai-engine-meta.outputs.tags }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -93,7 +93,7 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
     environment: staging
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -124,10 +124,10 @@ jobs:
         run: |
           # Wait for deployment to be ready
           sleep 30
-          
+
           # Get staging URL
           STAGING_URL=$(kubectl get service backend-api-service -n staging -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-          
+
           # Run basic health checks
           curl -f http://$STAGING_URL/health
           curl -f http://$STAGING_URL/api/ai/health
@@ -148,7 +148,7 @@ jobs:
     needs: [build, deploy-staging]
     if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
     environment: production
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -186,15 +186,15 @@ jobs:
         run: |
           # Wait for deployment to be ready
           sleep 60
-          
+
           # Get production URL
           PROD_URL=$(kubectl get service backend-api-service -n production -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-          
+
           # Comprehensive health checks
           curl -f https://$PROD_URL/health
           curl -f https://$PROD_URL/api/ai/health
           curl -f https://$PROD_URL/health/detailed
-          
+
           # Check database connectivity
           curl -f https://$PROD_URL/health/database/migration-status
 
@@ -235,7 +235,7 @@ jobs:
     if: failure() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     needs: [deploy-staging, deploy-production]
     environment: production
-    
+
     steps:
       - name: Set up Google Cloud CLI
         uses: google-github-actions/setup-gcloud@v1

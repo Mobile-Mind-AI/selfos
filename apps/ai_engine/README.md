@@ -141,7 +141,7 @@ MODEL_CONFIGS = {
 # OpenAI Configuration
 OPENAI_API_KEY=your_openai_api_key
 
-# Anthropic Configuration  
+# Anthropic Configuration
 ANTHROPIC_API_KEY=your_anthropic_api_key
 
 # Cache Settings
@@ -163,7 +163,7 @@ request = GoalDecompositionRequest(
     user_id="user123",
     goal_description="Start a photography business",
     life_areas=["career", "creativity"],
-    existing_goals=[], 
+    existing_goals=[],
     user_preferences={"risk_tolerance": "moderate"},
     additional_context={"budget": "$5000", "timeline": "6 months"}
 )
@@ -232,7 +232,7 @@ response = await orchestrator.chat(request)
 - **Strengths**: Creative tasks, conversation, general reasoning
 - **Use Cases**: Goal decomposition, creative planning, chat
 
-### Anthropic Integration  
+### Anthropic Integration
 - **Models**: Claude-3-sonnet, Claude-3-opus, Claude-3-haiku
 - **Strengths**: Analytical tasks, safety, nuanced reasoning
 - **Use Cases**: Task analysis, complex planning, detailed breakdowns
@@ -259,7 +259,7 @@ user_context = {
 
 # Goal type adaptation
 user_context = {
-    "goal_type": "skill_learning", 
+    "goal_type": "skill_learning",
     "current_goal": "learn_piano"
 }
 # → AI focuses on learning strategies and practice advice
@@ -316,7 +316,7 @@ health = await orchestrator.health_check()
     "status": "healthy",  # healthy, degraded, error
     "providers": {
         "openai": "healthy",
-        "anthropic": "error: API key invalid", 
+        "anthropic": "error: API key invalid",
         "local": "healthy"
     },
     "cache_size": 150,
@@ -363,7 +363,7 @@ requests = [
 
 responses = await asyncio.gather(*[
     orchestrator.decompose_goal(req) if isinstance(req, GoalDecompositionRequest)
-    else orchestrator.chat(req) if isinstance(req, ConversationRequest)  
+    else orchestrator.chat(req) if isinstance(req, ConversationRequest)
     else orchestrator.generate_tasks(req)
     for req in requests
 ])
@@ -451,7 +451,7 @@ async def decompose_goal(request: GoalDecompositionRequest):
     response = await orchestrator.decompose_goal(request)
     return response
 
-@router.post("/ai/chat") 
+@router.post("/ai/chat")
 async def chat(request: ConversationRequest):
     response = await orchestrator.chat(request)
     return response
@@ -461,7 +461,7 @@ async def chat(request: ConversationRequest):
 
 ### Typical Response Times
 - **Goal Decomposition**: 2-8 seconds (depending on complexity)
-- **Task Generation**: 1-4 seconds  
+- **Task Generation**: 1-4 seconds
 - **Conversation**: 1-3 seconds
 - **Cached Responses**: <100ms
 
@@ -476,7 +476,7 @@ async def chat(request: ConversationRequest):
 ### Development Guidelines
 
 1. **Provider Clients**: All providers must implement `ProviderClient` interface
-2. **Error Handling**: Always provide graceful fallbacks and meaningful errors  
+2. **Error Handling**: Always provide graceful fallbacks and meaningful errors
 3. **Testing**: Use `MockClient` for comprehensive testing scenarios
 4. **Metrics**: Add timing and success tracking for new features
 5. **Documentation**: Update prompts and context handling documentation

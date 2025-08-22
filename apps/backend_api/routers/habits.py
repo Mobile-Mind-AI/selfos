@@ -220,9 +220,8 @@ def complete_habit(
 )
 def get_habit_completions(
     habit_id: int,
-    start_date: date | None = Query(
-        None, description="Start date for completion range"
-    ),
+    start_date: date
+    | None = Query(None, description="Start date for completion range"),
     end_date: date | None = Query(None, description="End date for completion range"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
@@ -237,7 +236,8 @@ def get_habit_completions(
 @router.get("/habits/{habit_id}/progress", response_model=schemas.HabitProgress)
 def get_habit_progress(
     habit_id: int,
-    target_date: date | None = Query(
+    target_date: date
+    | None = Query(
         None, description="Date to calculate progress for (defaults to today)"
     ),
     db: Session = Depends(get_db),

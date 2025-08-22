@@ -27,16 +27,16 @@ class TestJournalService:
             goal_id=2,
             task_id=3
         )
-        
+
         # Mock database queries for validation
         mock_project = Project(id=1, user_id=self.user_id)
         mock_goal = Goal(id=2, user_id=self.user_id)
         mock_task = Task(id=3, user_id=self.user_id)
-        
+
         self.mock_db.query.return_value.filter.return_value.first.side_effect = [
             mock_project, mock_goal, mock_task
         ]
-        
+
         # Mock entry creation
         expected_entry = JournalEntry(
             id=1,
@@ -46,7 +46,7 @@ class TestJournalService:
             goal_id=entry_data.goal_id,
             task_id=entry_data.task_id
         )
-        
+
         self.mock_db.add = Mock()
         self.mock_db.commit = Mock()
         self.mock_db.refresh = Mock()
@@ -71,14 +71,14 @@ class TestJournalService:
             content="Test content",
             project_id=999  # Invalid project ID
         )
-        
+
         # Mock database query to return None (project not found)
         self.mock_db.query.return_value.filter.return_value.first.return_value = None
 
         # Act & Assert
         with pytest.raises(ValueError) as exc_info:
             JournalService.create_entry(self.mock_db, self.user_id, entry_data)
-        
+
         assert "Project with id 999 not found or access denied" in str(exc_info.value)
 
     def test_create_entry_with_invalid_goal(self):
@@ -88,14 +88,14 @@ class TestJournalService:
             content="Test content",
             goal_id=999  # Invalid goal ID
         )
-        
+
         # Mock database query to return None (goal not found)
         self.mock_db.query.return_value.filter.return_value.first.return_value = None
 
         # Act & Assert
         with pytest.raises(ValueError) as exc_info:
             JournalService.create_entry(self.mock_db, self.user_id, entry_data)
-        
+
         assert "Goal with id 999 not found or access denied" in str(exc_info.value)
 
     def test_create_entry_with_invalid_task(self):
@@ -105,21 +105,21 @@ class TestJournalService:
             content="Test content",
             task_id=999  # Invalid task ID
         )
-        
+
         # Mock database query to return None (task not found)
         self.mock_db.query.return_value.filter.return_value.first.return_value = None
 
         # Act & Assert
         with pytest.raises(ValueError) as exc_info:
             JournalService.create_entry(self.mock_db, self.user_id, entry_data)
-        
+
         assert "Task with id 999 not found or access denied" in str(exc_info.value)
 
     def test_create_entry_standalone(self):
         """Test creating standalone journal entry without associations"""
         # Arrange
         entry_data = JournalEntryCreate(content="Standalone entry")
-        
+
         # Mock entry creation
         expected_entry = JournalEntry(
             id=1,
@@ -129,7 +129,7 @@ class TestJournalService:
             goal_id=None,
             task_id=None
         )
-        
+
         self.mock_db.add = Mock()
         self.mock_db.commit = Mock()
         self.mock_db.refresh = Mock()
@@ -153,7 +153,7 @@ class TestJournalService:
             user_id=self.user_id,
             content="Test content"
         )
-        
+
         self.mock_db.query.return_value.options.return_value.filter.return_value.first.return_value = expected_entry
 
         # Act
@@ -181,11 +181,11 @@ class TestJournalService:
             JournalEntry(id=1, user_id=self.user_id, content="Entry 1"),
             JournalEntry(id=2, user_id=self.user_id, content="Entry 2")
         ]
-        
+
         # Set up the full mock chain for SQLAlchemy query
         mock_query = Mock()
         mock_query.offset.return_value.limit.return_value.all.return_value = mock_entries
-        
+
         # Chain: query -> options -> filter (user_id) -> filter (project_id) -> order_by -> offset -> limit -> all
         self.mock_db.query.return_value.options.return_value.filter.return_value.filter.return_value.order_by.return_value = mock_query
 
@@ -206,11 +206,11 @@ class TestJournalService:
         """Test getting journal entries with content search"""
         # Arrange
         mock_entries = [JournalEntry(id=1, user_id=self.user_id, content="Searched content")]
-        
+
         # Set up the full mock chain for SQLAlchemy query with search filter
         mock_query = Mock()
         mock_query.offset.return_value.limit.return_value.all.return_value = mock_entries
-        
+
         # Chain: query -> options -> filter (user_id) -> filter (search) -> order_by -> offset -> limit -> all
         self.mock_db.query.return_value.options.return_value.filter.return_value.filter.return_value.order_by.return_value = mock_query
 
@@ -229,7 +229,7 @@ class TestJournalService:
         """Test getting journal entries for specific project"""
         # Arrange
         mock_entries = [JournalEntry(id=1, user_id=self.user_id, project_id=1)]
-        
+
         mock_query = Mock()
         mock_query.options.return_value.order_by.return_value.all.return_value = mock_entries
         self.mock_db.query.return_value.filter.return_value.filter.return_value = mock_query
@@ -256,7 +256,7 @@ class TestJournalService:
                 parent_type="invalid",
                 parent_id=1
             )
-        
+
         assert "Invalid parent_type: invalid" in str(exc_info.value)
 
     def test_update_entry_success(self):
@@ -264,14 +264,14 @@ class TestJournalService:
         # Arrange
         entry_id = 1
         update_data = JournalEntryUpdate(content="Updated content")
-        
+
         existing_entry = JournalEntry(
             id=entry_id,
             user_id=self.user_id,
             content="Original content",
             version=1
         )
-        
+
         self.mock_db.query.return_value.filter.return_value.first.return_value = existing_entry
         self.mock_db.commit = Mock()
         self.mock_db.refresh = Mock()
@@ -290,7 +290,7 @@ class TestJournalService:
         # Arrange
         entry_id = 999
         update_data = JournalEntryUpdate(content="Updated content")
-        
+
         self.mock_db.query.return_value.filter.return_value.first.return_value = None
 
         # Act
@@ -304,7 +304,7 @@ class TestJournalService:
         # Arrange
         entry_id = 1
         existing_entry = JournalEntry(id=entry_id, user_id=self.user_id)
-        
+
         self.mock_db.query.return_value.filter.return_value.first.return_value = existing_entry
         self.mock_db.delete = Mock()
         self.mock_db.commit = Mock()
@@ -347,7 +347,7 @@ class TestJournalService:
         """Test getting journal entry count with filters"""
         # Arrange
         expected_count = 3
-        
+
         mock_query = Mock()
         mock_query.count.return_value = expected_count
         self.mock_db.query.return_value.filter.return_value.filter.return_value.filter.return_value = mock_query
@@ -370,7 +370,7 @@ class TestJournalService:
             JournalEntry(id=1, user_id=self.user_id, created_at=datetime.utcnow()),
             JournalEntry(id=2, user_id=self.user_id, created_at=datetime.utcnow() - timedelta(days=1))
         ]
-        
+
         mock_query = Mock()
         mock_query.limit.return_value.all.return_value = mock_entries
         self.mock_db.query.return_value.options.return_value.filter.return_value.order_by.return_value = mock_query
@@ -387,7 +387,7 @@ class TestJournalService:
         # Arrange
         search_term = "test"
         mock_entries = [JournalEntry(id=1, user_id=self.user_id, content="This is a test entry")]
-        
+
         mock_query = Mock()
         mock_query.limit.return_value.all.return_value = mock_entries
         self.mock_db.query.return_value.options.return_value.filter.return_value.order_by.return_value = mock_query
@@ -403,7 +403,7 @@ class TestJournalService:
         """Test getting journal entry statistics"""
         # Arrange
         from sqlalchemy import func
-        
+
         # Mock total entries count
         self.mock_db.query.return_value.filter.return_value.count.side_effect = [
             10,  # total_entries
@@ -412,10 +412,10 @@ class TestJournalService:
             2,   # with_task
             5    # recent_entries
         ]
-        
+
         # Mock average content length
         self.mock_db.query.return_value.filter.return_value.scalar.return_value = 150.5
-        
+
         # Mock oldest and newest entry dates
         oldest_date = datetime.utcnow() - timedelta(days=30)
         newest_date = datetime.utcnow()

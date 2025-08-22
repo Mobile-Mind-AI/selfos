@@ -298,7 +298,7 @@ Example:
 class MyToolsHandler(BaseToolsHandler):
     async def list_tools(self) -> List[Tool]:
         return [Tool(name="my_tool", ...)]
-    
+
     async def call_tool(self, name: str, arguments: Dict) -> Dict:
         if name == "my_tool":
             return await self._handle_my_tool(arguments)

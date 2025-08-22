@@ -142,19 +142,19 @@ echo ""
 # Run backend API tests
 if [[ "$RUN_BACKEND" == "true" ]]; then
     print_status "🔧 Running Backend API tests..."
-    
+
     cd apps/backend_api
-    
+
     # Setup test environment
     export $(cat .env.test 2>/dev/null | grep -v '^#' | xargs) || true
     export TESTING=true
     export PYTEST_CURRENT_TEST=true
-    
+
     # Create dummy Firebase credentials if needed
     if [[ ! -f "/tmp/dummy-firebase.json" ]]; then
         echo '{"type": "service_account", "project_id": "test-project"}' > /tmp/dummy-firebase.json
     fi
-    
+
     # Run the tests
     if python -m pytest tests/ $PYTEST_ARGS; then
         print_success "✅ Backend API tests passed"
@@ -163,7 +163,7 @@ if [[ "$RUN_BACKEND" == "true" ]]; then
         print_error "❌ Backend API tests failed"
         BACKEND_RESULT=1
     fi
-    
+
     cd ../..
     echo ""
 fi
@@ -171,9 +171,9 @@ fi
 # Run MCP server tests
 if [[ "$RUN_MCP" == "true" ]]; then
     print_status "🔗 Running MCP Server tests..."
-    
+
     cd apps/mcp_server
-    
+
     # Run the tests
     if python -m pytest tests/ $PYTEST_ARGS; then
         print_success "✅ MCP Server tests passed"
@@ -182,7 +182,7 @@ if [[ "$RUN_MCP" == "true" ]]; then
         print_error "❌ MCP Server tests failed"
         MCP_RESULT=1
     fi
-    
+
     cd ../..
     echo ""
 fi
@@ -190,7 +190,7 @@ fi
 # Generate combined coverage report if both were run
 if [[ "$RUN_COVERAGE" == "true" && "$RUN_BACKEND" == "true" && "$RUN_MCP" == "true" ]]; then
     print_status "📊 Generating combined coverage report..."
-    
+
     # Combine coverage data
     if command -v coverage >/dev/null 2>&1; then
         coverage combine apps/backend_api/.coverage apps/mcp_server/.coverage 2>/dev/null || true
@@ -228,7 +228,7 @@ fi
 echo ""
 if [[ $TOTAL_FAILURES -eq 0 ]]; then
     print_success "🎉 All tests passed!"
-    
+
     if [[ "$RUN_COVERAGE" == "true" ]]; then
         echo ""
         print_status "📊 Coverage reports available:"
@@ -238,7 +238,7 @@ if [[ $TOTAL_FAILURES -eq 0 ]]; then
             echo "  - Summary: coverage-summary.md"
         fi
     fi
-    
+
     exit 0
 else
     print_error "❌ $TOTAL_FAILURES test suite(s) failed"

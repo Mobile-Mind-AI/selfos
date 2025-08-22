@@ -14,12 +14,12 @@ router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 @router.get("/preferences/history", response_model=list[UserPreferencesHistoryItem])
 def get_preferences_history(
-    limit: int | None = Query(
+    limit: int
+    | None = Query(
         50, ge=1, le=1000, description="Maximum number of records to return"
     ),
-    preference_name: str | None = Query(
-        None, description="Filter by specific preference name"
-    ),
+    preference_name: str
+    | None = Query(None, description="Filter by specific preference name"),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -43,9 +43,8 @@ def get_preferences_history(
 
 @router.get("/preferences/summary", response_model=UserPreferencesChangeSummary)
 def get_preferences_change_summary(
-    days_back: int | None = Query(
-        30, ge=1, le=365, description="Number of days to analyze"
-    ),
+    days_back: int
+    | None = Query(30, ge=1, le=365, description="Number of days to analyze"),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -69,12 +68,12 @@ def get_preferences_change_summary(
 )
 def get_user_preferences_history_admin(
     target_user_id: str,
-    limit: int | None = Query(
+    limit: int
+    | None = Query(
         50, ge=1, le=1000, description="Maximum number of records to return"
     ),
-    preference_name: str | None = Query(
-        None, description="Filter by specific preference name"
-    ),
+    preference_name: str
+    | None = Query(None, description="Filter by specific preference name"),
     current_user: dict = Depends(
         get_current_user
     ),  # In production, this would check for admin role
@@ -110,9 +109,8 @@ def get_user_preferences_history_admin(
 )
 def get_user_preferences_change_summary_admin(
     target_user_id: str,
-    days_back: int | None = Query(
-        30, ge=1, le=365, description="Number of days to analyze"
-    ),
+    days_back: int
+    | None = Query(30, ge=1, le=365, description="Number of days to analyze"),
     current_user: dict = Depends(
         get_current_user
     ),  # In production, this would check for admin role

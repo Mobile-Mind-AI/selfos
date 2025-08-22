@@ -4,11 +4,7 @@ from datetime import datetime
 
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, Query
-from schemas import (
-    JournalEntry,
-    JournalEntryCreate,
-    JournalEntryUpdate,
-)
+from schemas import JournalEntry, JournalEntryCreate, JournalEntryUpdate
 from services.journal_service import JournalService
 from sqlalchemy.orm import Session
 
@@ -52,12 +48,10 @@ def get_journal_entries(
     goal_id: int | None = Query(None, description="Filter by goal ID"),
     task_id: int | None = Query(None, description="Filter by task ID"),
     search: str | None = Query(None, description="Search in content"),
-    start_date: datetime | None = Query(
-        None, description="Filter entries created after this date"
-    ),
-    end_date: datetime | None = Query(
-        None, description="Filter entries created before this date"
-    ),
+    start_date: datetime
+    | None = Query(None, description="Filter entries created after this date"),
+    end_date: datetime
+    | None = Query(None, description="Filter entries created before this date"),
     limit: int = Query(
         50, ge=1, le=100, description="Maximum number of entries to return"
     ),
@@ -106,12 +100,10 @@ def get_journal_entry_count(
     project_id: int | None = Query(None, description="Filter by project ID"),
     goal_id: int | None = Query(None, description="Filter by goal ID"),
     task_id: int | None = Query(None, description="Filter by task ID"),
-    start_date: datetime | None = Query(
-        None, description="Filter entries created after this date"
-    ),
-    end_date: datetime | None = Query(
-        None, description="Filter entries created before this date"
-    ),
+    start_date: datetime
+    | None = Query(None, description="Filter entries created after this date"),
+    end_date: datetime
+    | None = Query(None, description="Filter entries created before this date"),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):

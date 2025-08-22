@@ -31,17 +31,17 @@ python run_tests.py --coverage   # With coverage report
 
 ## Features
 
-✅ **Complete Goals API** (6 tools)  
-✅ **Security & Authentication** (Firebase + API keys)  
-✅ **Multiple Transports** (stdio, WebSocket, SSE)  
-✅ **Comprehensive Testing** (37 tests)  
-🚧 **Projects/Tasks APIs** (framework ready)  
-🚧 **AI Tools** (goal decomposition, suggestions)  
+✅ **Complete Goals API** (6 tools)
+✅ **Security & Authentication** (Firebase + API keys)
+✅ **Multiple Transports** (stdio, WebSocket, SSE)
+✅ **Comprehensive Testing** (37 tests)
+🚧 **Projects/Tasks APIs** (framework ready)
+🚧 **AI Tools** (goal decomposition, suggestions)
 
 ## Documentation
 
-📋 **[Complete Documentation](../../docs/MCP_SERVER.md)** - Full API reference and guides  
-🚀 **[Quick Reference](../../docs/QUICK_REFERENCE.md)** - Essential commands  
+📋 **[Complete Documentation](../../docs/MCP_SERVER.md)** - Full API reference and guides
+🚀 **[Quick Reference](../../docs/QUICK_REFERENCE.md)** - Essential commands
 👨‍💻 **[Developer Guide](../../CLAUDE.md)** - Development instructions
 
 ---

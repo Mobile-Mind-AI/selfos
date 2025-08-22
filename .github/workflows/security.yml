@@ -9,7 +9,7 @@ jobs:
   dependency-scan:
     name: Dependency Vulnerability Scan
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -61,7 +61,7 @@ jobs:
   sast-scan:
     name: Static Security Analysis
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -104,7 +104,7 @@ jobs:
   container-scan:
     name: Container Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -147,7 +147,7 @@ jobs:
   secrets-scan:
     name: Secrets Scanning
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -166,7 +166,7 @@ jobs:
   license-scan:
     name: License Compliance
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -184,7 +184,7 @@ jobs:
           cd apps/backend_api
           pip install -r requirements.txt
           pip-licenses --format=json --output-file=licenses.json
-          
+
           # Check for problematic licenses
           pip-licenses --fail-on="GPL v3"
 
@@ -202,12 +202,12 @@ jobs:
       actions: read
       contents: read
       security-events: write
-    
+
     strategy:
       fail-fast: false
       matrix:
         language: [ 'python' ]
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -240,7 +240,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [dependency-scan, sast-scan, container-scan, secrets-scan, license-scan, codeql]
     if: always()
-    
+
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -250,44 +250,44 @@ jobs:
           echo "# Security Scan Summary" >> security-summary.md
           echo "" >> security-summary.md
           echo "## Scan Results" >> security-summary.md
-          
+
           # Check job statuses
           if [ "${{ needs.dependency-scan.result }}" = "success" ]; then
             echo "✅ Dependency Scan: PASSED" >> security-summary.md
           else
             echo "❌ Dependency Scan: FAILED" >> security-summary.md
           fi
-          
+
           if [ "${{ needs.sast-scan.result }}" = "success" ]; then
             echo "✅ Static Analysis: PASSED" >> security-summary.md
           else
             echo "❌ Static Analysis: FAILED" >> security-summary.md
           fi
-          
+
           if [ "${{ needs.container-scan.result }}" = "success" ]; then
             echo "✅ Container Scan: PASSED" >> security-summary.md
           else
             echo "❌ Container Scan: FAILED" >> security-summary.md
           fi
-          
+
           if [ "${{ needs.secrets-scan.result }}" = "success" ]; then
             echo "✅ Secrets Scan: PASSED" >> security-summary.md
           else
             echo "❌ Secrets Scan: FAILED" >> security-summary.md
           fi
-          
+
           if [ "${{ needs.license-scan.result }}" = "success" ]; then
             echo "✅ License Check: PASSED" >> security-summary.md
           else
             echo "❌ License Check: FAILED" >> security-summary.md
           fi
-          
+
           if [ "${{ needs.codeql.result }}" = "success" ]; then
             echo "✅ CodeQL Analysis: PASSED" >> security-summary.md
           else
             echo "❌ CodeQL Analysis: FAILED" >> security-summary.md
           fi
-          
+
           echo "" >> security-summary.md
           echo "Generated on: $(date)" >> security-summary.md
 
@@ -298,7 +298,7 @@ jobs:
           script: |
             const fs = require('fs');
             const summary = fs.readFileSync('security-summary.md', 'utf8');
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,

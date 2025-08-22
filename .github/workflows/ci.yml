@@ -174,7 +174,7 @@ jobs:
           cd apps/backend_api
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          
+
           # Install additional testing dependencies for MCP
           pip install pytest pytest-asyncio pytest-cov pytest-xdist coverage[toml]
 
@@ -345,7 +345,7 @@ jobs:
         run: |
           # Find and copy coverage files
           find coverage-artifacts -name "coverage-*.xml" -exec cp {} . \;
-          
+
           # Create combined coverage report
           coverage combine coverage-backend.xml coverage-mcp.xml || true
           coverage report --format=markdown > coverage-summary.md || true
@@ -376,7 +376,7 @@ jobs:
           echo "✅ AI Engine Tests: ${{ needs.ai-engine-tests.result }}"
           echo "✅ Security: ${{ needs.security.result }}"
           echo "✅ Build: ${{ needs.build.result }}"
-          
+
           # Determine overall success
           if [[ "${{ needs.lint.result }}" == "success" && \
                 "${{ needs.backend-tests.result }}" == "success" && \

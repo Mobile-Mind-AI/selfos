@@ -5,18 +5,8 @@ Assistant permission models for sharing and access control.
 import enum
 from datetime import datetime
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-)
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy import (
-    ForeignKey,
-    Index,
-    Integer,
-    String,
-)
 from sqlalchemy.orm import relationship
 
 from .base import Base

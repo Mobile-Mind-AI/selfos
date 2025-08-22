@@ -68,9 +68,7 @@ async def create_personal_profile(
             return existing_profile
 
         # Create new profile
-        print(
-            f"🆕 PERSONAL_CONFIG: Creating new profile for user {current_user['uid']}"
-        )
+        print(f"🆕 PERSONAL_CONFIG: Creating new profile for user {current_user['uid']}")
         profile_dict = profile_data.model_dump()
         print(f"🆕 PERSONAL_CONFIG: Profile dict: {profile_dict}")
 
@@ -120,9 +118,7 @@ async def get_personal_profile(
         try:
             # Use Pydantic v2 method
             serialized = PersonalProfileOut.model_validate(profile)
-            print(
-                f"🔍 GET_PROFILE: Serialized avatar_id = {repr(serialized.avatar_id)}"
-            )
+            print(f"🔍 GET_PROFILE: Serialized avatar_id = {repr(serialized.avatar_id)}")
             print(
                 f"🔍 GET_PROFILE: Serialized selected_life_areas = {serialized.selected_life_areas}"
             )

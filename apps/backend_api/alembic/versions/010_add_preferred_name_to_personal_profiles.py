@@ -10,8 +10,8 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '010'
-down_revision = '009'
+revision = "010"
+down_revision = "009"
 branch_labels = None
 depends_on = None
 
@@ -22,46 +22,66 @@ def upgrade() -> None:
     connection = op.get_bind()
 
     # Check if column already exists
-    result = connection.execute(sa.text("""
+    result = connection.execute(
+        sa.text(
+            """
         SELECT column_name
         FROM information_schema.columns
         WHERE table_name = 'personal_profiles'
         AND column_name = 'preferred_name'
         AND table_schema = current_schema()
-    """))
+    """
+        )
+    )
 
     if not result.fetchone():
-        op.add_column('personal_profiles', sa.Column('preferred_name', sa.String(100), nullable=True))
+        op.add_column(
+            "personal_profiles",
+            sa.Column("preferred_name", sa.String(100), nullable=True),
+        )
         print("✅ Added preferred_name column to personal_profiles")
     else:
         print("✅ preferred_name column already exists")
 
     # Check if avatar_id column exists
-    result = connection.execute(sa.text("""
+    result = connection.execute(
+        sa.text(
+            """
         SELECT column_name
         FROM information_schema.columns
         WHERE table_name = 'personal_profiles'
         AND column_name = 'avatar_id'
         AND table_schema = current_schema()
-    """))
+    """
+        )
+    )
 
     if not result.fetchone():
-        op.add_column('personal_profiles', sa.Column('avatar_id', sa.String(100), nullable=True))
+        op.add_column(
+            "personal_profiles", sa.Column("avatar_id", sa.String(100), nullable=True)
+        )
         print("✅ Added avatar_id column to personal_profiles")
     else:
         print("✅ avatar_id column already exists")
 
     # Check if selected_life_areas column exists
-    result = connection.execute(sa.text("""
+    result = connection.execute(
+        sa.text(
+            """
         SELECT column_name
         FROM information_schema.columns
         WHERE table_name = 'personal_profiles'
         AND column_name = 'selected_life_areas'
         AND table_schema = current_schema()
-    """))
+    """
+        )
+    )
 
     if not result.fetchone():
-        op.add_column('personal_profiles', sa.Column('selected_life_areas', sa.JSON, nullable=True))
+        op.add_column(
+            "personal_profiles",
+            sa.Column("selected_life_areas", sa.JSON, nullable=True),
+        )
         print("✅ Added selected_life_areas column to personal_profiles")
     else:
         print("✅ selected_life_areas column already exists")
@@ -74,38 +94,50 @@ def downgrade() -> None:
     connection = op.get_bind()
 
     # Check and drop selected_life_areas column
-    result = connection.execute(sa.text("""
+    result = connection.execute(
+        sa.text(
+            """
         SELECT column_name
         FROM information_schema.columns
         WHERE table_name = 'personal_profiles'
         AND column_name = 'selected_life_areas'
         AND table_schema = current_schema()
-    """))
+    """
+        )
+    )
     if result.fetchone():
-        op.drop_column('personal_profiles', 'selected_life_areas')
+        op.drop_column("personal_profiles", "selected_life_areas")
         print("✅ Dropped selected_life_areas column")
 
     # Check and drop avatar_id column
-    result = connection.execute(sa.text("""
+    result = connection.execute(
+        sa.text(
+            """
         SELECT column_name
         FROM information_schema.columns
         WHERE table_name = 'personal_profiles'
         AND column_name = 'avatar_id'
         AND table_schema = current_schema()
-    """))
+    """
+        )
+    )
     if result.fetchone():
-        op.drop_column('personal_profiles', 'avatar_id')
+        op.drop_column("personal_profiles", "avatar_id")
         print("✅ Dropped avatar_id column")
 
     # Check and drop preferred_name column
-    result = connection.execute(sa.text("""
+    result = connection.execute(
+        sa.text(
+            """
         SELECT column_name
         FROM information_schema.columns
         WHERE table_name = 'personal_profiles'
         AND column_name = 'preferred_name'
         AND table_schema = current_schema()
-    """))
+    """
+        )
+    )
     if result.fetchone():
-        op.drop_column('personal_profiles', 'preferred_name')
+        op.drop_column("personal_profiles", "preferred_name")
         print("✅ Dropped preferred_name column")
     # ### end Alembic commands ###

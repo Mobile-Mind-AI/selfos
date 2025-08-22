@@ -154,9 +154,9 @@ class TestAssistantConversationIntegration:
         self, mock_process_message, mock_user
     ):
         """Test that conversations use the specified assistant profile"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_integration(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_integration(mock_user)
 
         # Mock the conversation processing
         mock_process_message.return_value = {
@@ -215,9 +215,9 @@ class TestAssistantConversationIntegration:
     @patch("services.intent_service.ConversationFlowManager.process_message")
     def test_conversation_with_default_assistant(self, mock_process_message, mock_user):
         """Test that conversations use default assistant when none specified"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_integration(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_integration(mock_user)
 
         # Mock the conversation processing
         mock_process_message.return_value = {
@@ -258,9 +258,9 @@ class TestAssistantConversationIntegration:
 
     def test_conversation_without_assistant_profiles(self, mock_user):
         """Test conversation when user has no assistant profiles"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_integration(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_integration(mock_user)
 
         # Don't create any assistant profiles
 
@@ -301,9 +301,9 @@ class TestAssistantConversationIntegration:
 
     def test_conversation_session_with_assistant_tracking(self, mock_user):
         """Test that conversation sessions track which assistant was used"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_integration(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_integration(mock_user)
 
         # Create an assistant profile
         create_response = client.post("/api/assistant_profiles/", json=CASUAL_ASSISTANT)
@@ -349,9 +349,9 @@ class TestAssistantConversationIntegration:
 
     def test_multiple_assistants_different_responses(self, mock_user):
         """Test that different assistants can potentially produce different responses"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_integration(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_integration(mock_user)
 
         # Create two different assistant profiles
         formal_response = client.post("/api/assistant_profiles/", json=FORMAL_ASSISTANT)
@@ -449,9 +449,9 @@ class TestAssistantConversationIntegration:
 
     def test_assistant_temperature_settings_passed_through(self, mock_user):
         """Test that assistant temperature settings are used in conversation processing"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_integration(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_integration(mock_user)
 
         # Create an assistant with specific temperature settings
         high_temp_assistant = CASUAL_ASSISTANT.copy()
@@ -506,9 +506,9 @@ class TestAssistantConversationIntegration:
 
     def test_nonexistent_assistant_id(self, mock_user):
         """Test conversation with non-existent assistant ID"""
-        app.dependency_overrides[get_current_user] = (
-            override_get_current_user_integration(mock_user)
-        )
+        app.dependency_overrides[
+            get_current_user
+        ] = override_get_current_user_integration(mock_user)
 
         message_data = {
             "message": "Hello there",

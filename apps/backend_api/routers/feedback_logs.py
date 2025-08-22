@@ -4,11 +4,7 @@ from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models import FeedbackLog
 from schemas import FeedbackLog as FeedbackLogSchema
-from schemas import (
-    FeedbackLogCreate,
-    FeedbackLogSummary,
-    FeedbackLogUpdate,
-)
+from schemas import FeedbackLogCreate, FeedbackLogSummary, FeedbackLogUpdate
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
