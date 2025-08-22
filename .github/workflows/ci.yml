@@ -133,7 +133,7 @@ jobs:
             -v
 
       - name: Upload backend coverage to artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage-backend-py${{ matrix.python-version }}
@@ -193,7 +193,7 @@ jobs:
             -v
 
       - name: Upload MCP coverage to artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage-mcp-py${{ matrix.python-version }}
@@ -278,7 +278,7 @@ jobs:
           pip-audit --format=json --output=pip-audit.json -r requirements.txt || true
 
       - name: Upload security reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: security-reports
@@ -337,7 +337,7 @@ jobs:
         run: pip install coverage[toml]
 
       - name: Download all coverage artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: coverage-artifacts
 
@@ -352,7 +352,7 @@ jobs:
           coverage html -d htmlcov-combined || true
 
       - name: Upload combined coverage
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage-combined

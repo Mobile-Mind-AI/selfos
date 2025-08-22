@@ -410,7 +410,7 @@ jobs:
           echo "- Update security configurations as needed" >> monitoring-report.md
 
       - name: Upload monitoring report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: monitoring-report-$(date +%Y%m%d)
           path: monitoring-report.md
