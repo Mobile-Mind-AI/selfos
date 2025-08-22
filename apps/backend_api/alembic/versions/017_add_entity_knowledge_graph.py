@@ -1,7 +1,7 @@
 """Add entity knowledge graph tables
 
-Revision ID: 001_add_entity_knowledge_graph
-Revises:
+Revision ID: 017_add_entity_knowledge_graph
+Revises: 016
 Create Date: 2025-01-12 18:00:00.000000
 
 """
@@ -10,8 +10,8 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "001_add_entity_knowledge_graph"
-down_revision = None
+revision = "017_add_entity_knowledge_graph"
+down_revision = "016"
 branch_labels = None
 depends_on = None
 
@@ -193,11 +193,11 @@ def upgrade() -> None:
         """
         INSERT INTO entity_types (user_id, name, description, icon, color, is_system, created_at, updated_at)
         VALUES
-        ('SYSTEM', 'Person', 'An individual person', 'person', '#4A90E2', true, NOW(), NOW()),
-        ('SYSTEM', 'Organization', 'A company, institution, or group', 'business', '#50E3C2', true, NOW(), NOW()),
-        ('SYSTEM', 'Place', 'A physical or virtual location', 'place', '#F5A623', true, NOW(), NOW()),
-        ('SYSTEM', 'Event', 'An occurrence or happening', 'event', '#BD10E0', true, NOW(), NOW()),
-        ('SYSTEM', 'Concept', 'An abstract idea or principle', 'lightbulb', '#7ED321', true, NOW(), NOW())
+        ('system', 'Person', 'An individual person', 'person', '#4A90E2', true, NOW(), NOW()),
+        ('system', 'Organization', 'A company, institution, or group', 'business', '#50E3C2', true, NOW(), NOW()),
+        ('system', 'Place', 'A physical or virtual location', 'place', '#F5A623', true, NOW(), NOW()),
+        ('system', 'Event', 'An occurrence or happening', 'event', '#BD10E0', true, NOW(), NOW()),
+        ('system', 'Concept', 'An abstract idea or principle', 'lightbulb', '#7ED321', true, NOW(), NOW())
     """
     )
 

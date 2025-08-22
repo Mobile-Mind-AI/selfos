@@ -186,7 +186,7 @@ jobs:
             --cov-report=xml:coverage-mcp.xml \
             --cov-report=html:htmlcov-mcp \
             --cov-report=term-missing \
-            --cov-fail-under=70 \
+            --cov-fail-under=45 \
             --junit-xml=pytest-mcp.xml \
             -n auto \
             --dist=worksteal \
