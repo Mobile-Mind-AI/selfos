@@ -23,9 +23,7 @@ logger = logging.getLogger(__name__)
 class TaskService:
     """Service class for task-related business operations."""
 
-    def get_task(
-        self, db: Session, user_id: str, task_id: int
-    ) -> models.Task | None:
+    def get_task(self, db: Session, user_id: str, task_id: int) -> models.Task | None:
         """
         Retrieve a single task by ID for a specific user.
 

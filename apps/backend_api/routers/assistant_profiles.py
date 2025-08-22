@@ -128,9 +128,7 @@ async def complete_onboarding(
     # If user already has profiles, unset their default status
     if existing_count > 0:
         db.query(AssistantProfile).filter(
-            and_(
-                AssistantProfile.user_id == user_id, AssistantProfile.is_default
-            )
+            and_(AssistantProfile.user_id == user_id, AssistantProfile.is_default)
         ).update({"is_default": False})
 
     db.add(profile)
@@ -175,9 +173,7 @@ async def create_assistant_profile(
     # If setting as default, unset other default profiles
     if profile_data.is_default:
         db.query(AssistantProfile).filter(
-            and_(
-                AssistantProfile.user_id == user_id, AssistantProfile.is_default
-            )
+            and_(AssistantProfile.user_id == user_id, AssistantProfile.is_default)
         ).update({"is_default": False})
 
     profile = AssistantProfile(
@@ -217,11 +213,7 @@ async def get_default_assistant_profile(
 
     profile = (
         db.query(AssistantProfile)
-        .filter(
-            and_(
-                AssistantProfile.user_id == user_id, AssistantProfile.is_default
-            )
-        )
+        .filter(and_(AssistantProfile.user_id == user_id, AssistantProfile.is_default))
         .first()
     )
 

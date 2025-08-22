@@ -236,9 +236,7 @@ class TestIntentClassifier:
         with patch.object(
             self.classifier, "_log_conversation", new_callable=AsyncMock
         ) as mock_log:
-            await self.classifier.classify_intent(
-                "Create a task to test logging"
-            )
+            await self.classifier.classify_intent("Create a task to test logging")
 
             # Verify logging was called
             mock_log.assert_called_once()

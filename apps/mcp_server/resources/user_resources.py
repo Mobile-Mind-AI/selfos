@@ -5,7 +5,6 @@ MCP resources for user-related data including profiles, preferences,
 and context information for AI agents.
 """
 
-
 from mcp.types import Resource
 
 

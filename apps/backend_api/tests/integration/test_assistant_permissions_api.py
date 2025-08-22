@@ -5,7 +5,6 @@ Tests the full API flow including authentication, permission checking,
 and CRUD operations for the assistant sharing system.
 """
 
-
 import pytest
 from fastapi.testclient import TestClient
 from main import app

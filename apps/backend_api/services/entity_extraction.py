@@ -36,9 +36,7 @@ class EntityExtractor:
         self.entity_types = {}
         types = (
             self.db.query(EntityType)
-            .filter(
-                or_(EntityType.user_id == self.user_id, EntityType.is_system)
-            )
+            .filter(or_(EntityType.user_id == self.user_id, EntityType.is_system))
             .all()
         )
 

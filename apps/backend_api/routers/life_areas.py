@@ -1,6 +1,5 @@
 """Life Areas API endpoints."""
 
-
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, status
 from models.goals import Goal

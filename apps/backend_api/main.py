@@ -1,4 +1,3 @@
-
 # Import dependencies to initialize Firebase
 
 # Import event system

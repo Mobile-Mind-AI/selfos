@@ -560,7 +560,9 @@ def get_assistant_versions(
             .first()
         )
         if not permission:
-            raise HTTPException(status_code=403, detail="No permission to view assistant")
+            raise HTTPException(
+                status_code=403, detail="No permission to view assistant"
+            )
 
     # For now, return current version as the only version
     return [

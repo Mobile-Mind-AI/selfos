@@ -5,7 +5,6 @@ MCP resources for contextual data including goal contexts, project timelines,
 and other structured information for AI agents.
 """
 
-
 from mcp.types import Resource
 
 

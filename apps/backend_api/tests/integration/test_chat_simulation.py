@@ -580,8 +580,6 @@ class TestChatPerformance:
         """Test handling multiple chat requests simultaneously."""
         headers = get_test_user_headers
 
-
-
         # This would be better with async test client, but for now test sequentially
         messages = [
             "Tell me about goal setting",

@@ -7,7 +7,6 @@ sys.path.insert(
 )
 
 
-
 def test_create_task(client, db):
     """Test creating a new task"""
     # First create a goal using the client from conftest

@@ -133,9 +133,7 @@ class StdioTransport:
             body_bytes = body.encode("utf-8")
 
             # Write Content-Length header and body
-            self.writer.write(
-                f"Content-Length: {len(body_bytes)}\\r\\n\\r\\n".encode()
-            )
+            self.writer.write(f"Content-Length: {len(body_bytes)}\\r\\n\\r\\n".encode())
             self.writer.write(body_bytes)
             await self.writer.drain()
 

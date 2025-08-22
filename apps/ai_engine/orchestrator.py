@@ -576,9 +576,7 @@ class ResponseCache:
         key_string = json.dumps(key_data, sort_keys=True)
         return hashlib.md5(key_string.encode()).hexdigest()
 
-    async def get(
-        self, prompt: str, model_config: dict[str, Any]
-    ) -> AIResponse | None:
+    async def get(self, prompt: str, model_config: dict[str, Any]) -> AIResponse | None:
         """Get cached response."""
         async with self._lock:
             key = self._generate_key(prompt, model_config)

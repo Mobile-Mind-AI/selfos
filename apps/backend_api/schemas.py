@@ -342,9 +342,7 @@ class TaskBase(BaseModel):
     def validate_dependencies(cls, v):
         if v is not None:
             # Remove duplicates and ensure all are positive integers
-            unique_deps = list(
-                {dep for dep in v if isinstance(dep, int) and dep > 0}
-            )
+            unique_deps = list({dep for dep in v if isinstance(dep, int) and dep > 0})
             return unique_deps
         return []
 
@@ -1139,9 +1137,7 @@ class UserOut(User):
     preferences: Optional["UserPreferencesOut"] = Field(
         None, description="User preferences"
     )
-    created_at: datetime | None = Field(
-        None, description="Account creation timestamp"
-    )
+    created_at: datetime | None = Field(None, description="Account creation timestamp")
 
     class Config:
         from_attributes = True
@@ -1299,9 +1295,7 @@ class TagUpdate(BaseModel):
     name: str | None = Field(
         None, description="Name of the tag", min_length=1, max_length=50
     )
-    color: str | None = Field(
-        None, description="Hex color code for UI", max_length=7
-    )
+    color: str | None = Field(None, description="Hex color code for UI", max_length=7)
 
     @validator("name")
     def validate_name(cls, v):
@@ -1350,13 +1344,9 @@ class StorySessionBase(BaseModel):
     title: str | None = Field(
         None, max_length=200, description="User-defined title for the story session"
     )
-    generated_text: str | None = Field(
-        None, description="AI-generated narrative text"
-    )
+    generated_text: str | None = Field(None, description="AI-generated narrative text")
     video_url: str | None = Field(None, description="URL to generated video")
-    audio_url: str | None = Field(
-        None, description="URL to generated audio/narration"
-    )
+    audio_url: str | None = Field(None, description="URL to generated audio/narration")
     thumbnail_url: str | None = Field(None, description="URL to video thumbnail")
 
     # Generation parameters
@@ -1430,7 +1420,9 @@ class StorySessionBase(BaseModel):
     )
 
     # Processing status
-    processing_status: Literal["pending", "generating", "completed", "failed"] | None = Field("pending", description="Current processing status")
+    processing_status: (
+        Literal["pending", "generating", "completed", "failed"] | None
+    ) = Field("pending", description="Current processing status")
     error_message: str | None = Field(
         None, description="Error message if generation failed"
     )
@@ -1448,13 +1440,9 @@ class StorySessionUpdate(BaseModel):
     title: str | None = Field(
         None, max_length=200, description="User-defined title for the story session"
     )
-    generated_text: str | None = Field(
-        None, description="AI-generated narrative text"
-    )
+    generated_text: str | None = Field(None, description="AI-generated narrative text")
     video_url: str | None = Field(None, description="URL to generated video")
-    audio_url: str | None = Field(
-        None, description="URL to generated audio/narration"
-    )
+    audio_url: str | None = Field(None, description="URL to generated audio/narration")
     thumbnail_url: str | None = Field(None, description="URL to video thumbnail")
     summary_period: str | None = Field(
         None, description="Period type: weekly, monthly, project-based, custom"
@@ -1514,7 +1502,9 @@ class StorySessionUpdate(BaseModel):
     regeneration_count: int | None = Field(
         None, ge=0, description="How many times this was regenerated"
     )
-    processing_status: Literal["pending", "generating", "completed", "failed"] | None = Field(None, description="Current processing status")
+    processing_status: (
+        Literal["pending", "generating", "completed", "failed"] | None
+    ) = Field(None, description="Current processing status")
     error_message: str | None = Field(
         None, description="Error message if generation failed"
     )

@@ -258,9 +258,7 @@ class OnboardingAnalyticsBase(BaseModel):
     step_number: int | None = Field(
         None, ge=1, le=10, description="Step number in flow"
     )
-    time_spent_seconds: int | None = Field(
-        None, ge=0, description="Time spent on step"
-    )
+    time_spent_seconds: int | None = Field(None, ge=0, description="Time spent on step")
     completion_percentage: float | None = Field(
         None, ge=0.0, le=100.0, description="Percentage completed"
     )
@@ -302,9 +300,7 @@ class PersonalityInsights(BaseModel):
     communication_style: str | None = Field(
         None, description="Preferred communication style"
     )
-    motivation_type: str | None = Field(
-        None, description="Primary motivation driver"
-    )
+    motivation_type: str | None = Field(None, description="Primary motivation driver")
     work_preferences: list[str] | None = Field(
         default_factory=list, description="Work style preferences"
     )
@@ -326,9 +322,7 @@ class StoryAnalysisOut(BaseModel):
     confidence_score: float = Field(
         default=0.0, ge=0.0, le=1.0, description="Analysis confidence"
     )
-    processing_notes: str | None = Field(
-        None, description="Additional analysis notes"
-    )
+    processing_notes: str | None = Field(None, description="Additional analysis notes")
 
 
 class StoryAnalysisRequest(BaseModel):

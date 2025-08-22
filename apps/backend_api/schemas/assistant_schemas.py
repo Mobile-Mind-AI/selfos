@@ -68,9 +68,7 @@ class AssistantProfileBase(BaseModel):
     description: str | None = Field(
         None, max_length=500, description="Assistant description"
     )
-    avatar_url: str | None = Field(
-        None, max_length=500, description="Avatar image URL"
-    )
+    avatar_url: str | None = Field(None, max_length=500, description="Avatar image URL")
     ai_model: SupportedAIModel = Field(
         SupportedAIModel.GPT_35_TURBO, description="AI model to use"
     )
@@ -195,9 +193,7 @@ class AssistantCreationData(BaseModel):
     """Data for assistant creation step."""
 
     name: str = Field(..., min_length=1, max_length=100, description="Assistant name")
-    avatar_url: str | None = Field(
-        None, max_length=500, description="Avatar image URL"
-    )
+    avatar_url: str | None = Field(None, max_length=500, description="Avatar image URL")
 
 
 class PersonalitySetupData(BaseModel):
@@ -246,9 +242,7 @@ class OnboardingRequest(BaseModel):
     """Request schema for assistant onboarding flow."""
 
     name: str = Field(..., min_length=1, max_length=100, description="Assistant name")
-    avatar_url: str | None = Field(
-        None, max_length=500, description="Avatar image URL"
-    )
+    avatar_url: str | None = Field(None, max_length=500, description="Avatar image URL")
     style: PersonalityStyle = Field(..., description="Personality style configuration")
     language: SupportedLanguage = Field(
         SupportedLanguage.ENGLISH, description="Primary language"

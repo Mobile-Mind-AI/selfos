@@ -132,9 +132,7 @@ class PermissionService:
         # Public assistants (read-only) - exclude owned to avoid duplicates
         public = (
             db.query(AssistantProfile)
-            .filter(
-                AssistantProfile.is_public, AssistantProfile.owner_id != user_id
-            )
+            .filter(AssistantProfile.is_public, AssistantProfile.owner_id != user_id)
             .all()
         )
 

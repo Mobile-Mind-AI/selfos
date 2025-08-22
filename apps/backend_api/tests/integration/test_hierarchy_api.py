@@ -444,9 +444,7 @@ class TestHierarchyAPI:
 
         # Create project hierarchy
         work_project = self.create_test_project(db, "Work Projects")
-        self.create_test_project(
-            db, "Company Website", work_project.id
-        )
+        self.create_test_project(db, "Company Website", work_project.id)
 
         # Test project endpoints
         response = client.get("/api/projects/roots/")

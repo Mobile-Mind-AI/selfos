@@ -6,11 +6,13 @@ from models import Goal, LifeArea, StorySession, Task
 from schemas import (
     GenerationRequest,
     PublishRequest,
+)
+from schemas import StorySession as StorySessionSchema
+from schemas import (
     StorySessionCreate,
     StorySessionSummary,
     StorySessionUpdate,
 )
-from schemas import StorySession as StorySessionSchema
 from sqlalchemy import and_, desc, func
 from sqlalchemy.orm import Session
 

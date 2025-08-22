@@ -1,6 +1,5 @@
 """Analytics router for user behavior insights and preference history."""
 
-
 from dependencies import get_current_user, get_db
 from fastapi import APIRouter, Depends, HTTPException, Query
 from schemas import UserPreferencesChangeSummary, UserPreferencesHistoryItem

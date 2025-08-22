@@ -1,6 +1,5 @@
 """User-related models."""
 
-
 from sqlalchemy import (
     Column,
     String,

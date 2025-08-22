@@ -18,11 +18,13 @@ from schemas import (
     HierarchyPathItem,
     LifeAreaOut,
     MediaAttachmentOut,
+)
+from schemas import Project as ProjectSchema
+from schemas import (
     ProjectCreate,
     ProjectOut,
     TaskOut,
 )
-from schemas import Project as ProjectSchema
 from services.project_service import project_service
 from sqlalchemy import and_, desc
 from sqlalchemy.orm import Session

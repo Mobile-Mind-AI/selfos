@@ -33,9 +33,7 @@ def get_entity_types(
     """Get all available entity types for the user."""
     types = (
         db.query(EntityType)
-        .filter(
-            or_(EntityType.user_id == current_user["uid"], EntityType.is_system)
-        )
+        .filter(or_(EntityType.user_id == current_user["uid"], EntityType.is_system))
         .all()
     )
     return types
@@ -148,9 +146,7 @@ def create_entity(
         db.query(EntityType)
         .filter(
             EntityType.id == entity.type_id,
-            or_(
-                EntityType.user_id == current_user["uid"], EntityType.is_system
-            ),
+            or_(EntityType.user_id == current_user["uid"], EntityType.is_system),
         )
         .first()
     )

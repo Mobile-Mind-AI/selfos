@@ -125,9 +125,7 @@ class AISettings(BaseSettings):
         default="local", env="VECTOR_DB_PROVIDER"
     )  # local, pinecone, weaviate
     pinecone_api_key: str | None = Field(default=None, env="PINECONE_API_KEY")
-    pinecone_environment: str | None = Field(
-        default=None, env="PINECONE_ENVIRONMENT"
-    )
+    pinecone_environment: str | None = Field(default=None, env="PINECONE_ENVIRONMENT")
 
     # Memory settings from .env
     memory_similarity_threshold: float = Field(

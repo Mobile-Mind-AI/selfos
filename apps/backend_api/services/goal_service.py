@@ -19,9 +19,7 @@ logger = logging.getLogger(__name__)
 class GoalService:
     """Service class for goal-related business operations."""
 
-    def get_goal(
-        self, db: Session, user_id: str, goal_id: int
-    ) -> models.Goal | None:
+    def get_goal(self, db: Session, user_id: str, goal_id: int) -> models.Goal | None:
         """
         Retrieve a single goal by ID for a specific user.
 

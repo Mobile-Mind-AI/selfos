@@ -1,5 +1,3 @@
-
-
 def test_create_life_area(client):
     """Test creating a new life area"""
     life_area_data = {

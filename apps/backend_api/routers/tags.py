@@ -150,9 +150,7 @@ async def delete_tag(
 @router.get("/{tag_id}/entities", response_model=dict[str, list[dict]])
 async def get_entities_by_tag(
     tag_id: int,
-    entity_types: list[str] | None = Query(
-        None, description="Filter by entity types"
-    ),
+    entity_types: list[str] | None = Query(None, description="Filter by entity types"),
     db: Session = Depends(get_db),
     current_user: dict[str, Any] = Depends(get_current_user),
 ):
