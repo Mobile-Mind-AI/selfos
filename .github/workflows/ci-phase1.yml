@@ -1,0 +1,73 @@
+name: CI Phase 1 (DB & Migrations)
+
+on:
+  pull_request:
+    branches: [ main, dev/phase1 ]
+  push:
+    branches: [ dev/phase1 ]
+
+jobs:
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: selfos
+          POSTGRES_PASSWORD: selfos
+          POSTGRES_DB: selfos_dev
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U selfos" \
+          --health-interval 10s \
+          --health-timeout 5s \
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for Postgres
+        run: |
+          for i in {1..20}; do
+            if pg_isready -h 127.0.0.1 -p 5432 -U selfos; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: Install Postgres client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Enable pgvector
+        run: psql "host=127.0.0.1 port=5432 dbname=selfos_dev user=selfos" -c "CREATE EXTENSION IF NOT EXISTS vector;"
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install deps
+        working-directory: apps/api
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -U pip
+          pip install -r requirements.txt
+      - name: Run Alembic migrations
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql+psycopg://selfos:selfos@127.0.0.1:5432/selfos_dev
+        run: |
+          . .venv/bin/activate
+          alembic -c alembic.ini upgrade head
+      - name: Basic ORM smoke
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql+psycopg://selfos:selfos@127.0.0.1:5432/selfos_dev
+        run: |
+          . .venv/bin/activate
+          python - <<'PY'
+          from sqlalchemy import create_engine
+          from sqlalchemy.orm import Session
+          from app.models.core import User
+          import uuid
+          engine = create_engine('${{ env.DATABASE_URL }}', future=True)
+          with Session(engine) as s:
+            u = User(email=f"ci+{uuid.uuid4()}@example.com")
+            s.add(u); s.commit()
+          print('OK')
+          PY
+
