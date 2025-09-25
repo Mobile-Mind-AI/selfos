@@ -1,0 +1,22 @@
+# General
+.DS_Store
+.env
+*.pyc
+__pycache__/
+.pytest_cache/
+.coverage
+coverage.xml
+dist/
+build/
+node_modules/
+.idea/
+
+# Python envs
+.venv/
+*/.venv/
+
+# Alembic artifacts
+apps/api/alembic/*.pyc
+
+# OS
+Thumbs.db
