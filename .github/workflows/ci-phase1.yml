@@ -24,6 +24,8 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
+      - name: Install Postgres client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Wait for Postgres
         run: |
           for i in {1..20}; do
@@ -31,10 +33,8 @@ jobs:
             sleep 2
           done
           exit 1
-      - name: Install Postgres client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Enable pgvector
-        run: psql "host=127.0.0.1 port=5432 dbname=selfos_dev user=selfos" -c "CREATE EXTENSION IF NOT EXISTS vector;"
+        run: psql "postgresql://selfos:selfos@127.0.0.1:5432/selfos_dev" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;"
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
