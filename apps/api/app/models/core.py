@@ -21,10 +21,10 @@ from ..db import Base
 
 
 def ulid() -> str:
-    # Runtime dependency provided via ulid-py
-    from ulid import ULID
+    # Use ulid-py factory to generate a new ULID string
+    import ulid as _ulid
 
-    return str(ULID())
+    return _ulid.new().str
 
 
 @declarative_mixin
