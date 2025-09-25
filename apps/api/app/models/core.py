@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    PrimaryKeyConstraint,
     String,
     Text,
     UniqueConstraint,
@@ -20,10 +21,10 @@ from ..db import Base
 
 
 def ulid() -> str:
-    # Runtime dependency provided via ulid-py
-    from ulid import ULID
+    # Use ulid-py factory to generate a new ULID string
+    import ulid as _ulid
 
-    return str(ULID())
+    return _ulid.new().str
 
 
 @declarative_mixin
@@ -62,7 +63,7 @@ class LifeArea(Base, IdMixin):
 class LifeAreaLink(Base):
     __tablename__ = "life_area_links"
     __table_args__ = (
-        UniqueConstraint("life_area_id", "object_type", "object_id", name="pk_life_area_link"),
+        PrimaryKeyConstraint("life_area_id", "object_type", "object_id", name="pk_life_area_link"),
         Index("ix_lal_user_object", "user_id", "object_type", "object_id"),
         CheckConstraint("object_type in ('dream','goal','project','task','habit')", name="ck_lal_object_type"),
         {"schema": "core"},
@@ -168,4 +169,3 @@ class Attachment(Base, IdMixin):
     gcs_path = Column(String, nullable=False)
     mime = Column(String, nullable=False)
     size_bytes = Column(Integer, nullable=True)
-

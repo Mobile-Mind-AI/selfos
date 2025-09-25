@@ -18,23 +18,27 @@ jobs:
           POSTGRES_DB: selfos_dev
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U selfos" \
-          --health-interval 10s \
-          --health-timeout 5s \
+          --health-cmd "pg_isready -U selfos"
+          --health-interval 10s
+          --health-timeout 5s
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
-      - name: Wait for Postgres
-        run: |
-          for i in {1..20}; do
-            if pg_isready -h 127.0.0.1 -p 5432 -U selfos; then exit 0; fi
-            sleep 2
-          done
-          exit 1
       - name: Install Postgres client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Wait for Postgres (psql)
+        env:
+          PSQL_DSN: postgresql://selfos:selfos@127.0.0.1:5432/selfos_dev
+        run: |
+          for i in {1..30}; do
+            if psql "$PSQL_DSN" -c 'SELECT 1' >/dev/null 2>&1; then
+              echo "Postgres is ready"; exit 0; fi
+            sleep 2
+          done
+          echo "Postgres did not become ready in time" >&2
+          exit 1
       - name: Enable pgvector
-        run: psql "host=127.0.0.1 port=5432 dbname=selfos_dev user=selfos" -c "CREATE EXTENSION IF NOT EXISTS vector;"
+        run: psql "postgresql://selfos:selfos@127.0.0.1:5432/selfos_dev" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;"
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -50,6 +54,7 @@ jobs:
         working-directory: apps/api
         env:
           DATABASE_URL: postgresql+psycopg://selfos:selfos@127.0.0.1:5432/selfos_dev
+          PYTHONPATH: ${{ github.workspace }}/apps/api
         run: |
           . .venv/bin/activate
           alembic -c alembic.ini upgrade head
@@ -57,6 +62,7 @@ jobs:
         working-directory: apps/api
         env:
           DATABASE_URL: postgresql+psycopg://selfos:selfos@127.0.0.1:5432/selfos_dev
+          PYTHONPATH: ${{ github.workspace }}/apps/api
         run: |
           . .venv/bin/activate
           python - <<'PY'
@@ -70,4 +76,3 @@ jobs:
             s.add(u); s.commit()
           print('OK')
           PY
-
