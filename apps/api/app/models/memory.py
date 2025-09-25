@@ -15,6 +15,7 @@ class Memory(Base):
     user_id = Column(String, nullable=False)  # schema-agnostic; reference core.users.id in app logic
     text = Column(String, nullable=False)
     # embedding stored via pgvector; managed in migration as raw SQL
-    metadata = Column(JSONB, nullable=False, default=dict)
+    # 'metadata' is a reserved attribute name in SQLAlchemy declarative Base.
+    # Map the DB column named "metadata" to a Python attribute named "meta".
+    meta = Column("metadata", JSONB, nullable=False, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-
