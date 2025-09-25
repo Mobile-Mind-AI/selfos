@@ -1,0 +1,272 @@
+name: Build & DB CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main, dev/phase1 ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migrations-up:
+    name: Alembic upgrade (matrix ${{ matrix.pg }})
+    strategy:
+      matrix:
+        pg: [pg14, pg15]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:${{ matrix.pg }}
+        env:
+          POSTGRES_USER: selfos
+          POSTGRES_PASSWORD: selfos
+          POSTGRES_DB: selfos_dev
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U selfos"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Postgres client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Wait for Postgres
+        env:
+          DSN: postgresql://selfos:selfos@127.0.0.1:5432/selfos_dev
+        run: |
+          for i in {1..40}; do psql "$DSN" -c 'SELECT 1' >/dev/null 2>&1 && exit 0; sleep 2; done; exit 1
+      - name: Enable pgvector
+        run: psql "postgresql://selfos:selfos@127.0.0.1:5432/selfos_dev" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('apps/api/requirements.txt') }}
+      - name: Install deps
+        working-directory: apps/api
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -U pip
+          pip install -r requirements.txt
+      - name: Alembic upgrade
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql+psycopg://selfos:selfos@127.0.0.1:5432/selfos_dev
+          PYTHONPATH: ${{ github.workspace }}/apps/api
+        run: |
+          . .venv/bin/activate
+          alembic -c alembic.ini upgrade head
+
+  migrations-downgrade-up:
+    name: Alembic downgrade->upgrade
+    needs: migrations-up
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: selfos
+          POSTGRES_PASSWORD: selfos
+          POSTGRES_DB: selfos_dev
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U selfos"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Postgres client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Wait for Postgres
+        env:
+          DSN: postgresql://selfos:selfos@127.0.0.1:5432/selfos_dev
+        run: |
+          for i in {1..40}; do psql "$DSN" -c 'SELECT 1' >/dev/null 2>&1 && exit 0; sleep 2; done; exit 1
+      - name: Enable pgvector
+        run: psql "postgresql://selfos:selfos@127.0.0.1:5432/selfos_dev" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('apps/api/requirements.txt') }}
+      - name: Install deps
+        working-directory: apps/api
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -U pip
+          pip install -r requirements.txt
+      - name: Alembic downgrade->upgrade
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql+psycopg://selfos:selfos@127.0.0.1:5432/selfos_dev
+          PYTHONPATH: ${{ github.workspace }}/apps/api
+        run: |
+          . .venv/bin/activate
+          alembic -c alembic.ini downgrade base
+          alembic -c alembic.ini upgrade head
+
+  orm-import:
+    name: ORM import check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('apps/api/requirements.txt') }}
+      - name: Install deps
+        working-directory: apps/api
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -U pip
+          pip install -r requirements.txt
+      - name: Import models
+        working-directory: apps/api
+        env:
+          PYTHONPATH: ${{ github.workspace }}/apps/api
+        run: |
+          . .venv/bin/activate
+          python - <<'PY'
+          from app.models import *  # noqa: F401,F403
+          print('Models import OK')
+          PY
+
+  orm-smoke:
+    name: ORM smoke insert
+    needs: migrations-up
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: selfos
+          POSTGRES_PASSWORD: selfos
+          POSTGRES_DB: selfos_dev
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U selfos"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Postgres client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Wait for Postgres
+        env:
+          DSN: postgresql://selfos:selfos@127.0.0.1:5432/selfos_dev
+        run: |
+          for i in {1..40}; do psql "$DSN" -c 'SELECT 1' >/dev/null 2>&1 && exit 0; sleep 2; done; exit 1
+      - name: Enable pgvector
+        run: psql "postgresql://selfos:selfos@127.0.0.1:5432/selfos_dev" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('apps/api/requirements.txt') }}
+      - name: Install deps
+        working-directory: apps/api
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -U pip
+          pip install -r requirements.txt
+      - name: Smoke insert
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql+psycopg://selfos:selfos@127.0.0.1:5432/selfos_dev
+          PYTHONPATH: ${{ github.workspace }}/apps/api
+        run: |
+          . .venv/bin/activate
+          python - <<'PY'
+          from sqlalchemy.orm import Session
+          from sqlalchemy import create_engine
+          from app.models.core import User, LifeArea, Task
+          engine = create_engine('${{ env.DATABASE_URL }}', future=True)
+          with Session(engine) as s:
+              u = User(email='ci@example.com')
+              s.add(u); s.flush()
+              la = LifeArea(user_id=u.id, name='Health')
+              s.add(la); s.flush()
+              t = Task(user_id=u.id, title='Test task')
+              s.add(t); s.commit()
+          print('ORM smoke OK')
+          PY
+
+  alembic-diff-check:
+    name: Alembic autogenerate diff check
+    needs: migrations-up
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: selfos
+          POSTGRES_PASSWORD: selfos
+          POSTGRES_DB: selfos_dev
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U selfos"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Postgres client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Wait for Postgres
+        env:
+          DSN: postgresql://selfos:selfos@127.0.0.1:5432/selfos_dev
+        run: |
+          for i in {1..40}; do psql "$DSN" -c 'SELECT 1' >/dev/null 2>&1 && exit 0; sleep 2; done; exit 1
+      - name: Enable pgvector
+        run: psql "postgresql://selfos:selfos@127.0.0.1:5432/selfos_dev" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('apps/api/requirements.txt') }}
+      - name: Install deps
+        working-directory: apps/api
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -U pip
+          pip install -r requirements.txt
+      - name: Autogenerate must be empty
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql+psycopg://selfos:selfos@127.0.0.1:5432/selfos_dev
+          PYTHONPATH: ${{ github.workspace }}/apps/api
+        run: |
+          . .venv/bin/activate
+          rm -f alembic/versions/_tmp_*.py
+          alembic -c alembic.ini revision --autogenerate -m "_tmp_check" || true
+          if ls alembic/versions/_tmp_*.py 1> /dev/null 2>&1; then
+            echo "Schema drift: autogenerate created a new revision" >&2
+            exit 1
+          fi
+
