@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    PrimaryKeyConstraint,
     String,
     Text,
     UniqueConstraint,
@@ -62,7 +63,7 @@ class LifeArea(Base, IdMixin):
 class LifeAreaLink(Base):
     __tablename__ = "life_area_links"
     __table_args__ = (
-        UniqueConstraint("life_area_id", "object_type", "object_id", name="pk_life_area_link"),
+        PrimaryKeyConstraint("life_area_id", "object_type", "object_id", name="pk_life_area_link"),
         Index("ix_lal_user_object", "user_id", "object_type", "object_id"),
         CheckConstraint("object_type in ('dream','goal','project','task','habit')", name="ck_lal_object_type"),
         {"schema": "core"},
@@ -168,4 +169,3 @@ class Attachment(Base, IdMixin):
     gcs_path = Column(String, nullable=False)
     mime = Column(String, nullable=False)
     size_bytes = Column(Integer, nullable=True)
-
