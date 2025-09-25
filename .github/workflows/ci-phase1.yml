@@ -54,6 +54,7 @@ jobs:
         working-directory: apps/api
         env:
           DATABASE_URL: postgresql+psycopg://selfos:selfos@127.0.0.1:5432/selfos_dev
+          PYTHONPATH: ${{ github.workspace }}/apps/api
         run: |
           . .venv/bin/activate
           alembic -c alembic.ini upgrade head
@@ -61,6 +62,7 @@ jobs:
         working-directory: apps/api
         env:
           DATABASE_URL: postgresql+psycopg://selfos:selfos@127.0.0.1:5432/selfos_dev
+          PYTHONPATH: ${{ github.workspace }}/apps/api
         run: |
           . .venv/bin/activate
           python - <<'PY'
