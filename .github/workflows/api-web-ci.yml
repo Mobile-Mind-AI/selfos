@@ -59,7 +59,7 @@ jobs:
         run: npm install
       - name: Lint
         working-directory: apps/web
-        run: npm run lint -- --no-error-on-unmatched-pattern
+        run: npm run lint
       - name: Build
         working-directory: apps/web
         env:
