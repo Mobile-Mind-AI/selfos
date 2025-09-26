@@ -3,7 +3,7 @@ name: API & Web CI
 on:
   pull_request:
   push:
-    branches: [ dev/phase2 ]
+    branches: [ dev/phase2, dev/phase2-ci-fixes ]
 
 jobs:
   api:
