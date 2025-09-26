@@ -2,8 +2,17 @@ name: API & Web CI
 
 on:
   pull_request:
+    branches:
+      - main
+      - 'dev/**'
+      - 'feature/**'
+      - 'bug/**'
   push:
-    branches: [ dev/phase2, dev/phase2-ci-fixes ]
+    branches:
+      - main
+      - 'dev/**'
+      - 'feature/**'
+      - 'bug/**'
 
 jobs:
   api:
