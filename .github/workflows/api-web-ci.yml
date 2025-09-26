@@ -39,7 +39,7 @@ jobs:
       - name: Export OpenAPI
         working-directory: apps/api
         run: |
-          ./scripts/export_openapi.sh > /dev/null
+          bash ./scripts/export_openapi.sh
       - uses: actions/upload-artifact@v4
         with:
           name: openapi.json
@@ -56,7 +56,7 @@ jobs:
           cache-dependency-path: apps/web/package.json
       - name: Install web deps
         working-directory: apps/web
-        run: npm ci
+        run: npm install
       - name: Lint
         working-directory: apps/web
         run: npm run lint -- --no-error-on-unmatched-pattern
@@ -65,4 +65,3 @@ jobs:
         env:
           NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
         run: npm run build
-

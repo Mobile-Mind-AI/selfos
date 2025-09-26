@@ -13,13 +13,15 @@ if curl -fsS "http://$HOST:$PORT/openapi.json" >/dev/null 2>&1; then
   exit 0
 fi
 
-echo "[+] Launching uvicorn to export OpenAPI..."
+echo "[+] Generating OpenAPI without server..."
 pushd "$(dirname "$0")/.." >/dev/null
-python - <<'PY'
+PYBIN="python3"
+if [ -x .venv/bin/python ]; then PYBIN=".venv/bin/python"; fi
+"$PYBIN" - <<'PY' > "$OUT"
 import json
 from app.api.main import create_app
 app = create_app()
 print(json.dumps(app.openapi()))
 PY
+echo "[✓] OpenAPI written to $OUT"
 popd >/dev/null
-
