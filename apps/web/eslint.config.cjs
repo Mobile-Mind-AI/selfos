@@ -26,4 +26,17 @@ module.exports = [
       },
     },
   },
+  {
+    files: ["next.config.js"],
+    languageOptions: {
+      globals: globals.node,
+      parserOptions: {
+        ecmaVersion: "latest",
+        sourceType: "commonjs",
+      },
+    },
+    rules: {
+      // keep defaults; this override ensures CommonJS globals
+    }
+  }
 ];
