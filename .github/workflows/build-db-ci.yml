@@ -2,8 +2,17 @@ name: Build & DB CI
 
 on:
   pull_request:
+    branches:
+      - main
+      - 'dev/**'
+      - 'feature/**'
+      - 'bug/**'
   push:
-    branches: [ main, dev/phase1 ]
+    branches:
+      - main
+      - 'dev/**'
+      - 'feature/**'
+      - 'bug/**'
 
 concurrency:
   group: ci-${{ github.ref }}
