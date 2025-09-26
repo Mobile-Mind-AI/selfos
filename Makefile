@@ -1,4 +1,4 @@
-.PHONY: help api-venv api-install bootstrap-local db-up db-migrate db-down cloudsql-migrate seed-areas fmt clean
+.PHONY: help api-venv api-install bootstrap-local db-up db-migrate db-down cloudsql-migrate seed-areas fmt clean api-dev api-openapi client-gen web-dev
 
 help:
 	@echo "Targets:"
@@ -37,3 +37,15 @@ cloudsql-migrate:
 clean:
 	rm -rf **/__pycache__ **/*.pyc .pytest_cache
 
+# Phase 2
+api-dev:
+	cd apps/api && . .venv/bin/activate 2>/dev/null || true; uvicorn app.api.main:app --reload --port 8000
+
+api-openapi:
+	cd apps/api && ./scripts/export_openapi.sh > /dev/null
+
+client-gen: api-openapi
+	./scripts/gen_client.sh
+
+web-dev:
+	cd apps/web && npm run dev

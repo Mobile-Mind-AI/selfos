@@ -1,0 +1,5 @@
+* { box-sizing: border-box }
+body { font-family: ui-sans-serif, system-ui, Arial, sans-serif }
+input { margin-right: 8px; padding: 6px }
+button { padding: 6px 10px }
+
