@@ -29,7 +29,7 @@ module.exports = [
   {
     files: ["next.config.js"],
     languageOptions: {
-      globals: globals.node,
+      globals: { ...globals.node, module: true, exports: true, require: true, __dirname: true, __filename: true },
       parserOptions: {
         ecmaVersion: "latest",
         sourceType: "commonjs",
